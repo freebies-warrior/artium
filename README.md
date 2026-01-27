@@ -65,6 +65,7 @@ See [`docs/api/CONTRACT.md`](docs/api/CONTRACT.md)
 ## Docs
 - Architecture: [docs/architecture.md](docs/architecture.md)
 - API contract: [docs/api/CONTRACT.md](docs/api/CONTRACT.md)
+- DB schema: [docs/db/schema.md](docs/db/schema.md)
 
 ---
 

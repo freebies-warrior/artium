@@ -6,8 +6,13 @@ type HandlerSet struct {
 	Auth *AuthHandler
 }
 
-func NewHandlerSet(users *database.UserDatabase, jwtSecret []byte) *HandlerSet {
+func NewHandlerSet(
+	users *database.UserDatabase,
+	tokens *database.EmailVerificationTokenDatabase,
+	jwtSecret []byte,
+	appBaseURL string,
+) *HandlerSet {
 	return &HandlerSet{
-		Auth: NewAuthHandler(users, jwtSecret),
+		Auth: NewAuthHandler(users, tokens, jwtSecret, appBaseURL),
 	}
 }

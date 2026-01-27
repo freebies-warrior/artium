@@ -12,6 +12,11 @@ func NewRouter(h *handlers.HandlerSet) *gin.Engine {
 
 	// Auth endpoints
 	r.POST("/auth/signup", h.Auth.Signup)
+	r.POST("/auth/login", h.Auth.Login)
+
+	// Verification
+	r.POST("/auth/verify", h.Auth.VerifyEmail)
+	r.POST("/auth/resend-verification", h.Auth.ResendVerification)
 
 	return r
 }

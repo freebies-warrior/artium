@@ -45,8 +45,8 @@ flowchart LR
 ```
 
 **Core components**
-- **Next.js Web App (`apps/web`)**: UI, form validation, calls backend APIs.
-- **Go API Server (`apps/api`)**: authentication, listings, bidding logic, upload orchestration.
+- **Next.js Web App (`apps/frontend`)**: UI, form validation, calls backend APIs.
+- **Go API Server (`apps/backend`)**: authentication, listings, bidding logic, upload orchestration.
 - **Postgres**: source of truth for users/items/pictures/bids.
 - **Object Storage**: stores uploaded images; DB stores references (URLs/keys).
 

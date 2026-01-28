@@ -82,7 +82,7 @@ More details: [`docs/architecture.md`](docs/architecture.md)
 To reset the database (drops all data and recreates tables):
 ```bash
 cd apps/backend
-go run # Make sure Go is installed
+go run ./apps/backend/cmd/dbreset  # Make sure Go is installed
 ```
 
 ---

@@ -22,10 +22,10 @@ const Footer = () => {
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="font-display font-bold text-primary-foreground text-sm">N</span>
+                <span className="font-display font-bold text-primary-foreground text-sm">A</span>
               </div>
               <span className="font-display font-semibold text-foreground">
-                NFT Marketplace
+                Artium
               </span>
             </div>
             <p className="text-muted-foreground max-w-sm">
@@ -68,13 +68,6 @@ const Footer = () => {
               Get the latest about new auctions, trending artworks, and featured sellers.
             </p>
           </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div className="pt-8 border-t border-border text-center">
-          <p className="text-muted-foreground text-sm">
-            © 2025 NFT Marketplace. All rights reserved.
-          </p>
         </div>
       </div>
     </footer>

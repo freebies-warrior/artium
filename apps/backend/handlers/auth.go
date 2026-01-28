@@ -194,12 +194,12 @@ func (h *AuthHandler) ResendVerification(c *gin.Context) {
 
 	row, err := h.users.GetUserByEmail(c.Request.Context(), email)
 	if err != nil {
-		c.JSON(http.StatusOK, okResp{OK: true})
+		c.JSON(http.StatusInternalServerError, okResp{OK: false})
 		return
 	}
 
 	if row.Verified {
-		c.JSON(http.StatusOK, okResp{OK: true})
+		c.JSON(http.StatusBadRequest, okResp{OK: false})
 		return
 	}
 
@@ -208,7 +208,7 @@ func (h *AuthHandler) ResendVerification(c *gin.Context) {
 		return
 	}
 	
-	c.JSON(http.StatusOK, okResp{OK: true})
+	c.JSON(http.StatusBadRequest, okResp{OK: false})
 }
 
 func (h *AuthHandler) sendVerificationLink(ctx context.Context, userID, email string) error {

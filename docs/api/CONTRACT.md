@@ -233,14 +233,18 @@ This endpoint should not leak whether the email exists.
 - **Auth:** none
 
 ### Request
+```json
 {
   "email": "user@example.com"
 }
+```
 
 ### Response `200`
+```json
 {
   "ok": true
 }
+```
 
 ### Errors
 - `400 VALIDATION_ERROR` (invalid email format)

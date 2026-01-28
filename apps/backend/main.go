@@ -24,8 +24,10 @@ func main() {
 
 	userDatabase := database.NewUserDatabase(db)
 	tokenDatabase := database.NewEmailVerificationTokenDatabase(db)
+	bidDatabase := database.NewBidDatabase(db)
+	itemDatabase := database.NewItemDatabase(db)
 
-	h := handlers.NewHandlerSet(userDatabase, tokenDatabase, []byte(secret), appBaseURL)
+	h := handlers.NewHandlerSet(userDatabase, tokenDatabase, bidDatabase,itemDatabase, []byte(secret), appBaseURL)
 	r := app.NewRouter(h)
 
 	log.Println("listening on :8080")

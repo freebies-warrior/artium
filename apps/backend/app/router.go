@@ -23,5 +23,9 @@ func NewRouter(h *handlers.HandlerSet) *gin.Engine {
 	r.POST("/auth/verify", h.Auth.VerifyEmail)
 	r.POST("/auth/resend-verification", h.Auth.ResendVerification)
 
+	// Bids endpoints
+	r.POST("/items/:item_id/bids", middlewares.RequireAuth(h.JWTSecret), h.Bids.PlaceBid)
+	r.GET("/items/:item_id/bids", h.Bids.ListBids)
+
 	return r
 }

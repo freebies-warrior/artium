@@ -80,11 +80,11 @@ func (r *EmailVerificationTokenDatabase) VerifyToken(ctx context.Context, tokenH
 	var u UserPublic
 	err = tx.QueryRowContext(ctx,
 		`UPDATE users
-		 SET verified = true
-		 WHERE id = $1
-		 RETURNING id::text, email, verified`,
+		SET verified = true
+		WHERE id = $1
+		RETURNING id::text, email, username, verified`,
 		userID,
-	).Scan(&u.ID, &u.Email, &u.Verified)
+	).Scan(&u.ID, &u.Email, &u.Username, &u.Verified)
 	if err != nil {
 		return UserPublic{}, err
 	}

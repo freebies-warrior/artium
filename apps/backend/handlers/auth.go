@@ -37,6 +37,7 @@ func NewAuthHandler(
 
 type signupReq struct {
 	Email    string `json:"email"`
+	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
@@ -71,6 +72,7 @@ type okResp struct {
 }
 
 var emailRe = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
+var usernameRe = regexp.MustCompile(`^[a-z0-9_]{3,20}$`)
 
 func (h *AuthHandler) Signup(c *gin.Context) {
 	var req signupReq
@@ -84,6 +86,17 @@ func (h *AuthHandler) Signup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid email", map[string]any{"field": "email"}))
 		return
 	}
+
+	username := normalizeUsername(req.Username)
+	if !usernameRe.MatchString(username) {
+		c.JSON(http.StatusBadRequest,
+			utils.NewError("VALIDATION_ERROR", "invalid username (3-20 chars: a-z, 0-9, _)",
+				map[string]any{"field": "username"},
+			),
+		)
+		return
+	}
+
 	if len(req.Password) < 8 {
 		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "password must be at least 8 characters", map[string]any{"field": "password"}))
 		return
@@ -95,11 +108,21 @@ func (h *AuthHandler) Signup(c *gin.Context) {
 		return
 	}
 
-	u, err := h.users.CreateUser(c.Request.Context(), email, hash)
+	u, err := h.users.CreateUser(c.Request.Context(), email, username, hash)
 	if err != nil {
-		if database.IsUniqueViolation(err) {
-			c.JSON(http.StatusConflict, utils.NewError("CONFLICT", "email already exists", map[string]any{"field": "email"}))
-			return
+		if constraint, ok := database.UniqueViolationConstraint(err); ok {
+			// Postgres default constraint for "field unique" is usually "users_field_key"
+			switch constraint {
+			case "users_email_key":
+				c.JSON(http.StatusConflict, utils.NewError("CONFLICT", "email already exists", map[string]any{"field": "email"}))
+				return
+			case "users_username_key":
+				c.JSON(http.StatusConflict, utils.NewError("CONFLICT", "username already exists", map[string]any{"field": "username"}))
+				return
+			default:
+				c.JSON(http.StatusConflict, utils.NewError("CONFLICT", "email or username already exists", nil))
+				return
+			}
 		}
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "database error", nil))
 		return
@@ -149,7 +172,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, loginResp{
 		Token: token,
-		User:  database.UserPublic{ID: row.ID, Email: row.Email, Verified: row.Verified},
+		User: database.UserPublic{
+			ID: row.ID, Email: row.Email, Username: row.Username, Verified: row.Verified,
+		},
 	})
 }
 
@@ -208,7 +233,7 @@ func (h *AuthHandler) ResendVerification(c *gin.Context) {
 		return
 	}
 	
-	c.JSON(http.StatusBadRequest, okResp{OK: false})
+	c.JSON(http.StatusOK, okResp{OK: true})
 }
 
 func (h *AuthHandler) sendVerificationLink(ctx context.Context, userID, email string) error {
@@ -234,5 +259,9 @@ func (h *AuthHandler) sendVerificationLink(ctx context.Context, userID, email st
 
 
 func normalizeEmail(s string) string {
+	return strings.ToLower(strings.TrimSpace(s))
+}
+
+func normalizeUsername(s string) string {
 	return strings.ToLower(strings.TrimSpace(s))
 }

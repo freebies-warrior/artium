@@ -67,6 +67,37 @@ erDiagram
 
 ---
 
+## `email_verification_tokens`
+
+**Purpose:** Store single-use, expiring tokens used to verify a user’s email address after signup (or after a resend request).
+
+| column      | type        | nullable | notes |
+|------------|-------------|----------|------|
+| id         | uuid        | no       | PK |
+| user_id    | uuid        | no       | FK → `users.id` |
+| token_hash | bytea       | no       | SHA-256 hash of the raw token (store hash only) |
+| expires_at | timestamptz | no       | token expiry time |
+| used_at    | timestamptz | yes      | set when token is consumed (single-use) |
+| created_at | timestamptz | no       | default `now()` |
+
+**Constraints**
+- `PRIMARY KEY (id)`
+- `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- `UNIQUE (token_hash)`
+
+**Indexes**
+- `evt_user_id_idx` on `(user_id)`
+- `evt_expires_at_idx` on `(expires_at)`
+
+**Notes**
+- Raw token should be cryptographically secure random bytes (e.g., 32 bytes) encoded as base64url.
+- Store only `token_hash` in DB; raw token is only sent to the user (email link).
+- Token is valid only if:
+  - `used_at IS NULL`
+  - `expires_at > now()`
+
+---
+
 ## `items`
 **Purpose:** Auction listings for artworks.
 

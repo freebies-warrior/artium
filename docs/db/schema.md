@@ -55,6 +55,7 @@ erDiagram
 |---------------|-------------|----------|------|
 | id            | uuid        | no       | PK |
 | email         | text        | no       | unique |
+| username      | text        | no       | unique |
 | password_hash | text        | no       | hashed password (no plaintext) |
 | verified      | boolean     | no       | default `false` |
 | created_at    | timestamptz | no       | default `now()` |
@@ -63,9 +64,11 @@ erDiagram
 **Constraints**
 - `PRIMARY KEY (id)`
 - `UNIQUE (email)`
+- `UNIQUE (username)`
 
 **Indexes**
 - `users_email_idx` on `(email)` (unique)
+- `users_username_idx` on `(username)` (unique)
 
 ---
 

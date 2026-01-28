@@ -21,3 +21,6 @@ CREATE TABLE IF NOT EXISTS items (
 	updated_at timestamptz NOT NULL DEFAULT now(),
 	CHECK (time_end > time_start)
 );
+
+CREATE INDEX IF NOT EXISTS items_seller_id_idx ON items (seller_id);
+CREATE INDEX IF NOT EXISTS item_status_time_end_idx ON items (status, time_end);

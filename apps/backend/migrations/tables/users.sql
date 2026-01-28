@@ -6,3 +6,5 @@ CREATE TABLE IF NOT EXISTS users (
 	created_at timestamptz NOT NULL DEFAULT now(),
 	updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS users_email_idx ON users(email);

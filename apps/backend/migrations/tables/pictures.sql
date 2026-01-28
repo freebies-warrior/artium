@@ -4,3 +4,5 @@ CREATE TABLE IF NOT EXISTS pictures (
 	url text NOT NULL,
 	created_at timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS pictures_item_id_idx ON pictures(item_id);

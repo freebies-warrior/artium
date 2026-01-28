@@ -13,7 +13,11 @@ DATABASE_URI=<YOUR_POSTGRESQL_DATABASE_URI>
 JWT_SECRET=<YOUR_SECRET_KEY>
 APP_BASE_URL=<YOUR_BASE_URL>
 ```
-4. Run the project, by default it is live on `localhost:8080`
+4. Initialize/Reset Database (run on first setup or reset)
+```sh
+go run cmd/dbreset/main.go
+```
+5. Run the project, by default it is live on `localhost:8080`
 ```
 go run .
 ```

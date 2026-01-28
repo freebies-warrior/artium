@@ -32,6 +32,7 @@ We store:
 ## Relationships (ER)
 
 - `users` 1—N `items` (seller owns many items)
+- `users` 1—N `email_verification_tokens` (a user can have multiple tokens over time)
 - `items` 1—N `pictures` (an item has multiple images)
 - `users` 1—N `bids` (a user can place many bids)
 - `items` 1—N `bids` (an item receives many bids)
@@ -42,6 +43,7 @@ erDiagram
   items ||--o{ pictures : has
   users ||--o{ bids : places
   items ||--o{ bids : receives
+  users ||--o{ email_verification_tokens : has
 ```
 
 ## Tables
@@ -169,5 +171,30 @@ Store structured attributes extracted from the artwork image. Example shape:
 
 **Indexes**
 - `pictures_item_id_idx` on `(item_id)`
+
+---
+
+## `bids`
+**Purpose:** Record bid history for each auction item.
+
+| column    | type        | nullable | notes |
+|----------|-------------|----------|------|
+| id       | uuid        | no       | PK, default `gen_random_uuid()` |
+| user_id  | uuid        | no       | FK → `users.id` |
+| item_id  | uuid        | no       | FK → `items.id` |
+| price    | bigint      | no       | bid amount in cents |
+| timestamp| timestamptz | no       | default `now()` |
+
+**Constraints**
+- `PRIMARY KEY (id)`
+- `FOREIGN KEY (user_id) REFERENCES users(id)`
+- `FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE`
+- Recommended checks:
+  - `CHECK (price > 0)`
+
+**Indexes**
+- `bids_item_id_timestamp_idx` on `(item_id, timestamp DESC)` (fast bid history for item page)
+- `bids_user_id_timestamp_idx` on `(user_id, timestamp DESC)` (user activity)
+- `bids_item_price_desc_idx` on `(item_id, price DESC)` (fast highest bid lookup)
 
 ---

@@ -77,6 +77,14 @@ More details: [`docs/architecture.md`](docs/architecture.md)
     docker compose stop
     ```
 
+#### Resetting the DB
+
+To reset the database (drops all data and recreates tables):
+```bash
+cd apps/backend
+go run # Make sure Go is installed
+```
+
 ---
 
 ## Docs

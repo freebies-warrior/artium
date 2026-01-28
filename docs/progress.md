@@ -29,10 +29,12 @@ Legend:
 
 ## Backend (Go)
 ### Auth
-- [ ] `POST /auth/signup`
-- [ ] `POST /auth/login`
-- [ ] Email verification (tokens + verify endpoint) *(confirm CONTRACT is updated)*
-- [ ] Auth middleware (protect seller/bid/upload endpoints)
+- [x] `POST /auth/signup` (signup)
+- [x] `POST /auth/login` (login)
+- [x] `POST /auth/verify` (verify token)
+- [x] `POST /auth/resend-verification` (resend email)
+- [x] Auth Middleware
+- [ ] Send Email Verification
 
 ### Items
 - [ ] `GET /items` (browse + pagination)

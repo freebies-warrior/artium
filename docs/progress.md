@@ -18,14 +18,15 @@ Legend:
 - [ ] Dockerized Next.js frontend
 
 ## Database (Schema + Integrity)
-- [ ] Enable `pgcrypto` (DB-generated UUIDs)
-- [ ] Tables: `users`
-- [ ] Tables: `items`
-- [ ] Tables: `pictures`
-- [ ] Tables: `bids`
-- [ ] Indexes (browse + bid history)
-- [ ] `updated_at` auto-update trigger (users/items)
-- [ ] Bid validity enforcement trigger (min bid + timeframe + active status)
+- [x] Enable `pgcrypto` (DB-generated UUIDs)
+- [x] Tables: `users`
+- [x] Tables: `email_verification_tokens`
+- [x] Tables: `items`
+- [x] Tables: `pictures`
+- [x] Tables: `bids`
+- [x] Indexes (browse + bid history)
+- [x] `updated_at` auto-update trigger (users/items)
+- [x] Bid validity enforcement trigger (min bid + timeframe + active status)
 
 ## Backend (Go)
 ### Auth

@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS items (
 	description text,
 	author text,
 	features jsonb,
+	height integer CHECK (height > 0),
+	weight integer CHECK (weight > 0),
 	base_price bigint NOT NULL CHECK (base_price >= 0),
 	increment bigint NOT NULL CHECK (increment > 0),
 	status item_status NOT NULL DEFAULT 'draft',

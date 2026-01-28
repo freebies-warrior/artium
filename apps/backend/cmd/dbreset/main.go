@@ -32,9 +32,6 @@ func main() {
 		"apps/backend/migrations/tables/pictures.sql",
 		"apps/backend/migrations/tables/bids.sql",
 
-		// Indexes
-		"apps/backend/migrations/indexes/bids_item_price_desc_idx.sql",
-
 		// Functions / Procedures
 		"apps/backend/migrations/functions/tg_set_updated_at.sql",
 		"apps/backend/migrations/functions/validate_bid_before_insert.sql",

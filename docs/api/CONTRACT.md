@@ -58,6 +58,7 @@ All money values are **integer** (e.g., `1500` = $1500.00).
 {
   "id": "uuid",
   "email": "user@example.com",
+  "username": "user_123",
   "verified": false
 }
 ```
@@ -137,6 +138,7 @@ Create a new user account.
 ```json
 {
   "email": "user@example.com",
+  "username": "user_123",
   "password": "plain-text-password"
 }
 ```
@@ -147,6 +149,7 @@ Create a new user account.
   "user": {
     "id": "uuid",
     "email": "user@example.com",
+    "username": "user_123",
     "verified": false
   }
 }
@@ -154,7 +157,7 @@ Create a new user account.
 
 ### Errors
 - `400 VALIDATION_ERROR` (invalid email/password)
-- `409 CONFLICT` (email already exists)
+- `409 CONFLICT` (email/username already exists)
 
 ---
 
@@ -180,6 +183,7 @@ Authenticate and receive a token.
   "user": {
     "id": "uuid",
     "email": "user@example.com",
+    "username": "user_123",
     "verified": false
   }
 }
@@ -213,6 +217,7 @@ On success, sets `users.verified = true`.
   "user": {
     "id": "uuid",
     "email": "user@example.com",
+    "username": "user_123",
     "verified": true
   }
 }

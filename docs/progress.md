@@ -44,8 +44,8 @@ Legend:
 - [ ] Status transitions (`draft → active → ended/cancelled`) *(if needed for demo)*
 
 ### Bids
-- [ ] `POST /items/{id}/bids` (place bid)
-- [ ] `GET /items/{id}/bids` (history)
+- [x] `POST /items/{id}/bids` (place bid)
+- [x] `GET /items/{id}/bids` (history)
 - [ ] Concurrency-safe bidding (DB transaction + row lock OR DB trigger)
 
 ### Uploads / Pictures

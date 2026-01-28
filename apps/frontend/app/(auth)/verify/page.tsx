@@ -26,7 +26,7 @@ export default function VerifyPage() {
         return
       }
 
-      router.replace('/dashboard')
+      router.replace('/?verify=success')
     }
 
     verify()

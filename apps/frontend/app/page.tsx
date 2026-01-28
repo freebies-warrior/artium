@@ -11,13 +11,20 @@ export default function Home() {
   // local UI-only state: whether banner is dismissed
   const [dismissed, setDismissed] = useState(false)
 
-  let banner: string | null = null
+  let banner: { message: string; type: 'success' | 'error' } | null = null
 
   if (!dismissed) {
     if (verifyStatus === 'failed') {
-      banner = 'This verification link is invalid or has expired.'
-    } else if (verifyStatus === 'invalid') {
-      banner = 'Invalid verification link.'
+      banner = {
+        message: 'This verification link is invalid or has expired.',
+        type: 'error',
+      }
+    } else if (verifyStatus === 'success') {
+      banner = {
+        message:
+          'Your email has been verified successfully. You may now log in.',
+        type: 'success',
+      }
     }
   }
 
@@ -25,8 +32,15 @@ export default function Home() {
     <main className="min-h-screen flex flex-col items-center justify-center gap-6">
       {banner && (
         <div className="fixed top-20 left-0 right-0 z-40 flex justify-center px-4">
-          <div className="relative w-full max-w-4xl bg-red-100 border border-red-300 rounded-lg px-4 py-3 text-red-700 text-center shadow">
-            <span>{banner}</span>
+          <div
+            className={`relative w-full max-w-4xl rounded-lg px-4 py-3 text-center shadow
+        ${
+          banner.type === 'success'
+            ? 'bg-green-100 border border-green-300 text-green-700'
+            : 'bg-red-100 border border-red-300 text-red-700'
+        }`}
+          >
+            <span>{banner.message}</span>
 
             <button
               onClick={() => {

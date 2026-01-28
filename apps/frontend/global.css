@@ -1,8 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap");
 
-/* =====================================
-   CSS VARIABLES (Design System)
-   ===================================== */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: 240 6% 10%;
@@ -34,6 +34,31 @@
   --ring: 266 100% 64%;
 
   --radius: 1rem;
+
+  /* =====================================
+     Missing tokens (added from your other global.css)
+     ===================================== */
+  --glow-purple: 266 100% 64%;
+  --glow-orange: 25 95% 53%;
+  --surface-elevated: 240 5% 16%;
+
+  --gradient-primary: linear-gradient(
+    135deg,
+    hsl(266 100% 64%) 0%,
+    hsl(280 100% 70%) 100%
+  );
+
+  --gradient-accent: linear-gradient(
+    135deg,
+    hsl(25 95% 53%) 0%,
+    hsl(350 80% 50%) 100%
+  );
+
+  --shadow-glow: 0 0 60px -10px hsl(var(--glow-purple) / 0.5);
+  --shadow-card: 0 4px 40px -8px hsl(0 0% 0% / 0.5);
+
+  /* Better native control rendering for dark UI */
+  color-scheme: dark;
 }
 
 /* =====================================
@@ -53,13 +78,29 @@ body {
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth; /* missing before */
+}
+
 body {
+  min-height: 100vh; /* missing before */
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: "Work Sans", system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Nice selection (missing before) */
+::selection {
+  background: hsl(var(--primary) / 0.25);
+}
+
+/* Better focus ring default (missing before) */
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
 }
 
 /* Headings */
@@ -88,7 +129,7 @@ h6 {
 .art-card {
   background-color: hsl(var(--card));
   color: hsl(var(--card-foreground));
-  border-radius: 1rem;
+  border-radius: var(--radius);
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -105,7 +146,7 @@ h6 {
   padding-right: 3rem;
   background-color: hsl(var(--card));
   color: hsl(var(--foreground));
-  border-radius: 1rem;
+  border-radius: var(--radius);
   border: 1px solid hsl(var(--border));
   font-size: 0.875rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -171,7 +212,7 @@ h6 {
 /* Button */
 .subscribe-btn {
   padding: 0.75rem 1.5rem;
-  border-radius: 1rem;
+  border-radius: var(--radius);
   font-weight: 600;
   background-color: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
@@ -189,15 +230,92 @@ h6 {
 }
 
 /* =====================================
+   Missing components from the other global.css (added)
+   ===================================== */
+
+.glow-text {
+  text-shadow: 0 0 40px hsl(var(--glow-purple) / 0.5);
+}
+
+.glow-box {
+  box-shadow: 0 0 40px -8px hsl(var(--glow-purple) / 0.5);
+}
+
+.gradient-border {
+  position: relative;
+  background: hsl(var(--card));
+  border-radius: var(--radius);
+}
+
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.5), transparent 50%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.nft-card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  will-change: transform;
+}
+
+.nft-card-hover:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 60px -15px hsl(var(--glow-purple) / 0.4);
+}
+
+.timer-digit {
+  background: linear-gradient(
+    180deg,
+    hsl(var(--surface-elevated)) 0%,
+    hsl(var(--card)) 100%
+  );
+  border: 1px solid hsl(var(--border));
+}
+
+.hero-gradient {
+  background: radial-gradient(
+    ellipse 80% 50% at 50% 100%,
+    hsl(var(--glow-purple) / 0.15),
+    transparent
+  );
+}
+
+/* =====================================
    UTILITIES (PURE CSS)
    ===================================== */
 
 .gradient-primary {
+  background: var(--gradient-primary);
+}
+
+.gradient-accent {
+  background: var(--gradient-accent);
+}
+
+.shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+.text-gradient {
   background: linear-gradient(
     135deg,
-    hsl(266 100% 64%) 0%,
-    hsl(280 100% 70%) 100%
+    hsl(var(--primary)) 0%,
+    hsl(var(--accent)) 100%
   );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .scrollbar-hide {

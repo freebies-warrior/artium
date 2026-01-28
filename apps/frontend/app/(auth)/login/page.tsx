@@ -1,7 +1,40 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 
 export default function LoginPage() {
+  const router = useRouter()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+
+    const data = await res.json()
+
+    setLoading(false)
+
+    if (!res.ok) {
+      setError(data?.error?.message || data?.message || 'Login failed')
+      return
+    }
+
+    router.push('/dashboard')
+  }
+
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
       {/* LEFT: Image */}
@@ -24,25 +57,33 @@ export default function LoginPage() {
             Welcome back! Please enter your details.
           </p>
 
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <input
               type="email"
               placeholder="Email Address"
-              className="w-full px-5 py-3 rounded-full bg-white text-black placeholder-gray-500 focus:outline-none"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-5 py-3 rounded-full bg-white text-black"
             />
 
             <input
               type="password"
               placeholder="Password"
-              className="w-full px-5 py-3 rounded-full bg-white text-black placeholder-gray-500 focus:outline-none"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-5 py-3 rounded-full bg-white text-black"
             />
 
             <button
               type="submit"
-              className="w-full py-3 rounded-full bg-purple-500 hover:bg-purple-600 transition font-semibold"
+              disabled={loading}
+              className="w-full py-3 rounded-full bg-purple-500 hover:bg-purple-600 transition font-semibold disabled:opacity-50"
             >
-              Login
+              {loading ? 'Logging in...' : 'Login'}
             </button>
+            {error && (
+              <p className="mb-4 text-red-500 text-sm text-center">{error}</p>
+            )}
           </form>
 
           {/* Footer links */}

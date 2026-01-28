@@ -69,6 +69,11 @@ See [`docs/api/CONTRACT.md`](docs/api/CONTRACT.md)
 
 ---
 
+## Progress
+See [docs/progress.md](docs/progress.md)
+
+---
+
 ## Team
 - Ferdinand Halim Santoso (@ferdihs)
 - Andrew Daniel Janong (@andrewjanong)

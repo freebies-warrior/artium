@@ -208,7 +208,7 @@ func (h *AuthHandler) ResendVerification(c *gin.Context) {
 		return
 	}
 	
-	c.JSON(http.StatusBadRequest, okResp{OK: true})
+	c.JSON(http.StatusOK, okResp{OK: true})
 }
 
 func (h *AuthHandler) sendVerificationLink(ctx context.Context, userID, email string) error {

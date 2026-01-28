@@ -1,6 +1,9 @@
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
-CREATE TYPE item_status AS ENUM ('draft','active','ended','cancelled');
+DO $$
+BEGIN
+	CREATE TYPE public.item_status AS ENUM ('draft','active','ended','cancelled');
+EXCEPTION
+	WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS items (
 	id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -11,7 +11,7 @@ func NewRouter(h *handlers.HandlerSet) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 
-	r.Use(middleware.CORS([]string{
+	r.Use(middlewares.CORS([]string{
 		"http://localhost:3000",
 	}))
 

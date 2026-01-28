@@ -7,9 +7,13 @@ import (
 	"backend/app"
 	"backend/database"
 	"backend/handlers"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	_ = godotenv.Load()
+
 	dsn := mustEnv("DATABASE_URL")
 	secret := mustEnv("JWT_SECRET")
 

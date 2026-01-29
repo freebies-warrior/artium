@@ -12,15 +12,16 @@ type BidButtonProps = {
   triggerText?: string;
 };
 
+// ...keep your imports
+
 function fmtSGD(n: number) {
-  // Keep simple like the example
-  return n.toFixed(2).replace(/\.00$/, "");
+  return n; // keep as you want
 }
 
 export default function BidButton({
   nftName = "The Orbitians",
-  currentPriceSGD = 1.63,
-  minBidSGD = 2.63,
+  currentPriceSGD = 3,
+  minBidSGD = 5,
   triggerText = "Place Bid",
 }: BidButtonProps) {
   const [bid, setBid] = React.useState<string>("");
@@ -28,8 +29,9 @@ export default function BidButton({
   const minBidStr = fmtSGD(minBidSGD);
   const currentPriceStr = fmtSGD(currentPriceSGD);
 
-  const bidValue = bid === "" ? NaN : Number(bid);
-  const canSubmit = Number.isFinite(bidValue) && bidValue >= minBidSGD;
+  // digits-only -> integer
+  const bidInt = bid === "" ? NaN : parseInt(bid, 10);
+  const canSubmit = Number.isFinite(bidInt) && bidInt >= minBidSGD;
 
   return (
     <Dialog.Root>
@@ -40,10 +42,8 @@ export default function BidButton({
       </Dialog.Trigger>
 
       <Dialog.Portal>
-        {/* Overlay */}
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
 
-        {/* Content */}
         <Dialog.Content
           className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 grid gap-4
                      border border-border bg-neutral-800 p-6 shadow-lg
@@ -54,7 +54,6 @@ export default function BidButton({
                      data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]
                      sm:rounded-lg sm:max-w-md"
         >
-          {/* Header */}
           <div className="bg-neutral-850 flex flex-col space-y-1.5 text-center sm:text-left">
             <Dialog.Title className="tracking-tight text-xl font-bold">
               Place a Bid
@@ -65,9 +64,7 @@ export default function BidButton({
             </Dialog.Description>
           </div>
 
-          {/* Body */}
           <div className="space-y-6 py-4">
-            {/* Price box */}
             <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
               <div>
                 <p className="text-sm text-muted-foreground">Current Price</p>
@@ -83,17 +80,26 @@ export default function BidButton({
               </div>
             </div>
 
-            {/* Bid input */}
+            {/* Bid input (INTEGER ONLY, DIGITS ONLY) */}
             <div className="space-y-3">
               <label className="text-sm font-medium">Your Bid</label>
               <div className="relative">
                 <input
-                  type="number"
-                  step="0.01"
-                  min={minBidSGD}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   placeholder="Enter bid amount"
                   value={bid}
-                  onChange={(e) => setBid(e.target.value)}
+                  onChange={(e) => {
+                    const digitsOnly = e.target.value.replace(/[^\d]/g, "");
+                    setBid(digitsOnly);
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const pasted = e.clipboardData.getData("text");
+                    const digitsOnly = pasted.replace(/[^\d]/g, "");
+                    setBid(digitsOnly);
+                  }}
                   className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-base
                              placeholder:text-muted-foreground ring-offset-background
                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
@@ -105,21 +111,15 @@ export default function BidButton({
               </div>
             </div>
 
-            {/* Set minimum */}
-            <Button
-              fullWidth
-              onClick={() => setBid(String(minBidSGD))}
-            >
+            <Button fullWidth onClick={() => setBid(String(minBidSGD))}>
               Set Minimum Bid ({minBidStr} SGD)
             </Button>
 
-            {/* Submit */}
-            <Button fullWidth>
+            <Button fullWidth disabled={!canSubmit}>
               Submit Bid
             </Button>
           </div>
 
-          {/* Close */}
           <Dialog.Close asChild>
             <button
               type="button"

@@ -26,12 +26,14 @@ func main() {
 	tokenDatabase := database.NewEmailVerificationTokenDatabase(db)
 	itemDatabase := database.NewItemDatabase(db)
 	pictureDatabase := database.NewPictureDatabase(db)
+	bidDatabase := database.NewBidDatabase(db)
 
 	h := handlers.NewHandlerSet(
 		userDatabase,
 		tokenDatabase,
 		itemDatabase,
 		pictureDatabase,
+		bidDatabase,
 		[]byte(secret),
 		appBaseURL,
 	)

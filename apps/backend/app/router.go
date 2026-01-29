@@ -28,5 +28,9 @@ func NewRouter(h *handlers.HandlerSet, jwtSecret []byte) *gin.Engine {
 	r.GET("/items/:item_id", h.Items.GetItem)
 	r.POST("/items", middlewares.RequireAuth(jwtSecret), h.Items.PostItem)
 
+	// Bids
+	r.POST("/items/:item_id/bids", middlewares.RequireAuth(jwtSecret), h.Bids.PlaceBid)
+	r.GET("/items/:item_id/bids", h.Bids.ListBids)
+
 	return r
 }

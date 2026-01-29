@@ -97,7 +97,7 @@ func (r *ItemDatabase) CreateItem(ctx context.Context, a CreateItemArgs) (Item, 
 			$1::uuid, $2, $3,
 			$4, $5, $6,
 			$7, $8, $9,
-			$10, $11, 'draft'
+			$10, $11, 'active'
 		)
 		RETURNING
 			id::text, seller_id::text,
@@ -331,4 +331,13 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
 	}
 
 	return items, next, nil
+}
+
+func (r *ItemDatabase) Exists(ctx context.Context, itemID string) (bool, error) {
+	var exists bool
+	err := r.db.QueryRowContext(ctx,
+		`SELECT EXISTS (SELECT 1 FROM items WHERE id = $1)`,
+		itemID,
+	).Scan(&exists)
+	return exists, err
 }

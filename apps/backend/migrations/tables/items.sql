@@ -20,6 +20,10 @@ CREATE TABLE IF NOT EXISTS items (
 	base_price bigint NOT NULL CHECK (base_price >= 0),
 	increment bigint NOT NULL CHECK (increment > 0),
 	status item_status NOT NULL DEFAULT 'draft',
+	highest_bid_id uuid,
+	highest_bid_amount BIGINT,
+	highest_bidder_id uuid REFERENCES users(id),
+	hightest_bid_time timestamptz,
 	created_at timestamptz NOT NULL DEFAULT now(),
 	updated_at timestamptz NOT NULL DEFAULT now(),
 	CHECK (time_end > time_start)
@@ -27,3 +31,4 @@ CREATE TABLE IF NOT EXISTS items (
 
 CREATE INDEX IF NOT EXISTS items_seller_id_idx ON items (seller_id);
 CREATE INDEX IF NOT EXISTS item_status_time_end_idx ON items (status, time_end);
+CREATE INDEX IF NOT EXISTS items_highest_bid_amount_idx ON items (highest_bid_amount DESC);

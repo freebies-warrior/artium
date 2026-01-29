@@ -125,30 +125,35 @@ erDiagram
 ## `items`
 
 **Purpose:** Auction listings for artworks.
-
-| column       | type        | nullable | notes                                            |
-| ------------ | ----------- | -------- | ------------------------------------------------ |
-| id           | uuid        | no       | PK                                               |
-| seller_id    | uuid        | no       | FK → `users.id`                                  |
-| time_start   | timestamptz | no       | auction start time                               |
-| time_end     | timestamptz | no       | auction end time                                 |
-| title        | text        | no       | listing title                                    |
-| description  | text        | yes      | seller-provided description                      |
-| author       | text        | yes      | artist/author name (if known)                    |
-| features     | jsonb       | yes      | AI-extracted + user-edited structured attributes |
-| year_created | integer     | yes      | year the artwork was created (if known)          |
-| height       | float       | yes      | height in cm (if known)                          |
-| width        | float       | yes      | width in cm (if known)                           |
-| base_price   | bigint      | no       | starting price in dollars                        |
-| increment    | bigint      | no       | minimum bid increment in dollars                 |
-| status       | text        | no       | e.g., `draft`, `active`, `ended`, `cancelled`    |
-| created_at   | timestamptz | no       | default `now()`                                  |
-| updated_at   | timestamptz | no       | default `now()`                                  |
+| Column              | Type        | Nullable | Notes                                            |
+| ------------------- | ----------- | -------- | ------------------------------------------------ |
+| `id`                | `uuid`      | No       | Primary Key                                      |
+| `seller_id`         | `uuid`      | No       | Foreign Key → `users.id`                        |
+| `time_start`        | `timestamptz` | No     | Auction start time                               |
+| `time_end`          | `timestamptz` | No     | Auction end time                                 |
+| `title`             | `text`      | No       | Listing title                                    |
+| `description`       | `text`      | Yes      | Seller-provided description                      |
+| `author`            | `text`      | Yes      | Artist/author name (if known)                   |
+| `features`          | `jsonb`     | Yes      | AI-extracted + user-edited structured attributes |
+| `year_created`      | `integer`   | Yes      | Year the artwork was created (if known)         |
+| `height`            | `float`     | Yes      | Height in cm (if known)                         |
+| `width`             | `float`     | Yes      | Width in cm (if known)                          |
+| `base_price`        | `bigint`    | No       | Starting price in dollars                       |
+| `increment`         | `bigint`    | No       | Minimum bid increment in dollars                |
+| `status`            | `text`      | No       | E.g., `draft`, `active`, `ended`, `cancelled`   |
+| `highest_bid_id`    | `uuid`      | Yes      | Foreign Key → `bids.id` (current highest bid)   |
+| `highest_bid_amount` | `bigint`   | Yes      | Current highest bid in dollars                  |
+| `highest_bidder_id` | `uuid`      | Yes      | Foreign Key → `users.id` (current highest bidder) |
+| `highest_bid_at`    | `timestamptz` | Yes    | Timestamp of current highest bid                |
+| `created_at`        | `timestamptz` | No     | Default `now()`                                 |
+| `updated_at`        | `timestamptz` | No     | Default `now()`                                 |
 
 **Constraints**
 
 - `PRIMARY KEY (id)`
 - `FOREIGN KEY (seller_id) REFERENCES users(id)`
+- `FOREIGN KEY (highest_bid_id) REFERENCES bids(id)`
+- `FOREIGN KEY (highest_bidder_id) REFERENCES users(id)`
 - `time_end > time_start`
 - `base_price >= 0`
 - `increment > 0`
@@ -158,6 +163,7 @@ erDiagram
 
 - `items_seller_id_idx` on `(seller_id)`
 - `items_status_time_end_idx` on `(status, time_end)` (useful for showing active auctions ending soon)
+- `items_highest_bid_amount_idx` on `(highest_bid_amount DESC)` (for leaderboard queries)
 
 **Notes on `features`**
 Store structured attributes extracted from the artwork image. Example shape:
@@ -227,5 +233,6 @@ Store structured attributes extracted from the artwork image. Example shape:
 - `bids_item_id_timestamp_idx` on `(item_id, timestamp DESC)` (fast bid history for item page)
 - `bids_user_id_timestamp_idx` on `(user_id, timestamp DESC)` (user activity)
 - `bids_item_price_desc_idx` on `(item_id, price DESC)` (fast highest bid lookup)
+- `bids_item_price_created_idx` on `(item_id, price, timestamp)` (for validating new bids)
 
 ---

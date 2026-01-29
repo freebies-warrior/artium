@@ -185,13 +185,16 @@ Store structured attributes extracted from the artwork image. Example shape:
 ## `pictures`
 
 **Purpose:** Store images associated with an item (artwork photos, thumbnails, etc.).
+## `pictures`
 
-| Column     | Type        | Nullable | Notes                           |
-| ---------- | ----------- | -------- | ------------------------------- |
-| `id`       | `uuid`      | No       | Primary Key                     |
-| `item_id`  | `uuid`      | No       | Foreign Key → `items.id`        |
-| `url`      | `text`      | No       | Image URL or object storage key |
-| `created_at` | `timestamptz` | No    | Default `now()`                 |
+**Purpose:** Store images associated with an item (artwork photos, thumbnails, etc.).
+
+| Column      | Type        | Nullable | Notes                           |
+| ----------- | ----------- | -------- | ------------------------------- |
+| `id`        | `uuid`      | No       | Primary Key                     |
+| `item_id`   | `uuid`      | No       | Foreign Key → `items.id`        |
+| `key`       | `text`      | No       | Image storage key               |
+| `created_at`| `timestamptz` | No     | Default `now()`                 |
 
 **Constraints**
 

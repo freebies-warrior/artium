@@ -150,7 +150,7 @@ export default function ArtPage() {
       setLoadingMore(true);
       setErrorMore(null);
       try {
-        const url = `/api/items?q=${encodeURIComponent(author)}`;
+        const url = `/api/items?q=${encodeURIComponent(author ?? "")}`;
         const data = await fetchJson<ListItemsResponse>(url);
 
         if (!cancelled) {

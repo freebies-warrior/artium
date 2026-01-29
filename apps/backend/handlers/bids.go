@@ -60,16 +60,6 @@ func (h *BidsHandler) PlaceBid(c *gin.Context) {
 		return
 	}
 
-	exists, err := h.items.Exists(c.Request.Context(), itemID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "database error", nil))
-		return
-	}
-	if !exists {
-		c.JSON(http.StatusNotFound, utils.NewError("NOT_FOUND", "item not found", nil))
-		return
-	}
-
 	bid, err := h.bids.CreateBid(c.Request.Context(), userID, itemID, req.Price)
 	if err != nil {
 		if pgErr, ok := database.PgError(err); ok {

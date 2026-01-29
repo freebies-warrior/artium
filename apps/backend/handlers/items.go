@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -48,6 +49,8 @@ type listItemsResp struct {
 	Items      []database.Item `json:"items"`
 	NextCursor *string         `json:"next_cursor"`
 }
+
+var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
 func (h *ItemsHandler) PostItem(c *gin.Context) {
 	uidAny, ok := c.Get(middlewares.CtxUserIDKey)
@@ -169,14 +172,32 @@ func (h *ItemsHandler) ListItems(c *gin.Context) {
 	}
 
 	status := strings.TrimSpace(c.Query("status"))
+	if status != "" {
+		switch strings.ToLower(status) {
+		case "draft", "active", "ended", "cancelled":
+		default:
+			c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid status", map[string]any{"field": "status"}))
+			return
+		}
+	}
+
+	sellerID := strings.TrimSpace(c.Query("seller_id"))
+	if sellerID != "" {
+		if !uuidPattern.MatchString(sellerID) {
+			c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid seller_id", map[string]any{"field": "seller_id"}))
+			return
+		}
+	}
+
 	q := strings.TrimSpace(c.Query("q"))
 	cursor := strings.TrimSpace(c.Query("cursor"))
 
 	items, next, err := h.items.ListItems(c.Request.Context(), database.ListItemsParams{
-		Limit:  limit,
-		Cursor: cursor,
-		Status: status,
-		Query:  q,
+		Limit:    limit,
+		Cursor:   cursor,
+		Status:   status,
+		SellerID: sellerID,
+		Query:    q,
 	})
 	if err != nil {
 		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid query params", nil))

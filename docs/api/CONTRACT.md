@@ -304,6 +304,7 @@ Returns auction items for browsing (max 100 items).
 - `limit` (optional, int, default 20, max 100)
 - `cursor` (optional, string)
 - `status` (optional, string: `draft|active|ended|cancelled`)
+- `seller_id` (optional, uuid)
 - `q` (optional, string search on title/author)
 
 ### Response `200`

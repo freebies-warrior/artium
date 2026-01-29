@@ -227,10 +227,11 @@ func (r *ItemDatabase) GetItemByID(ctx context.Context, itemID string) (Item, er
 }
 
 type ListItemsParams struct {
-	Limit  int
-	Cursor string
-	Status string
-	Query  string
+	Limit    int
+	Cursor   string
+	Status   string
+	SellerID string
+	Query    string
 }
 
 func makeCursor(createdAt time.Time, id string) string {
@@ -276,6 +277,12 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
 		}
 	}
 
+	sellerID := strings.TrimSpace(p.SellerID)
+	var sellerParam any = nil
+	if sellerID != "" {
+		sellerParam = sellerID
+	}
+
 	q := strings.TrimSpace(p.Query)
 	qLike := "%" + q + "%"
 
@@ -311,11 +318,12 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
         FROM items i, users u
         WHERE
             ($1::item_status IS NULL OR status = $1::item_status)
-            AND ($2 = '' OR i.title ILIKE $3 OR COALESCE(i.author, '') ILIKE $3)
-            AND (NOT $4 OR (i.created_at, id) < ($5, $6::uuid))
+			AND ($2::uuid IS NULL OR i.seller_id = $2::uuid)
+            AND ($3 = '' OR i.title ILIKE $4 OR COALESCE(i.author, '') ILIKE $4)
+            AND (NOT $5 OR (i.created_at, id) < ($6, $7::uuid))
         ORDER BY i.created_at DESC, i.id DESC
         LIMIT $7
-    `, statusParam, q, qLike, hasCursor, curT, curID, limit+1)
+    `, statusParam, sellerParam, q, qLike, hasCursor, curT, curID, limit+1)
 	if err != nil {
 		return nil, nil, err
 	}

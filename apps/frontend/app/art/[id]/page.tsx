@@ -157,14 +157,20 @@ export default function ArtPage() {
           setMoreItems(
             data.items
               .filter((x) => x.id !== itemId)
-              .map((x) => ({
-                id: x.id,
-                title: x.title,
-                author: x.author ?? author,
-                highestBid: formatHighestBid(x.base_price),
-                due: formatDue(x.time_end),
-              }))
+              .map((x) => {
+                const safeAuthor =
+                  (x.author?.trim() || author?.trim() || "Unknown");
+
+                return {
+                  id: x.id,
+                  title: x.title,
+                  author: safeAuthor, // ✅ always string
+                  highestBid: formatHighestBid(x.base_price),
+                  due: formatDue(x.time_end),
+                };
+              })
           );
+
         }
       } catch (e: any) {
         if (!cancelled) setErrorMore(e.message);

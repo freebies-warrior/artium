@@ -14,13 +14,17 @@ This document is the **human-readable API contract** between the Next.js fronten
 ## Conventions
 
 ### Authentication
+
 Protected endpoints require:
+
 - `Authorization: Bearer <token>`
 
 If missing/invalid:
+
 - `401 Unauthorized`
 
 ### Standard Error Format
+
 All error responses SHOULD follow:
 
 ```json
@@ -34,6 +38,7 @@ All error responses SHOULD follow:
 ```
 
 Common error codes:
+
 - `VALIDATION_ERROR`
 - `UNAUTHORIZED`
 - `FORBIDDEN`
@@ -43,17 +48,24 @@ Common error codes:
 - `AI_REJECTED_INPUT`
 
 ### IDs and timestamps
+
 - `id` fields: UUID strings
 - timestamps: ISO-8601 in UTC (e.g., `"2026-01-27T13:22:10Z"`)
 
 ### Money
-All money values are **integer** (e.g., `1500` = $1500.00).
+
+All money values are **integers in SGD dollars** (not cents).
+For example:
+
+- `1500` means **$1500.00**
+- `10500` means **$10,500.00**
 
 ---
 
 ## Entities (Response Shapes)
 
 ### User (public)
+
 ```json
 {
   "id": "uuid",
@@ -64,6 +76,7 @@ All money values are **integer** (e.g., `1500` = $1500.00).
 ```
 
 ### Picture
+
 ```json
 {
   "id": "uuid",
@@ -74,6 +87,7 @@ All money values are **integer** (e.g., `1500` = $1500.00).
 ```
 
 ### Item (Listing)
+
 ```json
 {
   "id": "uuid",
@@ -113,6 +127,7 @@ All money values are **integer** (e.g., `1500` = $1500.00).
 ```
 
 ### Bid
+
 ```json
 {
   "id": "uuid",
@@ -128,6 +143,7 @@ All money values are **integer** (e.g., `1500` = $1500.00).
 ## Auth Endpoints
 
 ## Sign Up
+
 Create a new user account.
 
 - **Method:** `POST`
@@ -135,6 +151,7 @@ Create a new user account.
 - **Auth:** none
 
 ### Request
+
 ```json
 {
   "email": "user@example.com",
@@ -144,6 +161,7 @@ Create a new user account.
 ```
 
 ### Response `201`
+
 ```json
 {
   "user": {
@@ -156,12 +174,14 @@ Create a new user account.
 ```
 
 ### Errors
+
 - `400 VALIDATION_ERROR` (invalid email/password)
 - `409 CONFLICT` (email/username already exists)
 
 ---
 
 ## Login
+
 Authenticate and receive a token.
 
 - **Method:** `POST`
@@ -169,6 +189,7 @@ Authenticate and receive a token.
 - **Auth:** none
 
 ### Request
+
 ```json
 {
   "email": "user@example.com",
@@ -177,6 +198,7 @@ Authenticate and receive a token.
 ```
 
 ### Response `200`
+
 ```json
 {
   "token": "jwt-token-string",
@@ -190,6 +212,7 @@ Authenticate and receive a token.
 ```
 
 ### Errors
+
 - `400 VALIDATION_ERROR`
 - `401 UNAUTHORIZED` (wrong credentials)
 - `403 FORBIDDEN` (credentials correct but `verified=false`, return “Please verify your email”)
@@ -197,6 +220,7 @@ Authenticate and receive a token.
 ---
 
 ## Verify Email
+
 Verify an account using a token (single-use, expiring).  
 On success, sets `users.verified = true`.
 
@@ -205,6 +229,7 @@ On success, sets `users.verified = true`.
 - **Auth:** none
 
 ### Request
+
 ```json
 {
   "token": "verification-token-from-email-link"
@@ -212,6 +237,7 @@ On success, sets `users.verified = true`.
 ```
 
 ### Response `200`
+
 ```json
 {
   "user": {
@@ -224,12 +250,14 @@ On success, sets `users.verified = true`.
 ```
 
 ### Errors
+
 - `400 VALIDATION_ERROR` (missing token, invalid token, expired token, already used token)
 - `500 INTERNAL_ERROR` (database / unexpected)
 
 ---
 
 ## Resend Verification Email
+
 Request a new verification link if the user is not verified.  
 This endpoint should not leak whether the email exists.
 
@@ -238,6 +266,7 @@ This endpoint should not leak whether the email exists.
 - **Auth:** none
 
 ### Request
+
 ```json
 {
   "email": "user@example.com"
@@ -245,6 +274,7 @@ This endpoint should not leak whether the email exists.
 ```
 
 ### Response `200`
+
 ```json
 {
   "ok": true
@@ -252,15 +282,16 @@ This endpoint should not leak whether the email exists.
 ```
 
 ### Errors
+
 - `400 VALIDATION_ERROR` (invalid email format)
 - `500 INTERNAL_ERROR` (unexpected / database)
-
 
 ---
 
 ## Item Endpoints
 
 ## List Items
+
 Returns auction items for browsing (max 100 items).
 
 - **Method:** `GET`
@@ -269,12 +300,14 @@ Returns auction items for browsing (max 100 items).
 - **Notes:** default max = 100; support pagination via `limit` and `cursor`.
 
 ### Query Params
+
 - `limit` (optional, int, default 20, max 100)
 - `cursor` (optional, string)
 - `status` (optional, string: `draft|active|ended|cancelled`)
 - `q` (optional, string search on title/author)
 
 ### Response `200`
+
 ```json
 {
   "items": [
@@ -303,11 +336,13 @@ Returns auction items for browsing (max 100 items).
 ```
 
 ### Errors
+
 - `400 VALIDATION_ERROR`
 
 ---
 
 ## Get Item Info
+
 Returns item details + pictures + current bid state (if you compute it).
 
 - **Method:** `GET`
@@ -315,6 +350,7 @@ Returns item details + pictures + current bid state (if you compute it).
 - **Auth:** none
 
 ### Response `200`
+
 ```json
 {
   "item": {
@@ -333,18 +369,25 @@ Returns item details + pictures + current bid state (if you compute it).
     "time_start": "2026-01-27T10:00:00Z",
     "time_end": "2026-01-28T10:00:00Z",
     "pictures": [
-      { "id": "uuid", "item_id": "uuid", "url": "https://.../image.jpg", "created_at": "2026-01-27T09:00:10Z" }
+      {
+        "id": "uuid",
+        "item_id": "uuid",
+        "url": "https://.../image.jpg",
+        "created_at": "2026-01-27T09:00:10Z"
+      }
     ]
   }
 }
 ```
 
 ### Errors
+
 - `404 NOT_FOUND`
 
 ---
 
 ## Post Item
+
 Create a new auction item. Seller supplies basic info + image URLs (uploaded separately).
 
 - **Method:** `POST`
@@ -352,6 +395,7 @@ Create a new auction item. Seller supplies basic info + image URLs (uploaded sep
 - **Auth:** required
 
 ### Request
+
 ```json
 {
   "title": "Sunset on Canvas",
@@ -364,14 +408,12 @@ Create a new auction item. Seller supplies basic info + image URLs (uploaded sep
   "width": 80.0,
   "time_start": "2026-01-27T10:00:00Z",
   "time_end": "2026-01-28T10:00:00Z",
-  "picture_urls": [
-    "https://.../image1.jpg",
-    "https://.../image2.jpg"
-  ]
+  "picture_urls": ["https://.../image1.jpg", "https://.../image2.jpg"]
 }
 ```
 
 ### Response `201`
+
 ```json
 {
   "item": {
@@ -386,13 +428,19 @@ Create a new auction item. Seller supplies basic info + image URLs (uploaded sep
     "time_start": "2026-01-27T10:00:00Z",
     "time_end": "2026-01-28T10:00:00Z",
     "pictures": [
-      { "id": "uuid", "item_id": "uuid", "url": "https://.../image1.jpg", "created_at": "2026-01-27T09:00:10Z" }
+      {
+        "id": "uuid",
+        "item_id": "uuid",
+        "url": "https://.../image1.jpg",
+        "created_at": "2026-01-27T09:00:10Z"
+      }
     ]
   }
 }
 ```
 
 ### Errors
+
 - `400 VALIDATION_ERROR`
 - `401 UNAUTHORIZED`
 
@@ -401,6 +449,7 @@ Create a new auction item. Seller supplies basic info + image URLs (uploaded sep
 ## Bid Endpoints
 
 ## Place Bid
+
 Place a bid for an item.
 
 - **Method:** `POST`
@@ -408,6 +457,7 @@ Place a bid for an item.
 - **Auth:** required
 
 ### Request
+
 ```json
 {
   "price": 10500
@@ -415,6 +465,7 @@ Place a bid for an item.
 ```
 
 ### Response `201`
+
 ```json
 {
   "bid": {
@@ -428,13 +479,16 @@ Place a bid for an item.
 ```
 
 ### Errors
+
 - `400 VALIDATION_ERROR` (invalid price format)
 - `401 UNAUTHORIZED`
 - `404 NOT_FOUND` (item not found)
 - `409 CONFLICT` (bid too low / auction not active / auction ended)
 
 ### Notes
+
 Server enforces:
+
 - item is `active`
 - now is within `[time_start, time_end]`
 - `price >= current_price + increment` (or `>= base_price` if no bids)
@@ -442,6 +496,7 @@ Server enforces:
 ---
 
 ## Get Bid History
+
 Fetch recent bids for an item.
 
 - **Method:** `GET`
@@ -449,9 +504,11 @@ Fetch recent bids for an item.
 - **Auth:** none
 
 ### Query Params
+
 - `limit` (optional, int, default 20, max 100)
 
 ### Response `200`
+
 ```json
 {
   "bids": [
@@ -467,6 +524,7 @@ Fetch recent bids for an item.
 ```
 
 ### Errors
+
 - `404 NOT_FOUND`
 
 ---
@@ -476,6 +534,7 @@ Fetch recent bids for an item.
 > Note: These are **support features** for buyer experience. They do not alter auction outcomes directly.
 
 ## Get Similar Items
+
 Recommend similar items based on the clicked item (ignore price range).
 
 - **Method:** `GET`
@@ -483,10 +542,12 @@ Recommend similar items based on the clicked item (ignore price range).
 - **Auth:** none
 
 ### Query Params
+
 - `item_id` (required, uuid)
 - `limit` (optional, int, default 8, max 24)
 
 ### Response `200`
+
 ```json
 {
   "item_id": "uuid",
@@ -498,7 +559,12 @@ Recommend similar items based on the clicked item (ignore price range).
         "author": "Unknown",
         "status": "active",
         "pictures": [
-          { "id": "uuid", "item_id": "uuid", "url": "https://.../thumb.jpg", "created_at": "2026-01-27T09:00:10Z" }
+          {
+            "id": "uuid",
+            "item_id": "uuid",
+            "url": "https://.../thumb.jpg",
+            "created_at": "2026-01-27T09:00:10Z"
+          }
         ]
       },
       "similarity": {
@@ -516,12 +582,14 @@ Recommend similar items based on the clicked item (ignore price range).
 ```
 
 ### Errors
+
 - `400 VALIDATION_ERROR`
 - `404 NOT_FOUND`
 
 ---
 
 ## Preview Artwork in a Room (Generate / Compose)
+
 Generate a preview image showing the artwork placed in the user's room.
 
 - **Method:** `POST`
@@ -529,14 +597,16 @@ Generate a preview image showing the artwork placed in the user's room.
 - **Auth:** required (or none for demo)
 
 ### Request
+
 ```json
 {
   "room_image_url": "https://.../room.jpg",
-  "item_id": "uuid",
+  "item_id": "uuid"
 }
 ```
 
 ### Response `200`
+
 ```json
 {
   "preview_image_url": "https://.../preview.jpg",
@@ -557,6 +627,7 @@ Generate a preview image showing the artwork placed in the user's room.
 ```
 
 ### Errors
+
 - `400 VALIDATION_ERROR`
 - `422 AI_REJECTED_INPUT` (image too dark/blur/no wall detected and no manual box)
 - `500 INTERNAL_ERROR`
@@ -566,14 +637,17 @@ Generate a preview image showing the artwork placed in the user's room.
 ## Frontend Page → Endpoint Mapping (MVP)
 
 ### Login page
+
 - `POST /auth/signup`
 - `POST /auth/login`
 
 ### Home page
+
 - `GET /items` (browse items)
 - `POST /items` (seller posts item for auction)
 
 ### Item page
+
 - `GET /items/{item_id}` (item details)
 - `POST /items/{item_id}/bids` (place bid)
 - `GET /items/{item_id}/bids` (bid history)

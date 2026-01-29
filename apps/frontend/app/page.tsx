@@ -5,7 +5,6 @@ import Footer from '@/components/Footer'
 import HeroSection from '@/components/HeroSections'
 import Tabs from '@/components/Tabs'
 import ArtGrid from '@/components/ArtGrid'
-import Navbar from '@/components/NavBar'
 import Pagination from '@/components/Pagination'
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'arts' | 'sellers'>('arts')

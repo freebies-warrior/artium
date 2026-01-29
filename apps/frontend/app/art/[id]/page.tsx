@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import '../../../global.css'
-import Navbar from '@/components/NavBar'
 import CountdownTimer from '@/components/CountdownTimer'
 import { ArrowRight, Gem } from 'lucide-react'
 

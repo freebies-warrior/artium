@@ -1,37 +1,37 @@
-"use client";
+'use client'
 
-import * as React from "react";
-import * as Dialog from "@radix-ui/react-dialog";
-import { X, Gem } from "lucide-react";
-import { Button } from "./ui/Button";
+import * as React from 'react'
+import * as Dialog from '@radix-ui/react-dialog'
+import { X } from 'lucide-react'
+import { Button } from './ui/Button'
 
 type BidButtonProps = {
-  nftName?: string;
-  currentPriceSGD?: number;
-  minBidSGD?: number;
-  triggerText?: string;
-};
+  nftName?: string
+  currentPriceSGD?: number
+  minBidSGD?: number
+  triggerText?: string
+}
 
 // ...keep your imports
 
 function fmtSGD(n: number) {
-  return n; // keep as you want
+  return n // keep as you want
 }
 
 export default function BidButton({
-  nftName = "The Orbitians",
+  nftName = 'The Orbitians',
   currentPriceSGD = 3,
   minBidSGD = 5,
-  triggerText = "Place Bid",
+  triggerText = 'Place Bid',
 }: BidButtonProps) {
-  const [bid, setBid] = React.useState<string>("");
+  const [bid, setBid] = React.useState<string>('')
 
-  const minBidStr = fmtSGD(minBidSGD);
-  const currentPriceStr = fmtSGD(currentPriceSGD);
+  const minBidStr = fmtSGD(minBidSGD)
+  const currentPriceStr = fmtSGD(currentPriceSGD)
 
   // digits-only -> integer
-  const bidInt = bid === "" ? NaN : parseInt(bid, 10);
-  const canSubmit = Number.isFinite(bidInt) && bidInt >= minBidSGD;
+  const bidInt = bid === '' ? NaN : parseInt(bid, 10)
+  const canSubmit = Number.isFinite(bidInt) && bidInt >= minBidSGD
 
   return (
     <Dialog.Root>
@@ -59,7 +59,7 @@ export default function BidButton({
               Place a Bid
             </Dialog.Title>
             <Dialog.Description className="text-sm text-muted-foreground">
-              You are about to place a bid on{" "}
+              You are about to place a bid on{' '}
               <span className="text-primary font-medium">{nftName}</span>
             </Dialog.Description>
           </div>
@@ -91,14 +91,14 @@ export default function BidButton({
                   placeholder="Enter bid amount"
                   value={bid}
                   onChange={(e) => {
-                    const digitsOnly = e.target.value.replace(/[^\d]/g, "");
-                    setBid(digitsOnly);
+                    const digitsOnly = e.target.value.replace(/[^\d]/g, '')
+                    setBid(digitsOnly)
                   }}
                   onPaste={(e) => {
-                    e.preventDefault();
-                    const pasted = e.clipboardData.getData("text");
-                    const digitsOnly = pasted.replace(/[^\d]/g, "");
-                    setBid(digitsOnly);
+                    e.preventDefault()
+                    const pasted = e.clipboardData.getData('text')
+                    const digitsOnly = pasted.replace(/[^\d]/g, '')
+                    setBid(digitsOnly)
                   }}
                   className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-base
                              placeholder:text-muted-foreground ring-offset-background
@@ -134,5 +134,5 @@ export default function BidButton({
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-  );
+  )
 }

@@ -1,11 +1,11 @@
-'use client';
-import "../global.css";
+'use client'
+import '../global.css'
 
-import { Search } from "lucide-react";
-import { motion } from "framer-motion";
+import { Search } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 export default function HeroSection() {
-    return (
+  return (
     <section className="py-8 md:py-12">
       <div className="container mx-auto px-4">
         <motion.div
@@ -42,5 +42,5 @@ export default function HeroSection() {
         </motion.div>
       </div>
     </section>
-  );
+  )
 }

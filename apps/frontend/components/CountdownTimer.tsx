@@ -1,10 +1,10 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from "react";
-import "../global.css";
+import { useState, useEffect } from 'react'
+import '../global.css'
 
 interface CountdownTimerProps {
-  targetDate?: Date;
+  targetDate?: Date
 }
 
 export default function CountdownTimer({ targetDate }: CountdownTimerProps) {
@@ -12,25 +12,31 @@ export default function CountdownTimer({ targetDate }: CountdownTimerProps) {
     hours: 59,
     minutes: 59,
     seconds: 59,
-  });
+  })
 
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        let { hours, minutes, seconds } = prev;
+        let { hours, minutes, seconds } = prev
 
-        if (seconds > 0) seconds--;
-        else if (minutes > 0) { minutes--; seconds = 59; }
-        else if (hours > 0) { hours--; minutes = 59; seconds = 59; }
+        if (seconds > 0) seconds--
+        else if (minutes > 0) {
+          minutes--
+          seconds = 59
+        } else if (hours > 0) {
+          hours--
+          minutes = 59
+          seconds = 59
+        }
 
-        return { hours, minutes, seconds };
-      });
-    }, 1000);
+        return { hours, minutes, seconds }
+      })
+    }, 1000)
 
-    return () => clearInterval(timer);
-  }, []);
+    return () => clearInterval(timer)
+  }, [])
 
-  const formatNumber = (num: number) => num.toString().padStart(2, "0");
+  const formatNumber = (num: number) => num.toString().padStart(2, '0')
 
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 lg:p-6">
@@ -80,5 +86,5 @@ export default function CountdownTimer({ targetDate }: CountdownTimerProps) {
         </div>
       </div>
     </div>
-  );
+  )
 }

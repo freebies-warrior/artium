@@ -62,18 +62,17 @@ erDiagram
 ## Tables
 
 ## `users`
-
 **Purpose:** Store buyer/seller accounts.
 
-| column        | type        | nullable | notes                          |
+| Column        | Type        | Nullable | Notes                          |
 | ------------- | ----------- | -------- | ------------------------------ |
-| id            | uuid        | no       | PK                             |
-| email         | text        | no       | unique                         |
-| username      | text        | no       | unique                         |
-| password_hash | text        | no       | hashed password (no plaintext) |
-| verified      | boolean     | no       | default `false`                |
-| created_at    | timestamptz | no       | default `now()`                |
-| updated_at    | timestamptz | no       | default `now()`                |
+| `id`          | `uuid`      | No       | Primary Key                    |
+| `email`       | `text`      | No       | Unique                         |
+| `username`    | `text`      | No       | Unique                         |
+| `password_hash` | `text`    | No       | Hashed password (no plaintext) |
+| `verified`    | `boolean`   | No       | Default `false`                |
+| `created_at`  | `timestamptz` | No     | Default `now()`                |
+| `updated_at`  | `timestamptz` | No     | Default `now()`                |
 
 **Constraints**
 
@@ -92,14 +91,14 @@ erDiagram
 
 **Purpose:** Store single-use, expiring tokens used to verify a user’s email address after signup (or after a resend request).
 
-| column     | type        | nullable | notes                                           |
-| ---------- | ----------- | -------- | ----------------------------------------------- |
-| id         | uuid        | no       | PK                                              |
-| user_id    | uuid        | no       | FK → `users.id`                                 |
-| token_hash | bytea       | no       | SHA-256 hash of the raw token (store hash only) |
-| expires_at | timestamptz | no       | token expiry time                               |
-| used_at    | timestamptz | yes      | set when token is consumed (single-use)         |
-| created_at | timestamptz | no       | default `now()`                                 |
+| Column      | Type        | Nullable | Notes                                           |
+| ----------- | ----------- | -------- | ----------------------------------------------- |
+| `id`        | `uuid`      | No       | Primary Key                                     |
+| `user_id`   | `uuid`      | No       | Foreign Key → `users.id`                       |
+| `token_hash`| `bytea`     | No       | SHA-256 hash of the raw token (store hash only) |
+| `expires_at`| `timestamptz` | No     | Token expiry time                               |
+| `used_at`   | `timestamptz` | Yes    | Set when token is consumed (single-use)         |
+| `created_at`| `timestamptz` | No     | Default `now()`                                 |
 
 **Constraints**
 
@@ -190,12 +189,12 @@ Store structured attributes extracted from the artwork image. Example shape:
 
 **Purpose:** Store images associated with an item (artwork photos, thumbnails, etc.).
 
-| column     | type        | nullable | notes                           |
+| Column     | Type        | Nullable | Notes                           |
 | ---------- | ----------- | -------- | ------------------------------- |
-| id         | uuid        | no       | PK                              |
-| item_id    | uuid        | no       | FK → `items.id`                 |
-| url        | text        | no       | image URL or object storage key |
-| created_at | timestamptz | no       | default `now()`                 |
+| `id`       | `uuid`      | No       | Primary Key                     |
+| `item_id`  | `uuid`      | No       | Foreign Key → `items.id`        |
+| `url`      | `text`      | No       | Image URL or object storage key |
+| `created_at` | `timestamptz` | No    | Default `now()`                 |
 
 **Constraints**
 
@@ -211,14 +210,13 @@ Store structured attributes extracted from the artwork image. Example shape:
 ## `bids`
 
 **Purpose:** Record bid history for each auction item.
-
-| column    | type        | nullable | notes                           |
+| Column    | Type        | Nullable | Notes                           |
 | --------- | ----------- | -------- | ------------------------------- |
-| id        | uuid        | no       | PK, default `gen_random_uuid()` |
-| user_id   | uuid        | no       | FK → `users.id`                 |
-| item_id   | uuid        | no       | FK → `items.id`                 |
-| price     | bigint      | no       | bid amount in dollars           |
-| timestamp | timestamptz | no       | default `now()`                 |
+| `id`      | `uuid`      | No       | Primary Key, default `gen_random_uuid()` |
+| `user_id` | `uuid`      | No       | Foreign Key → `users.id`        |
+| `item_id` | `uuid`      | No       | Foreign Key → `items.id`        |
+| `price`   | `bigint`    | No       | Bid amount in dollars           |
+| `timestamp` | `timestamptz` | No    | Default `now()`                 |
 
 **Constraints**
 

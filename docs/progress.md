@@ -38,14 +38,14 @@ Legend:
 - [ ] Send Email Verification
 
 ### Items
-- [ ] `GET /items` (browse + pagination)
-- [ ] `GET /items/{id}` (item detail)
-- [ ] `POST /items` (create listing)
-- [ ] Status transitions (`draft → active → ended/cancelled`) *(if needed for demo)*
+- [x] `GET /items` (browse + pagination)
+- [x] `GET /items/{id}` (item detail)
+- [x] `POST /items` (create listing)
+- [ ] Status transitions (`draft → active → ended/cancelled`)
 
 ### Bids
-- [ ] `POST /items/{id}/bids` (place bid)
-- [ ] `GET /items/{id}/bids` (history)
+- [x] `POST /items/{id}/bids` (place bid)
+- [x] `GET /items/{id}/bids` (history)
 - [ ] Concurrency-safe bidding (DB transaction + row lock OR DB trigger)
 
 ### Uploads / Pictures

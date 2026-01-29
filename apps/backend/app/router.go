@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(h *handlers.HandlerSet) *gin.Engine {
+func NewRouter(h *handlers.HandlerSet, jwtSecret []byte) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 
@@ -15,13 +15,22 @@ func NewRouter(h *handlers.HandlerSet) *gin.Engine {
 		"http://localhost:3000",
 	}))
 
-	// Auth endpoints
+	// Auth
 	r.POST("/auth/signup", h.Auth.Signup)
 	r.POST("/auth/login", h.Auth.Login)
 
 	// Verification
 	r.POST("/auth/verify", h.Auth.VerifyEmail)
 	r.POST("/auth/resend-verification", h.Auth.ResendVerification)
+
+	// Items
+	r.GET("/items", h.Items.ListItems)
+	r.GET("/items/:item_id", h.Items.GetItem)
+	r.POST("/items", middlewares.RequireAuth(jwtSecret), h.Items.PostItem)
+
+	// Bids
+	r.POST("/items/:item_id/bids", middlewares.RequireAuth(jwtSecret), h.Bids.PlaceBid)
+	r.GET("/items/:item_id/bids", h.Bids.ListBids)
 
 	return r
 }

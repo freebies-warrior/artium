@@ -33,7 +33,7 @@ type postItemReq struct {
 	Width       *float64 `json:"width"`
 	TimeStart   string   `json:"time_start"`
 	TimeEnd     string   `json:"time_end"`
-	PictureURLs []string `json:"picture_urls"`
+	PictureKeys []string `json:"picture_keys"`
 }
 
 type postItemResp struct {
@@ -97,8 +97,8 @@ func (h *ItemsHandler) PostItem(c *gin.Context) {
 	}
 
 	// optional: require at least 1 picture
-	if len(req.PictureURLs) == 0 {
-		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "at least one picture_urls is required", map[string]any{"field": "picture_urls"}))
+	if len(req.PictureKeys) == 0 {
+		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "at least one picture_keys is required", map[string]any{"field": "picture_keys"}))
 		return
 	}
 
@@ -120,7 +120,7 @@ func (h *ItemsHandler) PostItem(c *gin.Context) {
 		return
 	}
 
-	pics, err := h.pictures.CreatePictures(c.Request.Context(), it.ID, req.PictureURLs)
+	pics, err := h.pictures.CreatePictures(c.Request.Context(), it.ID, req.PictureKeys)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to create pictures", nil))
 		return

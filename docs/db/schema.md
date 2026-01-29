@@ -140,7 +140,6 @@ erDiagram
 | `base_price`        | `bigint`    | No       | Starting price in dollars                       |
 | `increment`         | `bigint`    | No       | Minimum bid increment in dollars                |
 | `status`            | `text`      | No       | E.g., `draft`, `active`, `ended`, `cancelled`   |
-| `highest_bid_id`    | `uuid`      | Yes      | Foreign Key → `bids.id` (current highest bid)   |
 | `highest_bid_amount` | `bigint`   | Yes      | Current highest bid in dollars                  |
 | `highest_bidder_id` | `uuid`      | Yes      | Foreign Key → `users.id` (current highest bidder) |
 | `highest_bid_at`    | `timestamptz` | Yes    | Timestamp of current highest bid                |
@@ -150,8 +149,6 @@ erDiagram
 **Constraints**
 
 - `PRIMARY KEY (id)`
-- `FOREIGN KEY (seller_id) REFERENCES users(id)`
-- `FOREIGN KEY (highest_bid_id) REFERENCES bids(id)`
 - `FOREIGN KEY (highest_bidder_id) REFERENCES users(id)`
 - `time_end > time_start`
 - `base_price >= 0`

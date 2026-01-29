@@ -290,7 +290,7 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
         FROM items
         WHERE
             ($1::item_status IS NULL OR status = $1::item_status)
-            AND ($2 = '' OR title ILIKE $3 OR author ILIKE $3)
+            AND ($2 = '' OR title ILIKE $3 OR COALESCE(author, '') ILIKE $3)
             AND (NOT $4 OR (created_at, id) < ($5, $6::uuid))
         ORDER BY created_at DESC, id DESC
         LIMIT $7

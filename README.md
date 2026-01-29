@@ -57,8 +57,33 @@ More details: [`docs/architecture.md`](docs/architecture.md)
 
 ---
 
-## API Contract
-See [`docs/api/CONTRACT.md`](docs/api/CONTRACT.md)
+## Setup
+
+### Database
+
+#### Running Postgres via Docker
+
+1. Install Docker and Docker Compose
+2. From the repo root, run:
+   ```bash
+   docker compose up -d
+   ```
+3. The Postgres DB will be available at `localhost:5432` with:
+    - User: `postgres`
+    - Password: `postgres`
+    - DB: `artium`
+4. To stop the DB:
+    ```bash
+    docker compose stop
+    ```
+
+#### Resetting the DB
+
+To reset the database (drops all data and recreates tables):
+```bash
+cd apps/backend
+go run ./cmd/dbreset  # Make sure Go is installed
+```
 
 ---
 
@@ -66,6 +91,11 @@ See [`docs/api/CONTRACT.md`](docs/api/CONTRACT.md)
 - Architecture: [docs/architecture.md](docs/architecture.md)
 - API contract: [docs/api/CONTRACT.md](docs/api/CONTRACT.md)
 - DB schema: [docs/db/schema.md](docs/db/schema.md)
+
+---
+
+## Progress
+See [docs/progress.md](docs/progress.md)
 
 ---
 

@@ -32,6 +32,7 @@ We store:
 ## Relationships (ER)
 
 - `users` 1—N `items` (seller owns many items)
+- `users` 1—N `email_verification_tokens` (a user can have multiple tokens over time)
 - `items` 1—N `pictures` (an item has multiple images)
 - `users` 1—N `bids` (a user can place many bids)
 - `items` 1—N `bids` (an item receives many bids)
@@ -42,6 +43,7 @@ erDiagram
   items ||--o{ pictures : has
   users ||--o{ bids : places
   items ||--o{ bids : receives
+  users ||--o{ email_verification_tokens : has
 ```
 
 ## Tables
@@ -53,6 +55,7 @@ erDiagram
 |---------------|-------------|----------|------|
 | id            | uuid        | no       | PK |
 | email         | text        | no       | unique |
+| username      | text        | no       | unique |
 | password_hash | text        | no       | hashed password (no plaintext) |
 | verified      | boolean     | no       | default `false` |
 | created_at    | timestamptz | no       | default `now()` |
@@ -61,9 +64,42 @@ erDiagram
 **Constraints**
 - `PRIMARY KEY (id)`
 - `UNIQUE (email)`
+- `UNIQUE (username)`
 
 **Indexes**
 - `users_email_idx` on `(email)` (unique)
+- `users_username_idx` on `(username)` (unique)
+
+---
+
+## `email_verification_tokens`
+
+**Purpose:** Store single-use, expiring tokens used to verify a user’s email address after signup (or after a resend request).
+
+| column      | type        | nullable | notes |
+|------------|-------------|----------|------|
+| id         | uuid        | no       | PK |
+| user_id    | uuid        | no       | FK → `users.id` |
+| token_hash | bytea       | no       | SHA-256 hash of the raw token (store hash only) |
+| expires_at | timestamptz | no       | token expiry time |
+| used_at    | timestamptz | yes      | set when token is consumed (single-use) |
+| created_at | timestamptz | no       | default `now()` |
+
+**Constraints**
+- `PRIMARY KEY (id)`
+- `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- `UNIQUE (token_hash)`
+
+**Indexes**
+- `evt_user_id_idx` on `(user_id)`
+- `evt_expires_at_idx` on `(expires_at)`
+
+**Notes**
+- Raw token should be cryptographically secure random bytes (e.g., 32 bytes) encoded as base64url.
+- Store only `token_hash` in DB; raw token is only sent to the user (email link).
+- Token is valid only if:
+  - `used_at IS NULL`
+  - `expires_at > now()`
 
 ---
 
@@ -138,5 +174,30 @@ Store structured attributes extracted from the artwork image. Example shape:
 
 **Indexes**
 - `pictures_item_id_idx` on `(item_id)`
+
+---
+
+## `bids`
+**Purpose:** Record bid history for each auction item.
+
+| column    | type        | nullable | notes |
+|----------|-------------|----------|------|
+| id       | uuid        | no       | PK, default `gen_random_uuid()` |
+| user_id  | uuid        | no       | FK → `users.id` |
+| item_id  | uuid        | no       | FK → `items.id` |
+| price    | bigint      | no       | bid amount in cents |
+| timestamp| timestamptz | no       | default `now()` |
+
+**Constraints**
+- `PRIMARY KEY (id)`
+- `FOREIGN KEY (user_id) REFERENCES users(id)`
+- `FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE`
+- Recommended checks:
+  - `CHECK (price > 0)`
+
+**Indexes**
+- `bids_item_id_timestamp_idx` on `(item_id, timestamp DESC)` (fast bid history for item page)
+- `bids_user_id_timestamp_idx` on `(user_id, timestamp DESC)` (user activity)
+- `bids_item_price_desc_idx` on `(item_id, price DESC)` (fast highest bid lookup)
 
 ---

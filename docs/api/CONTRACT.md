@@ -58,6 +58,7 @@ All money values are **integer** (e.g., `1500` = $1500.00).
 {
   "id": "uuid",
   "email": "user@example.com",
+  "username": "user_123",
   "verified": false
 }
 ```
@@ -126,7 +127,7 @@ All money values are **integer** (e.g., `1500` = $1500.00).
 
 ## Auth Endpoints
 
-## 1) Sign Up
+## Sign Up
 Create a new user account.
 
 - **Method:** `POST`
@@ -137,6 +138,7 @@ Create a new user account.
 ```json
 {
   "email": "user@example.com",
+  "username": "user_123",
   "password": "plain-text-password"
 }
 ```
@@ -147,6 +149,7 @@ Create a new user account.
   "user": {
     "id": "uuid",
     "email": "user@example.com",
+    "username": "user_123",
     "verified": false
   }
 }
@@ -154,11 +157,11 @@ Create a new user account.
 
 ### Errors
 - `400 VALIDATION_ERROR` (invalid email/password)
-- `409 CONFLICT` (email already exists)
+- `409 CONFLICT` (email/username already exists)
 
 ---
 
-## 2) Login
+## Login
 Authenticate and receive a token.
 
 - **Method:** `POST`
@@ -180,6 +183,7 @@ Authenticate and receive a token.
   "user": {
     "id": "uuid",
     "email": "user@example.com",
+    "username": "user_123",
     "verified": false
   }
 }
@@ -188,12 +192,75 @@ Authenticate and receive a token.
 ### Errors
 - `400 VALIDATION_ERROR`
 - `401 UNAUTHORIZED` (wrong credentials)
+- `403 FORBIDDEN` (credentials correct but `verified=false`, return “Please verify your email”)
+
+---
+
+## Verify Email
+Verify an account using a token (single-use, expiring).  
+On success, sets `users.verified = true`.
+
+- **Method:** `POST`
+- **Path:** `/auth/verify`
+- **Auth:** none
+
+### Request
+```json
+{
+  "token": "verification-token-from-email-link"
+}
+```
+
+### Response `200`
+```json
+{
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "username": "user_123",
+    "verified": true
+  }
+}
+```
+
+### Errors
+- `400 VALIDATION_ERROR` (missing token, invalid token, expired token, already used token)
+- `500 INTERNAL_ERROR` (database / unexpected)
+
+---
+
+## Resend Verification Email
+Request a new verification link if the user is not verified.  
+This endpoint should not leak whether the email exists.
+
+- **Method:** `POST`
+- **Path:** `/auth/resend-verification`
+- **Auth:** none
+
+### Request
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+### Response `200`
+```json
+{
+  "ok": true
+}
+```
+
+### Errors
+- `400 VALIDATION_ERROR` (invalid email format)
+- `500 INTERNAL_ERROR` (unexpected / database)
+
 
 ---
 
 ## Item Endpoints
 
-## 3) List Items
+## List Items
 Returns auction items for browsing (max 100 items).
 
 - **Method:** `GET`
@@ -240,7 +307,7 @@ Returns auction items for browsing (max 100 items).
 
 ---
 
-## 4) Get Item Info
+## Get Item Info
 Returns item details + pictures + current bid state (if you compute it).
 
 - **Method:** `GET`
@@ -277,7 +344,7 @@ Returns item details + pictures + current bid state (if you compute it).
 
 ---
 
-## 5) Post Item
+## Post Item
 Create a new auction item. Seller supplies basic info + image URLs (uploaded separately).
 
 - **Method:** `POST`
@@ -333,7 +400,7 @@ Create a new auction item. Seller supplies basic info + image URLs (uploaded sep
 
 ## Bid Endpoints
 
-## 6) Place Bid
+## Place Bid
 Place a bid for an item.
 
 - **Method:** `POST`
@@ -374,7 +441,7 @@ Server enforces:
 
 ---
 
-## 7) Get Bid History
+## Get Bid History
 Fetch recent bids for an item.
 
 - **Method:** `GET`
@@ -408,7 +475,7 @@ Fetch recent bids for an item.
 
 > Note: These are **support features** for buyer experience. They do not alter auction outcomes directly.
 
-## 8) Get Similar Items
+## Get Similar Items
 Recommend similar items based on the clicked item (ignore price range).
 
 - **Method:** `GET`
@@ -454,7 +521,7 @@ Recommend similar items based on the clicked item (ignore price range).
 
 ---
 
-## 9) Preview Artwork in a Room (Generate / Compose)
+## Preview Artwork in a Room (Generate / Compose)
 Generate a preview image showing the artwork placed in the user's room.
 
 - **Method:** `POST`

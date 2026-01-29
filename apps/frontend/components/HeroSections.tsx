@@ -29,7 +29,7 @@ export default function HeroSection() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="mb-8"
         >
-          <div className="relative relative w-full">
+          <div className="relative w-full">
             <input
               type="text"
               placeholder="Search your favourite Arts"

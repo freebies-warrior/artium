@@ -16,7 +16,7 @@ class VisualizerConfig(BaseModel):
     )
 
     # If critic says "bad", allow a single retry by default
-    max_retries: int = Field(default_factory=lambda: int(os.getenv("VISUALIZER_MAX_RETRIES", "1")))
+    max_retries: int = Field(default_factory=lambda: int(os.getenv("VISUALIZER_MAX_RETRIES", "3")))
 
     # Threshold: if room judge says needs enhancement, we enhance
     enhance_if_low_quality: bool = Field(

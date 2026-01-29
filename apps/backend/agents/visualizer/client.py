@@ -1,6 +1,6 @@
 import io
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 from PIL import Image
 from google import genai
 from google.genai import types
@@ -31,9 +31,17 @@ class GeminiClient:
 
         return types.Part.from_bytes(data=data, mime_type=mt)
 
-    def generate_json(self, model: str, prompt: str, image: Optional[Image.Image] = None) -> Dict[str, Any]:
+    def generate_json(
+        self,
+        model: str,
+        prompt: str,
+        image: Optional[Image.Image] = None,
+        images: Optional[List[Image.Image]] = None,
+    ) -> Dict[str, Any]:
         contents = [prompt]
-        if image is not None:
+        if images:
+            contents.extend([self._img_part(im) for im in images])
+        elif image is not None:
             contents.append(self._img_part(image))
 
         resp = self.client.models.generate_content(
@@ -41,11 +49,10 @@ class GeminiClient:
             contents=contents,
             config=types.GenerateContentConfig(response_mime_type="application/json"),
         )
-
         text = (resp.text or "").strip()
         text = text.removeprefix("```json").removeprefix("```").split("```")[0].strip()
         return json.loads(text)
-
+    
     def edit_image(self, model: str, prompt: str, room: Image.Image, art: Image.Image | None = None) -> Image.Image:
         contents = [prompt, self._img_part(room)]
         if art is not None:

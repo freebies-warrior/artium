@@ -14,11 +14,13 @@ from .prompts import (
     ROOM_ENHANCE_PROMPT,
     COMPOSITE_PROMPT,
     CRITIC_PROMPT,
+    LOCATE_ARTWORK_PROMPT,
+    APPRAISAL_PROMPT,
 )
-from .types import RoomQualityReport, CriticReport
+from .types import RoomQualityReport, CriticReport, ArtworkPlacement, AppraisalReport
 
 load_dotenv()
-print(os.getenv("GOOGLE_API_KEY"))
+# print(os.getenv("GOOGLE_API_KEY"))
 
 def _load_image(path: str) -> Image.Image:
     img = Image.open(path)
@@ -53,6 +55,26 @@ def composite_install(
         prompt = prompt.strip() + "\n\nExtra instruction from critic:\n" + extra_fix_instruction.strip() + "\n"
     return client.edit_image(cfg.gemini_image_model, prompt, room=room_img, art=art_img)
 
+def locate_artwork(client: GeminiClient, cfg: VisualizerConfig,
+                  original_room_img: Image.Image,
+                  composite_img: Image.Image) -> ArtworkPlacement:
+    data = client.generate_json(
+        cfg.gemini_text_model,
+        LOCATE_ARTWORK_PROMPT,
+        images=[original_room_img, composite_img],
+    )
+
+    def clamp(v: float) -> float:
+        return max(0.0, min(1.0, float(v)))
+
+    return ArtworkPlacement(
+        x=clamp(data.get("x", 0.0)),
+        y=clamp(data.get("y", 0.0)),
+        w=clamp(data.get("w", 1.0)),
+        h=clamp(data.get("h", 1.0)),
+        confidence=clamp(data.get("confidence", 0.5)),
+        notes=str(data.get("notes", "")),
+    )
 
 def critic(client: GeminiClient, cfg: VisualizerConfig, composite_img: Image.Image) -> CriticReport:
     data = client.generate_json(cfg.gemini_text_model, CRITIC_PROMPT, image=composite_img)
@@ -62,6 +84,23 @@ def critic(client: GeminiClient, cfg: VisualizerConfig, composite_img: Image.Ima
     if verdict not in ("PASS", "RETRY"):
         verdict = "PASS"
     return CriticReport(verdict=verdict, issues=issues, suggested_fix=suggested_fix)
+
+def appraise_installation(client: GeminiClient, cfg: VisualizerConfig,
+                         composite_img: Image.Image,
+                         placement: ArtworkPlacement) -> AppraisalReport:
+    prompt = (
+        APPRAISAL_PROMPT
+        + f"\n\nBounding box: x={placement.x:.4f}, y={placement.y:.4f}, w={placement.w:.4f}, h={placement.h:.4f}\n"
+    )
+    data = client.generate_json(cfg.gemini_text_model, prompt, image=composite_img)
+    print("Run appraisal: waiting")
+
+    return AppraisalReport(
+        suitable=bool(data.get("suitable", True)),
+        summary=str(data.get("summary", "")),
+        reasons=str(data.get("reasons", "")),
+        suggestions=str(data.get("suggestions", "")),
+    )
 
 # Initial implementation to test pipeline helper functions
 def run_pipeline_sequential(

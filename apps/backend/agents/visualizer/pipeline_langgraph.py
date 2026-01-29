@@ -13,18 +13,23 @@ from .pipeline_sequential import (
     composite_install,
     critic,
     _load_image,
+    locate_artwork,
+    appraise_installation
 )
 
 class VizState(TypedDict, total=False):
     cfg: VisualizerConfig
     client: GeminiClient
-    room_img: Image.Image
+    room_img: Image.Image # current img
     art_img: Image.Image
     used_enhancement: bool
     retries_used: int
     room_quality: Any
-    out_img: Image.Image
+    out_img: Image.Image # composite img
     critic: Any
+    placement: Any
+    appraisal: Any
+
 
 
 def run_pipeline_langgraph(cfg: VisualizerConfig, room_path: str, art_path: str) -> Dict[str, Any]:
@@ -57,6 +62,7 @@ def run_pipeline_langgraph(cfg: VisualizerConfig, room_path: str, art_path: str)
 
     def node_composite(s: VizState) -> VizState:
         s["out_img"] = composite_install(s["client"], s["cfg"], s["room_img"], s["art_img"])
+        s["placement"] = locate_artwork(s["client"], s["cfg"], s["room_img"], s["out_img"])
         return s
 
     def node_critic(s: VizState) -> VizState:
@@ -65,8 +71,13 @@ def run_pipeline_langgraph(cfg: VisualizerConfig, room_path: str, art_path: str)
 
     def node_retry(s: VizState) -> VizState:
         s["retries_used"] += 1
-        fix = s["critic"].suggested_fix or "Improve realism of scale, perspective, and shadow. Keep it photorealistic."
+        fix = s["critic"].suggested_fix or "Improve realism of scale, perspective, and shadow. Keep it photorealistic. Do not remove anything from the original room."
         s["out_img"] = composite_install(s["client"], s["cfg"], s["room_img"], s["art_img"], extra_fix_instruction=fix)
+        s["placement"] = locate_artwork(s["client"], s["cfg"], s["room_img"], s["out_img"])
+        return s
+    
+    def node_appraisal(s: VizState) -> VizState:
+        s["appraisal"] = appraise_installation(s["client"], s["cfg"], s["out_img"], s["placement"])
         return s
 
     def route_after_critic(s: VizState) -> str:
@@ -76,13 +87,14 @@ def run_pipeline_langgraph(cfg: VisualizerConfig, room_path: str, art_path: str)
             return "end"
         return "retry"
 
+
     g = StateGraph(VizState)
     g.add_node("judge", node_judge)
     g.add_node("enhance", node_enhance)
     g.add_node("composite", node_composite)
     g.add_node("critic", node_critic)
     g.add_node("retry", node_retry)
-
+    g.add_node("appraisal", node_appraisal)
     g.set_entry_point("judge")
     g.add_edge("judge", "enhance")
     g.add_edge("enhance", "composite")
@@ -93,11 +105,13 @@ def run_pipeline_langgraph(cfg: VisualizerConfig, room_path: str, art_path: str)
         route_after_critic,
         {
             "retry": "retry",
-            "end": END,
+            "end": "appraisal",
         },
     )
 
     g.add_edge("retry", "critic")
+
+    g.add_edge("appraisal", END)
 
     app = g.compile()
     final = app.invoke(state)

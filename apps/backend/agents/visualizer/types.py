@@ -31,3 +31,22 @@ class VisualizerResult:
     retries_used: int
     room_quality: RoomQualityReport
     critic: CriticReport
+    placement: ArtworkPlacement
+    appraisal: AppraisalReport
+
+@dataclass
+class ArtworkPlacement:
+    # normalized [0,1] on final composite image
+    x: float
+    y: float
+    w: float
+    h: float
+    confidence: float
+    notes: str = ""
+
+@dataclass
+class AppraisalReport:
+    suitable: bool
+    summary: str
+    reasons: str
+    suggestions: str

@@ -39,12 +39,16 @@ def visualize_installation(
             retries_used = int(final.get("retries_used", 0))
             room_quality = final["room_quality"]
             crit = final["critic"]
-        except Exception:
+            placement = final.get("placement", None)
+            appraisal = final.get("appraisal", None)
+        except Exception as e:
+            print(f"LangGraph pipeline failed with error: {e}")
             # fallback silently
             out_img, used_enhancement, retries_used, room_quality, crit = run_pipeline_sequential(
                 cfg, room_path, art_path
             )
     else:
+        print("LangGraph pipeline not used; falling back to sequential.")
         out_img, used_enhancement, retries_used, room_quality, crit = run_pipeline_sequential(
             cfg, room_path, art_path
         )
@@ -57,4 +61,6 @@ def visualize_installation(
         retries_used=retries_used,
         room_quality=room_quality,
         critic=crit,
+        placement=placement,
+        appraisal=appraisal,
     )

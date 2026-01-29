@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import asdict
 
 from .runner import visualize_installation
 from .config import VisualizerConfig
@@ -47,6 +48,10 @@ def main() -> None:
             "suggested_fix": res.critic.suggested_fix,
         },
     }, indent=2))
+
+    # For now the result will be stored as a json file
+    with open("test/output/output_state.json", "w", encoding="utf-8") as f:
+        json.dump(asdict(res), f, ensure_ascii =False, indent = 2)
 
 
 if __name__ == "__main__":

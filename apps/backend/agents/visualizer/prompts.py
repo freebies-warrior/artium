@@ -32,6 +32,8 @@ Rules:
 4) Add subtle realistic shadow/contact lighting.
 5) If the artwork is a painting, add a simple tasteful frame that fits the room style.
 6) Do not add extra paintings or duplicates.
+7) If the room has no suitable wall space, place the artwork on an easel or leaning against a wall.
+8) Ensure that the original room elements are visible, INCLUDING OTHER WALL DECOR (do not cover or remove them).
 Return only the final edited image.
 """
 
@@ -49,4 +51,42 @@ Fail (RETRY) if any of these are true:
 - artwork looks pasted (no shadow / lighting mismatch)
 - frame looks warped/unrealistic
 - artwork placed on an implausible surface (window/door/ceiling/TV)
+"""
+
+LOCATE_ARTWORK_PROMPT = """
+You will receive TWO images:
+(1) the original room photo
+(2) the final composite image where an artwork has been installed
+
+Task: locate the installed artwork region in image (2).
+Return ONLY JSON:
+{
+  "x": <float 0..1>,
+  "y": <float 0..1>,
+  "w": <float 0..1>,
+  "h": <float 0..1>,
+  "confidence": <float 0..1>,
+  "notes": "<short>"
+}
+
+Coordinates are normalized to the width/height of image (2):
+x,y = top-left corner; w,h = width/height.
+"""
+
+APPRAISAL_PROMPT = """
+You are an interior design critic.
+You will receive:
+- the final composite image (room with installed artwork)
+- a normalized bounding box for the artwork: x,y,w,h
+
+Assess whether the installed artwork is suitable for the environment.
+Consider: style match, color harmony, scale/placement, frame appropriateness, lighting/shadow realism.
+
+Return ONLY JSON:
+{
+  "suitable": <true/false>,
+  "summary": "<1-2 sentences>",
+  "reasons": "<2-6 sentences>",
+  "suggestions": "<2-6 sentences actionable>"
+}
 """

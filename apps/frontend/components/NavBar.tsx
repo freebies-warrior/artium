@@ -62,12 +62,20 @@ export default function Navbar() {
             </Link>
           </>
         ) : (
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 rounded-full bg-purple-500 text-white leading-none"
-          >
-            Logout
-          </button>
+          <>
+            <Link
+              href="/user"
+              className="px-4 py-2 rounded-full bg-purple-500 text-white leading-none"
+            >
+              Profile
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 rounded-full bg-purple-500 text-white leading-none"
+            >
+              Logout
+            </button>
+          </>
         )}
       </nav>
     </header>

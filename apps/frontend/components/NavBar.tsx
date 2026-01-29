@@ -9,7 +9,12 @@ export default function Navbar() {
         <Link href="/" className="leading-none">
           Marketplace
         </Link>
-
+        <Link
+          href="/login"
+          className="px-4 py-2 rounded-full bg-purple-500 text-white leading-none"
+        >
+          Log in
+        </Link>
         <Link
           href="/signup"
           className="px-4 py-2 rounded-full bg-purple-500 text-white leading-none"

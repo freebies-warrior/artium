@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 
 export default function SignupPage() {
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -26,7 +27,7 @@ export default function SignupPage() {
     const res = await fetch('/api/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ username, email, password }),
     })
 
     const data = await res.json()
@@ -66,6 +67,14 @@ export default function SignupPage() {
           </p>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
+            <input
+              type="username"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full px-5 py-3 rounded-full bg-white text-black"
+            />
+
             <input
               type="email"
               placeholder="Email Address"

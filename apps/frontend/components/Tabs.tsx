@@ -1,19 +1,16 @@
-import { useState } from "react";
+'use client';
+
 import { motion } from "framer-motion";
-import '../global.css'
+import "../global.css";
 
 interface TabsProps {
   activeTab: "arts" | "sellers";
   onTabChange: (tab: "arts" | "sellers") => void;
-  artsCount: number;
-  sellersCount: number;
 }
 
 export default function Tabs({
   activeTab,
   onTabChange,
-  artsCount,
-  sellersCount,
 }: TabsProps) {
   return (
     <div className="border-b border-border">
@@ -24,7 +21,6 @@ export default function Tabs({
             className={`tab-button ${activeTab === "arts" ? "active" : ""}`}
           >
             Arts
-            <span className="tab-badge">{artsCount}</span>
             {activeTab === "arts" && (
               <motion.div
                 layoutId="activeTab"
@@ -32,12 +28,12 @@ export default function Tabs({
               />
             )}
           </button>
+
           <button
             onClick={() => onTabChange("sellers")}
             className={`tab-button ${activeTab === "sellers" ? "active" : ""}`}
           >
             Sellers
-            <span className="tab-badge">{sellersCount}</span>
             {activeTab === "sellers" && (
               <motion.div
                 layoutId="activeTab"
@@ -49,4 +45,4 @@ export default function Tabs({
       </div>
     </div>
   );
-};
+}

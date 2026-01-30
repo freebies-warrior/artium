@@ -140,9 +140,9 @@ erDiagram
 | `base_price`        | `bigint`    | No       | Starting price in dollars                       |
 | `increment`         | `bigint`    | No       | Minimum bid increment in dollars                |
 | `status`            | `text`      | No       | E.g., `draft`, `active`, `ended`, `cancelled`   |
-| `highest_bid_amount` | `bigint`   | Yes      | Current highest bid in dollars                  |
+| `highest_bid_amount`| `bigint`   | Yes      | Current highest bid in dollars                  |
 | `highest_bidder_id` | `uuid`      | Yes      | Foreign Key → `users.id` (current highest bidder) |
-| `highest_bid_at`    | `timestamptz` | Yes    | Timestamp of current highest bid                |
+| `highest_bid_time`  | `timestamptz` | Yes    | Timestamp of current highest bid                |
 | `created_at`        | `timestamptz` | No     | Default `now()`                                 |
 | `updated_at`        | `timestamptz` | No     | Default `now()`                                 |
 

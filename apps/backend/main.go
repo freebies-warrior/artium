@@ -29,7 +29,6 @@ func main() {
 	bidDatabase := database.NewBidDatabase(db)
 
 	h := handlers.NewHandlerSet(
-		db,
 		userDatabase,
 		tokenDatabase,
 		itemDatabase,

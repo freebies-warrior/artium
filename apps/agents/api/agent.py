@@ -56,7 +56,7 @@ class PreviewResponse(BaseModel):
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-router = APIRouter(prefix = "/agents/visualizer", tags = ["visualizer"])
+router = APIRouter(prefix = "/agents", tags = ["agents"])
 
 
 def _download_to_temp(url: str, suffix: str) -> Path:
@@ -75,7 +75,7 @@ def health() -> dict:
     return {"status": "ok"}
 
 
-@router.get("/config")
+@router.get("/visualizer/config")
 def get_config() -> dict:
     cfg = VisualizerConfig()
     return {
@@ -86,7 +86,7 @@ def get_config() -> dict:
     }
 
 
-@router.post("/visualize_installation", response_model=PreviewResponse)
+@router.post("/visualizer/visualize_installation", response_model=PreviewResponse)
 def preview(req: PreviewRequest) -> PreviewResponse:
     logger.info("preview request", extra={"room_url": str(req.room_url), "art_url": str(req.art_url)})
 

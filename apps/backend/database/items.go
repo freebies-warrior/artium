@@ -315,7 +315,8 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
 			i.highest_bid_id::text, i.highest_bid_amount,
 			i.highest_bidder_id::text, i.highest_bid_time,
             i.created_at, i.updated_at
-        FROM items i, users u
+        FROM items i
+		JOIN users u ON u.id = i.seller_id
         WHERE
             ($1::item_status IS NULL OR status = $1::item_status)
 			AND ($2::uuid IS NULL OR i.seller_id = $2::uuid)

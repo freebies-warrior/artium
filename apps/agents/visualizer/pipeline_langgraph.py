@@ -32,24 +32,8 @@ class VizState(TypedDict, total=False):
 
 
 
-def run_pipeline_langgraph(cfg: VisualizerConfig, room_path: str, art_path: str) -> Dict[str, Any]:
-    """
-    Returns a dict containing:
-      out_img, used_enhancement, retries_used, room_quality, critic
-    """
-    if StateGraph is None:
-        raise RuntimeError("langgraph is not installed; use sequential pipeline instead.")
-
-    client = GeminiClient()
-    state: VizState = {
-        "cfg": cfg,
-        "client": client,
-        "room_img": _load_image(room_path),
-        "art_img": _load_image(art_path),
-        "used_enhancement": False,
-        "retries_used": 0,
-    }
-
+def build_visualization_graph():
+    """Build and compile the visualization graph (called once at startup)."""
     def node_judge(s: VizState) -> VizState:
         print("Judge")
         s["room_quality"] = room_judge(s["client"], s["cfg"], s["room_img"])
@@ -93,7 +77,6 @@ def run_pipeline_langgraph(cfg: VisualizerConfig, room_path: str, art_path: str)
             return "end"
         return "retry"
 
-
     g = StateGraph(VizState)
     g.add_node("judge", node_judge)
     g.add_node("enhance", node_enhance)
@@ -116,9 +99,33 @@ def run_pipeline_langgraph(cfg: VisualizerConfig, room_path: str, art_path: str)
     )
 
     g.add_edge("retry", "critic")
-
     g.add_edge("appraisal", END)
 
-    app = g.compile()
+    return g.compile()
+
+
+def run_pipeline_langgraph(cfg: VisualizerConfig, room_path: str, art_path: str) -> Dict[str, Any]:
+    """
+    This is deprecated; use VisualizerService instead. Only used for testing using CLI
+
+    Returns a dict containing:
+      out_img, used_enhancement, retries_used, room_quality, critic
+    
+    Note: Consider using VisualizerService for production to cache the graph.
+    """
+    if StateGraph is None:
+        raise RuntimeError("langgraph is not installed; use sequential pipeline instead.")
+
+    client = GeminiClient()
+    state: VizState = {
+        "cfg": cfg,
+        "client": client,
+        "room_img": _load_image(room_path),
+        "art_img": _load_image(art_path),
+        "used_enhancement": False,
+        "retries_used": 0,
+    }
+
+    app = build_visualization_graph()
     final = app.invoke(state)
     return final

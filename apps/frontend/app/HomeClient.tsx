@@ -17,6 +17,7 @@ type ItemDTO = {
   author: string | null
   time_end: string
   base_price: number | string
+  highest_bid_amount: number | string | undefined
 }
 
 type ListItemsResponse =
@@ -47,7 +48,8 @@ function formatDue(iso: string) {
   return `${dd}-${mm}-${yyyy}`
 }
 
-function formatBid(n: number | string) {
+function formatBid(n: number | string | undefined) {
+  if (n == undefined) return undefined;
   const num = typeof n === 'string' ? Number(n) : n
   if (!Number.isFinite(num)) return String(n)
   return `${num.toLocaleString()} SGD`
@@ -149,7 +151,8 @@ export default function HomeClient() {
         id: it.id,
         title: it.title,
         author: it.author?.trim() || 'Unknown',
-        highestBid: formatBid(it.base_price),
+        basePrice: formatBid(it.base_price),
+        highestBid: formatBid(it.highest_bid_amount),
         due: formatDue(it.time_end),
       }))
 

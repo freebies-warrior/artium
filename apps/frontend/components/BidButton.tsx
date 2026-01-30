@@ -10,11 +10,13 @@ type ItemForBid = {
   base_price: number | undefined
   increment: number | undefined
   title: string | undefined
+  highest_bid_amount: number | undefined
 }
 
 type BidButtonProps = {
   item: ItemForBid
   triggerText?: string
+  setRefreshKey: () => void
 }
 
 function fmtSGD(n: number) {
@@ -24,20 +26,34 @@ function fmtSGD(n: number) {
 export default function BidButton({
   item,
   triggerText = 'Place Bid',
+  setRefreshKey
 }: BidButtonProps) {
-  const [bid, setBid] = React.useState<string>('')
+  const [bid, setBid] = React.useState('')
   const [submitting, setSubmitting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
+  // ✅ Control dialog
+  const [open, setOpen] = React.useState(false)
+
   const currentPrice = item.base_price ?? 0
+  const highestBid = item.highest_bid_amount
   const increment = item.increment ?? 0
-  const minBid = currentPrice + increment
+  console.log(highestBid);
+  console.log("HIHI: " + currentPrice);
+  const minBid = highestBid
+    ? highestBid + increment
+    : currentPrice
 
   const bidInt = bid === '' ? NaN : parseInt(bid, 10)
-  const canSubmit = Number.isFinite(bidInt) && bidInt >= minBid && !submitting
+
+  const canSubmit =
+    Number.isFinite(bidInt) &&
+    bidInt >= minBid &&
+    !submitting
 
   async function submitBid() {
     if (!canSubmit) return
+
     if (!item.id) {
       setError('Missing item id.')
       return
@@ -47,16 +63,18 @@ export default function BidButton({
     setError(null)
 
     try {
-      // ✅ call Next.js proxy route (server reads httpOnly cookie and adds Bearer)
       const res = await fetch(`/api/items/${item.id}/bids`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ price: bidInt }),
       })
 
       if (!res.ok) {
         const text = await res.text()
         const data = text ? JSON.parse(text) : {}
+
         throw new Error(
           data?.error?.message ??
             data?.message ??
@@ -66,7 +84,13 @@ export default function BidButton({
         )
       }
 
+      // ✅ Reset state
       setBid('')
+      setError(null)
+
+      // ✅ Close dialog
+      setOpen(false)
+      setRefreshKey();
       alert('Bid placed successfully!')
     } catch (e: any) {
       setError(e?.message ?? 'Failed to place bid')
@@ -76,7 +100,8 @@ export default function BidButton({
   }
 
   return (
-    <Dialog.Root>
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      {/* Trigger */}
       <Dialog.Trigger asChild>
         <Button className="h-12 w-full bg-purple-600 text-white hover:bg-purple-700">
           {triggerText}
@@ -93,51 +118,84 @@ export default function BidButton({
 
           <Dialog.Description className="mb-6 text-sm text-muted-foreground">
             You are bidding on{' '}
-            <span className="font-medium text-primary">{item.title}</span>
+            <span className="font-medium text-primary">
+              {item.title}
+            </span>
           </Dialog.Description>
 
           <div className="space-y-4">
+            {/* Price Info */}
             <div className="flex justify-between rounded-lg bg-secondary/40 p-4">
               <div>
-                <p className="text-xs text-muted-foreground">Current Price</p>
-                <p className="font-semibold">SGD {fmtSGD(currentPrice)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {highestBid ? 'Highest Bid' : 'Base Price'}
+                </p>
+
+                <p className="font-semibold">
+                  SGD {fmtSGD(highestBid ?? currentPrice)}
+                </p>
               </div>
+
               <div className="text-right">
-                <p className="text-xs text-muted-foreground">Minimum Bid</p>
+                <p className="text-xs text-muted-foreground">
+                  Minimum Bid
+                </p>
+
                 <p className="font-semibold text-primary">
                   SGD {fmtSGD(minBid)}
                 </p>
               </div>
             </div>
 
+            {/* Input */}
             <div>
-              <label className="mb-1 block text-sm font-medium">Your Bid</label>
+              <label className="mb-1 block text-sm font-medium">
+                Your Bid
+              </label>
+
               <div className="relative">
                 <input
                   type="text"
                   inputMode="numeric"
                   value={bid}
-                  onChange={(e) => setBid(e.target.value.replace(/[^\d]/g, ''))}
+                  onChange={(e) =>
+                    setBid(e.target.value.replace(/[^\d]/g, ''))
+                  }
                   className="w-full rounded-md border border-border bg-background px-3 py-2 pr-14"
                   placeholder="Enter amount"
                 />
+
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                   SGD
                 </span>
               </div>
             </div>
 
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {/* Error */}
+            {error && (
+              <p className="text-sm text-red-400">
+                {error}
+              </p>
+            )}
 
-            <Button fullWidth onClick={() => setBid(String(minBid))}>
+            {/* Buttons */}
+            <Button
+              fullWidth
+              onClick={() => setBid(String(minBid))}
+            >
               Set Minimum Bid
             </Button>
 
-            <Button fullWidth disabled={!canSubmit} onClick={submitBid}>
+            <Button
+              fullWidth
+              disabled={!canSubmit}
+              onClick={submitBid}
+            >
               {submitting ? 'Submitting…' : 'Submit Bid'}
             </Button>
           </div>
 
+          {/* Close Button */}
           <Dialog.Close asChild>
             <button className="absolute right-4 top-4 text-muted-foreground hover:text-foreground">
               <X className="h-4 w-4" />

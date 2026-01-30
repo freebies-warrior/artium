@@ -26,6 +26,9 @@ type Item = {
   author?: string
   status?: string
   base_price?: number
+  highest_bid_amount?: number
+  highest_bidder_id?: string
+  highest_bid_time?: Date
   increment?: number
 
   time_start?: string
@@ -47,6 +50,7 @@ type ListItemsResponse = {
     title: string
     author?: string
     base_price?: number
+    highest_bid_amount?: number
     time_end?: string
   }>
   next_cursor: string | null
@@ -68,9 +72,9 @@ async function fetchJson<T>(url: string): Promise<T> {
   return res.json()
 }
 
-function formatHighestBid(basePrice?: number) {
-  if (typeof basePrice !== 'number') return 'SGD —'
-  return `SGD ${basePrice.toLocaleString()}`
+function formatHighestBid(price?: number) {
+  if (typeof price !== 'number') return 'SGD —'
+  return `SGD ${price.toLocaleString()}`
 }
 
 function formatDue(iso?: string) {
@@ -100,6 +104,8 @@ export default function ArtPage() {
     const raw = (params as any)?.item_id ?? (params as any)?.id
     return typeof raw === 'string' ? raw : ''
   }, [params])
+  const [refreshKey, setRefreshKey] = useState(0)
+
 
   const [isOpen, setIsOpen] = useState(false)
   const [startIndex, setStartIndex] = useState(0)
@@ -138,7 +144,7 @@ export default function ArtPage() {
     return () => {
       cancelled = true
     }
-  }, [itemId])
+  }, [itemId, refreshKey])
 
   /* ───────────── Fetch more from same author ───────────── */
   useEffect(() => {
@@ -165,7 +171,7 @@ export default function ArtPage() {
                   id: x.id,
                   title: x.title,
                   author: safeAuthor, // ✅ always string
-                  highestBid: formatHighestBid(x.base_price),
+                  highestBid: formatHighestBid(x.highest_bid_amount ?? x.base_price),
                   due: formatDue(x.time_end),
                 }
               })
@@ -192,7 +198,7 @@ export default function ArtPage() {
   }, [item?.time_end])
 
   const featuresText = stringifyFeatures(item?.features)
-
+  console.log("HAHA: " + item?.highest_bid_amount);
   return (
     <div className="min-h-screen bg-background pt-16">
       <Navbar />
@@ -236,9 +242,11 @@ export default function ArtPage() {
                   item={{
                     id: item?.id,
                     title: item?.title,
-                    base_price: item?.base_price ?? 1,
+                    base_price:  item?.base_price,
                     increment: item?.increment ?? 1,
+                    highest_bid_amount: item?.highest_bid_amount,
                   }}
+                  setRefreshKey= {() => setRefreshKey(refreshKey + 1)}
                 />
               )}
             </div>
@@ -291,11 +299,13 @@ export default function ArtPage() {
             {!auctionEnded && (
               <BidButton
                 item={{
-                  id: item?.id,
-                  title: item?.title,
-                  base_price: item?.base_price ?? 1,
-                  increment: item?.increment ?? 1,
+                    id: item?.id,
+                    title: item?.title,
+                    base_price:  item?.base_price,
+                    increment: item?.increment ?? 1,
+                    highest_bid_amount: item?.highest_bid_amount,
                 }}
+                setRefreshKey= {() => setRefreshKey(refreshKey + 1)}
               />
             )}
           </div>

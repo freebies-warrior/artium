@@ -11,7 +11,8 @@ export type ArtUI = {
   id: string
   title: string
   author: string
-  highestBid: string
+  basePrice: string
+  highestBid: string | undefined
   due: string
 }
 
@@ -46,8 +47,8 @@ const ArtCard = ({ art, index }: { art: ArtUI; index: number }) => {
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground">Highest Bid</p>
-              <p className="font-mono text-sm font-medium">{art.highestBid}</p>
+              <p className="text-xs text-muted-foreground">{art.highestBid ? "Highest Bid" : "Base Price"}</p>
+              <p className="font-mono text-sm font-medium">{art.highestBid ?? art.basePrice}</p>
             </div>
             <div className="text-right">
               <p className="text-xs text-muted-foreground">Due</p>

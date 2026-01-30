@@ -27,3 +27,5 @@ CREATE TABLE IF NOT EXISTS items (
 
 CREATE INDEX IF NOT EXISTS items_seller_id_idx ON items (seller_id);
 CREATE INDEX IF NOT EXISTS item_status_time_end_idx ON items (status, time_end);
+CREATE INDEX IF NOT EXISTS idx_items_draft_time_start ON items (time_start) WHERE status = 'draft';
+CREATE INDEX IF NOT EXISTS idx_items_draft_active_time_end ON items (time_end) WHERE status IN ('draft', 'active');

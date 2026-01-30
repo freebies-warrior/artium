@@ -158,6 +158,8 @@ erDiagram
 
 - `items_seller_id_idx` on `(seller_id)`
 - `items_status_time_end_idx` on `(status, time_end)` (useful for showing active auctions ending soon)
+- `idx_items_draft_time_start` on `items (time_start)` where `status = 'draft'` (useful to update drafts that are scheduled to be active)
+- `idx_items_draft_active_time_end` on `items (time_end)` where `status IN ('draft','active')` (useful to update auctions status to end)
 
 **Notes on `features`**
 Store structured attributes extracted from the artwork image. Example shape:

@@ -16,9 +16,9 @@ BEGIN
 		RAISE EXCEPTION 'Item not found' USING ERRCODE = 'P0001';
 	END IF;
 
-	-- Basic auction state checks
-	IF v_item.status <> 'active' THEN
-		RAISE EXCEPTION 'Auction not active' USING ERRCODE = 'P0001';
+	-- Cancelled is always blocked
+	IF v_item.status = 'cancelled' THEN
+		RAISE EXCEPTION 'Auction cancelled' USING ERRCODE = 'P0001';
 	END IF;
 
 	IF now() < v_item.time_start THEN
@@ -34,7 +34,7 @@ BEGIN
 		RAISE EXCEPTION 'Seller cannot bid on own item' USING ERRCODE = 'P0001';
 	END IF;
 
-	-- Find current highest bid (fast with the index above)
+	-- Find current highest bid
 	SELECT price INTO v_highest
 	FROM bids
 	WHERE item_id = NEW.item_id
@@ -49,10 +49,9 @@ BEGIN
 
 	IF NEW.price < v_min_required THEN
 		RAISE EXCEPTION 'Bid too low. Minimum required: %', v_min_required
-	  	USING ERRCODE = 'P0001';
+		USING ERRCODE = 'P0001';
 	END IF;
 
-	-- Basic sanity
 	IF NEW.price <= 0 THEN
 		RAISE EXCEPTION 'Bid must be positive' USING ERRCODE = 'P0001';
 	END IF;

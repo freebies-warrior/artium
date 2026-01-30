@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION public.items_set_status_from_time()
+CREATE OR REPLACE FUNCTION items_set_status_from_time()
 RETURNS trigger
 AS $$
 BEGIN

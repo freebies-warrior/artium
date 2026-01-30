@@ -119,7 +119,7 @@ For example:
     {
       "id": "uuid",
       "item_id": "uuid",
-      "url": "https://.../image.jpg",
+      "key": "https://.../image.jpg",
       "created_at": "2026-01-27T09:00:10Z"
     }
   ]
@@ -453,12 +453,12 @@ Create a new auction item. Seller supplies basic info + image URLs (uploaded sep
       {
         "id": "uuid",
         "item_id": "uuid",
-        "url": "some-key-1",
+        "key": "some-key-1",
         "created_at": "2026-01-27T09:00:10Z"
       }, {
         "id": "uuid",
         "item_id": "uuid",
-        "url": "some-key-2",
+        "key": "some-key-2",
         "created_at": "2026-01-27T09:00:10Z"
       }
     ]
@@ -589,7 +589,7 @@ Recommend similar items based on the clicked item (ignore price range).
           {
             "id": "uuid",
             "item_id": "uuid",
-            "url": "https://.../thumb.jpg",
+            "key": "https://.../thumb.jpg",
             "created_at": "2026-01-27T09:00:10Z"
           }
         ]

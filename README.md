@@ -66,7 +66,7 @@ More details: [`docs/architecture.md`](docs/architecture.md)
 1. Install Docker and Docker Compose
 2. From the repo root, run:
    ```bash
-   docker compose up -d
+   docker compose up -d --build
    ```
 3. The Postgres DB will be available at `localhost:5432` with:
     - User: `postgres`

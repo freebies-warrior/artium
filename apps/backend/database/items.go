@@ -184,7 +184,7 @@ func (r *ItemDatabase) GetItemByID(ctx context.Context, itemID string) (Item, er
 		FROM items i, users u
 		WHERE
 			i.id = $1::uuid
-			AND u.id = $1::uuid;
+			AND u.id = i.seller_id::uuid;
 	`, itemID).Scan(
 		&it.ID, &it.SellerID,
 		&it.SellerUsername,

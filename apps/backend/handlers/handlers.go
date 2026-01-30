@@ -21,10 +21,12 @@ func NewHandlerSet(
 	r2Bucket string,
 	s3Client *s3.Client,
 ) *HandlerSet {
+	uploadHandler := NewUploadHandler(r2Bucket, s3Client)
+
 	return &HandlerSet{
 		Auth: NewAuthHandler(users, tokens, jwtSecret, appBaseURL),
-		Items: NewItemsHandler(items, pictures),
-		Uploads: NewUploadHandler(r2Bucket, s3Client),
+		Items: NewItemsHandler(items, pictures, uploadHandler),
+		Uploads: uploadHandler,
 		Bids: NewBidsHandler(bids, items),
 	}
 }

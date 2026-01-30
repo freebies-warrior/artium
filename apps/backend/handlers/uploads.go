@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
@@ -31,16 +32,32 @@ type presignPutResp struct {
 	UploadURL string `json:"upload_url"`
 }
 
-type presignGetResp struct {
-	Key     string `json:"key"`
-	ViewURL string `json:"view_url"`
-}
-
 func NewUploadHandler(bucket string, s3Client *s3.Client) *UploadHandler {
 	return &UploadHandler{
 		bucket:    bucket,
 		presigner: s3.NewPresignClient(s3Client),
 	}
+}
+
+func (h *UploadHandler) PresignGetURL(ctx context.Context, key string, expires time.Duration) (string, error) {
+	if strings.HasPrefix(key, "http://") || strings.HasPrefix(key, "https://") {
+		return key, nil
+	}
+
+	out, err := h.presigner.PresignGetObject(
+		ctx,
+		&s3.GetObjectInput{
+			Bucket: aws.String(h.bucket),
+			Key:    aws.String(key),
+		},
+		func(o *s3.PresignOptions) {
+			o.Expires = expires
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+	return out.URL, nil
 }
 
 func (h *UploadHandler) PresignPut(c *gin.Context) {

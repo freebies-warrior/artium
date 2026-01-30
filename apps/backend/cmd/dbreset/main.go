@@ -34,6 +34,8 @@ func main() {
 
 		// Functions / Procedures
 		"apps/backend/migrations/functions/items_set_status_from_time.sql",
+		"apps/backend/migrations/functions/refresh_item_status.sql",
+		"apps/backend/migrations/functions/sweep_item_statuses.sql",
 		"apps/backend/migrations/functions/tg_set_updated_at.sql",
 		"apps/backend/migrations/functions/validate_bid_before_insert.sql",
 

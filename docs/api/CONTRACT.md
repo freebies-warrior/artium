@@ -81,7 +81,7 @@ For example:
 {
   "id": "uuid",
   "item_id": "uuid",
-  "url": "https://.../image.jpg",
+  "key": "some-key",
   "created_at": "2026-01-27T13:22:10Z"
 }
 ```
@@ -304,6 +304,7 @@ Returns auction items for browsing (max 100 items).
 - `limit` (optional, int, default 20, max 100)
 - `cursor` (optional, string)
 - `status` (optional, string: `draft|active|ended|cancelled`)
+- `seller_id` (optional, uuid)
 - `q` (optional, string search on title/author)
 
 ### Response `200`
@@ -314,18 +315,26 @@ Returns auction items for browsing (max 100 items).
     {
       "id": "uuid",
       "seller_id": "uuid",
+      "seller_username": "seller_123",
       "title": "Sunset on Canvas",
       "author": "Unknown",
       "status": "active",
+      "year_created": 1995,
+      "height": 60.0,
+      "width": 80.0,
       "base_price": 10000,
       "increment": 500,
       "time_start": "2026-01-27T10:00:00Z",
       "time_end": "2026-01-28T10:00:00Z",
+      "highest_bid_id": "uuid",
+      "highest_bid_amount": 10500,
+      "highest_bidder_id": "uuid",
+      "highest_bid_time": "2026-01-27T13:22:10Z",
       "pictures": [
         {
           "id": "uuid",
           "item_id": "uuid",
-          "url": "https://.../thumb.jpg",
+          "key": "some-key",
           "created_at": "2026-01-27T09:00:10Z"
         }
       ]
@@ -356,6 +365,7 @@ Returns item details + pictures + current bid state (if you compute it).
   "item": {
     "id": "uuid",
     "seller_id": "uuid",
+    "seller_username": "seller_123",
     "title": "Sunset on Canvas",
     "description": "A warm, calm landscape...",
     "author": "Unknown",
@@ -368,11 +378,15 @@ Returns item details + pictures + current bid state (if you compute it).
     "status": "active",
     "time_start": "2026-01-27T10:00:00Z",
     "time_end": "2026-01-28T10:00:00Z",
+    "highest_bid_id": "uuid",
+    "highest_bid_amount": 10500,
+    "highest_bidder_id": "uuid",
+    "highest_bid_time": "2026-01-27T13:22:10Z",
     "pictures": [
       {
         "id": "uuid",
         "item_id": "uuid",
-        "url": "https://.../image.jpg",
+        "key": "some-key",
         "created_at": "2026-01-27T09:00:10Z"
       }
     ]
@@ -408,7 +422,7 @@ Create a new auction item. Seller supplies basic info + image URLs (uploaded sep
   "width": 80.0,
   "time_start": "2026-01-27T10:00:00Z",
   "time_end": "2026-01-28T10:00:00Z",
-  "picture_urls": ["https://.../image1.jpg", "https://.../image2.jpg"]
+  "picture_keys": ["some-key-1", "some-key-2"]
 }
 ```
 
@@ -419,19 +433,32 @@ Create a new auction item. Seller supplies basic info + image URLs (uploaded sep
   "item": {
     "id": "uuid",
     "seller_id": "uuid",
+    "seller_username": "seller_123",
     "title": "Sunset on Canvas",
     "description": "A warm, calm landscape...",
     "author": "Unknown",
     "base_price": 10000,
     "increment": 500,
+    "year_created": 1995,
+    "height": 60.0,
+    "width": 80.0,
     "status": "draft",
     "time_start": "2026-01-27T10:00:00Z",
     "time_end": "2026-01-28T10:00:00Z",
+    "highest_bid_id": "uuid",
+    "highest_bid_amount": null,
+    "highest_bidder_id": null,
+    "highest_bid_time": null,
     "pictures": [
       {
         "id": "uuid",
         "item_id": "uuid",
-        "url": "https://.../image1.jpg",
+        "url": "some-key-1",
+        "created_at": "2026-01-27T09:00:10Z"
+      }, {
+        "id": "uuid",
+        "item_id": "uuid",
+        "url": "some-key-2",
         "created_at": "2026-01-27T09:00:10Z"
       }
     ]

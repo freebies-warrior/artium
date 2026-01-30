@@ -46,7 +46,7 @@ Legend:
 ### Bids
 - [x] `POST /items/{id}/bids` (place bid)
 - [x] `GET /items/{id}/bids` (history)
-- [ ] Concurrency-safe bidding (DB transaction + row lock OR DB trigger)
+- [x] Concurrency-safe bidding (DB transaction + row lock OR DB trigger)
 
 ### Uploads / Pictures
 - [ ] `POST /uploads` (optional signed URL)

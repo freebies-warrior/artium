@@ -35,11 +35,13 @@ func main() {
 		// Functions / Procedures
 		"apps/backend/migrations/functions/tg_set_updated_at.sql",
 		"apps/backend/migrations/functions/validate_bid_before_insert.sql",
+		"apps/backend/migrations/functions/update_item_highest_bid_after_insert.sql",
 
 		// Triggers
 		"apps/backend/migrations/triggers/users_set_updated_at.sql",
 		"apps/backend/migrations/triggers/items_set_updated_at.sql",
 		"apps/backend/migrations/triggers/trg_validate_bid_before_insert.sql",
+		"apps/backend/migrations/triggers/trg_update_item_highest_bid_after_insert.sql",
 	}
 
 	ctx := context.Background()
@@ -57,11 +59,11 @@ func main() {
 
 	// Reset schema
 	resetSQL := `
-DROP SCHEMA IF EXISTS public CASCADE;
-CREATE SCHEMA public;
-GRANT ALL ON SCHEMA public TO postgres;
-GRANT ALL ON SCHEMA public TO public;
-`
+		DROP SCHEMA IF EXISTS public CASCADE;
+		CREATE SCHEMA public;
+		GRANT ALL ON SCHEMA public TO postgres;
+		GRANT ALL ON SCHEMA public TO public;
+	`
 	if _, err := tx.Exec(ctx, resetSQL); err != nil {
 		log.Fatalf("reset schema failed: %v", err)
 	}

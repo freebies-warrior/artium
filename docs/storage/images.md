@@ -78,6 +78,7 @@ Storing keys is better because:
 
 Purpose:
 - Generate a presigned PUT URL for uploading an image to R2.
+- Generate a presigned GET URL for preview as well
 - Return an object key which will later be stored in DB for item pictures.
 
 Auth:
@@ -94,11 +95,12 @@ Response JSON example:
 
     {
       "key": "uploads/<uid>/20260130T120000Z-acde1234abcd5678.jpg",
-      "upload_url": "https://<accountid>.r2.cloudflarestorage.com/<bucket>/uploads/...?...signature..."
+      "upload_url": "https://<accountid>.r2.cloudflarestorage.com/<bucket>/uploads/...?...signature...",
+      "view_url": "https://<accountid>.r2.cloudflarestorage.com/<bucket>/uploads/...?...signature..."
     }
 
 Notes:
-- upload_url expires (example: 10 minutes).
+- upload_url and view_url expires (example: 10 minutes).
 - Backend validates content_type starts with "image/".
 
 ### 2) PUT <upload_url> (Direct-to-R2)

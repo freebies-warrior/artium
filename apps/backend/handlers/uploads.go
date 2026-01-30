@@ -30,6 +30,7 @@ type presignReq struct {
 type presignPutResp struct {
 	Key       string `json:"key"`
 	UploadURL string `json:"upload_url"`
+	ViewURL	  string `json:"view_url,omitempty"`
 }
 
 func NewUploadHandler(bucket string, s3Client *s3.Client) *UploadHandler {
@@ -97,7 +98,7 @@ func (h *UploadHandler) PresignPut(c *gin.Context) {
 
 	key := "uploads/" + uid + "/" + time.Now().UTC().Format("20060102T150405Z") + "-" + randHex(16) + ext
 
-	out, err := h.presigner.PresignPutObject(
+	putOut, err := h.presigner.PresignPutObject(
 		c.Request.Context(),
 		&s3.PutObjectInput{
 			Bucket:      aws.String(h.bucket),
@@ -113,9 +114,25 @@ func (h *UploadHandler) PresignPut(c *gin.Context) {
 		return
 	}
 
+	getOut, err := h.presigner.PresignGetObject(
+		c.Request.Context(),
+		&s3.GetObjectInput{
+			Bucket: aws.String(h.bucket),
+			Key:    aws.String(key),
+		},
+		func(o *s3.PresignOptions) {
+			o.Expires = 72 * time.Hour
+		},
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to presign view url", nil))
+		return
+	}
+
 	c.JSON(http.StatusOK, presignPutResp{
 		Key:       key,
-		UploadURL: out.URL,
+		UploadURL: putOut.URL,
+		ViewURL:   getOut.URL,
 	})
 }
 

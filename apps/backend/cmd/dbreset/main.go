@@ -33,6 +33,7 @@ func main() {
 		"apps/backend/migrations/tables/bids.sql",
 
 		// Functions / Procedures
+		"apps/backend/migrations/functions/items_set_status_from_time.sql",
 		"apps/backend/migrations/functions/tg_set_updated_at.sql",
 		"apps/backend/migrations/functions/validate_bid_before_insert.sql",
 
@@ -40,6 +41,7 @@ func main() {
 		"apps/backend/migrations/triggers/users_set_updated_at.sql",
 		"apps/backend/migrations/triggers/items_set_updated_at.sql",
 		"apps/backend/migrations/triggers/trg_validate_bid_before_insert.sql",
+		"apps/backend/migrations/triggers/trg_items_set_status_from_time.sql",
 	}
 
 	ctx := context.Background()

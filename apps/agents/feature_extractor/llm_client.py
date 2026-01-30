@@ -64,16 +64,27 @@ class VisionLLMClient:
         )
         print("Client responded")
         text = (resp.text or "").strip()
-        
-        if not text:
-            raise ValueError(f"Empty response from LLM. Response: {resp}")
-        
         text = text.removeprefix("```json").removeprefix("```").split("```")[0].strip()
-        
-        if not text:
-            raise ValueError(f"Empty text after cleaning. Original response text: {resp.text}")
-        
         return json.loads(text)
+    
+    def generate_text(
+        self,
+        prompt: str,
+        image_jpeg_bytes: Optional[bytes] = None,
+        images_jpeg_bytes: Optional[List[bytes]] = None,
+    ) -> str:
+        """Generate plain text response (not JSON)."""
+        contents = [prompt]
+        if images_jpeg_bytes:
+            contents.extend([self._img_part_from_bytes(b) for b in images_jpeg_bytes])
+        elif image_jpeg_bytes is not None:
+            contents.append(self._img_part_from_bytes(image_jpeg_bytes))
+
+        resp = self.client.models.generate_content(
+            model=self.model,
+            contents=contents,
+        )
+        return (resp.text or "").strip()
     
     def edit_image(self, model: str, prompt: str, room: Image.Image, art: Image.Image | None = None) -> Image.Image:
         contents = [prompt, self._img_part(room)]
@@ -100,3 +111,6 @@ class GeminiVisionClient(VisionLLMClient):
 
     def infer_json(self, prompt: str, image_bytes: bytes) -> Dict[str, Any]:
         return self.client.generate_json(prompt=prompt, image_jpeg_bytes=image_bytes)
+    
+    def infer_text(self, prompt: str, image_bytes: bytes) -> str:
+        return self.client.generate_text(prompt=prompt, image_jpeg_bytes=image_bytes)

@@ -19,7 +19,6 @@ def parse_args():
     p.add_argument("--author", default="Unknown")
     p.add_argument("--year", default=None)
     p.add_argument("--image-url", required=True)
-    p.add_argument("--artwork-type", choices=["painting", "sculpture"], default="painting", help="Type of artwork")
     p.add_argument("--medium-hint", default=None)
     p.add_argument("--out", default="features.json")
     return p.parse_args()
@@ -39,7 +38,6 @@ def main():
 
     initial_state: FeatureState = {
         "metadata": md,
-        "artwork_type": args.artwork_type,
         "image_bytes": image_bytes,
         "image_mode": image_mode,
         "image_size": image_size,

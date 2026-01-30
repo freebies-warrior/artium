@@ -8,6 +8,7 @@ from langgraph.types import Command
 
 from .types import FeatureState
 from .llm_client import VisionLLMClient
+from .classifier_node import artwork_classifier_node
 from .brushstroke_node import brushstroke_node
 from .blending_node import blending_node
 from .physicality_node import physicality_node
@@ -91,6 +92,8 @@ def finalize_node(state: FeatureState) -> Command:
 def build_graph(vision_llm: VisionLLMClient):
     g = StateGraph(FeatureState)
 
+    # Classifier node - entry point
+    g.add_node("artwork_classifier", artwork_classifier_node(vision_llm))
     g.add_node("state_coordinator", state_coordinator_node)
     
     # Painting branch
@@ -110,7 +113,11 @@ def build_graph(vision_llm: VisionLLMClient):
     g.add_node("market_agent", market_intelligence_node(search_fn=serpapi_search))
     g.add_node("finalize", finalize_node)
 
-    g.set_entry_point("state_coordinator")
+    # Entry point: classifier determines artwork type first
+    g.set_entry_point("artwork_classifier")
+    
+    # Classifier routes to coordinator (or END if not artwork)
+    g.add_edge("artwork_classifier", "state_coordinator")
 
     # Painting branch edges (extraction nodes → aggregator → coordinator)
     g.add_edge("brushstroke_agent", "vision_aggregate_painting")

@@ -1,6 +1,9 @@
 package handlers
 
-import "backend/database"
+import (
+	"backend/database"
+	"backend/utils/email"
+)
 
 type HandlerSet struct {
 	Auth *AuthHandler
@@ -14,11 +17,12 @@ func NewHandlerSet(
 	items *database.ItemDatabase,
 	pictures *database.PictureDatabase,
 	bids *database.BidDatabase,
+	emailService *email.Service,
 	jwtSecret []byte,
 	appBaseURL string,
 ) *HandlerSet {
 	return &HandlerSet{
-		Auth: NewAuthHandler(users, tokens, jwtSecret, appBaseURL),
+		Auth: NewAuthHandler(users, tokens, emailService, jwtSecret, appBaseURL),
 		Items: NewItemsHandler(items, pictures),
 		Bids: NewBidsHandler(bids, items),
 	}

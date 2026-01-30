@@ -7,6 +7,7 @@ import (
 	"backend/app"
 	"backend/database"
 	"backend/handlers"
+	"backend/utils/email"
 
 	"github.com/joho/godotenv"
 )
@@ -18,6 +19,15 @@ func main() {
 	secret := mustEnv("JWT_SECRET")
 
 	appBaseURL := getenv("APP_BASE_URL", "http://localhost:3000")
+
+	emailService := email.New(email.Config{
+		Host:     mustEnv("SMTP_HOST"),
+		Port:     587, // keep simple for now
+		Username: mustEnv("SMTP_USERNAME"),
+		Password: mustEnv("SMTP_PASSWORD"),
+		FromName: mustEnv("EMAIL_FROM_NAME"),
+		FromAddr: mustEnv("EMAIL_FROM_ADDRESS"),
+	})
 
 	db := app.MustOpenDB(dsn)
 	defer db.Close()
@@ -34,6 +44,7 @@ func main() {
 		itemDatabase,
 		pictureDatabase,
 		bidDatabase,
+		emailService,
 		[]byte(secret),
 		appBaseURL,
 	)

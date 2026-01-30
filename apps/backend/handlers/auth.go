@@ -10,6 +10,7 @@ import (
 
 	"backend/database"
 	"backend/utils"
+	"backend/utils/email"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,6 +18,7 @@ import (
 type AuthHandler struct {
 	users      *database.UserDatabase
 	tokens     *database.EmailVerificationTokenDatabase
+	email	   *email.Service 
 	jwtSecret  []byte
 	appBaseURL string
 }
@@ -24,12 +26,14 @@ type AuthHandler struct {
 func NewAuthHandler(
 	users *database.UserDatabase,
 	tokens *database.EmailVerificationTokenDatabase,
+	emailService *email.Service,
 	jwtSecret []byte,
 	appBaseURL string,
 ) *AuthHandler {
 	return &AuthHandler{
 		users:      users,
 		tokens:     tokens,
+		email: emailService,
 		jwtSecret:  jwtSecret,
 		appBaseURL: appBaseURL,
 	}
@@ -252,6 +256,22 @@ func (h *AuthHandler) sendVerificationLink(ctx context.Context, userID, email st
 	}
 
 	verifyURL := h.appBaseURL + "/verify?token=" + rawToken
+
+	expiryMinutes := int(time.Until(expires).Minutes())
+
+	if err := h.email.SendVerificationEmail(
+		email,
+		verifyURL,
+		expiryMinutes,
+	); err != nil {
+		log.Printf(
+			"failed to send verification email user_id=%s err=%v",
+			userID,
+			err,
+		)
+		return err
+	}
+
 	log.Printf("[DEV] verification link for %s: %s", email, verifyURL)
 
 	return nil

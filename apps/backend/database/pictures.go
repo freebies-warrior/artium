@@ -17,6 +17,7 @@ type PicturePublic struct {
 	ID        string `json:"id"`
 	ItemID    string `json:"item_id"`
 	Key       string `json:"key"`
+	URL       string `json:"url,omitempty"` // filled in handler (signed url)
 	CreatedAt string `json:"created_at"`
 }
 

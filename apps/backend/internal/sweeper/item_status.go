@@ -10,6 +10,13 @@ import (
 const lockID int64 = 67 // for pg advisory lock identification
 
 func SweepOnce(ctx context.Context, db *sql.DB) error {
+	// pin to one connection
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
 	start := time.Now()
 
 	// Ensure only one instance sweeps (important if you ever scale replicas)
@@ -23,7 +30,7 @@ func SweepOnce(ctx context.Context, db *sql.DB) error {
 	defer func() { _, _ = db.ExecContext(context.Background(), `SELECT pg_advisory_unlock($1)`, lockID) }()
 
 	var ended, activated int
-	if err := db.QueryRowContext(ctx, `SELECT ended_count, activated_count FROM public.sweep_item_statuses()`).Scan(&ended, &activated); err != nil {
+	if err := db.QueryRowContext(ctx, `SELECT ended_count, activated_count FROM sweep_item_statuses()`).Scan(&ended, &activated); err != nil {
 		return err
 	}
 
@@ -35,6 +42,9 @@ func SweepOnce(ctx context.Context, db *sql.DB) error {
 }
 
 func Start(ctx context.Context, db *sql.DB, interval time.Duration) {
+	if err := SweepOnce(ctx, db); err != nil {
+		log.Printf("status_sweeper error: %v", err)
+	}
 	ticker := time.NewTicker(interval)
 	go func() {
 		defer ticker.Stop()

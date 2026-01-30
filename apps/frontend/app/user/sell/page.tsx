@@ -16,13 +16,19 @@ export default function SellPage() {
   const [timeStart, setTimeStart] = useState('')
   const [timeEnd, setTimeEnd] = useState('')
 
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setError(null)
 
     if (!timeStart || !timeEnd) {
       alert('Please select start and end time')
       return
     }
+
+    setLoading(true)
 
     const res = await fetch('/api/items', {
       method: 'POST',
@@ -40,12 +46,21 @@ export default function SellPage() {
         width: width ? Number(width) : null,
         time_start: new Date(timeStart).toISOString(),
         time_end: new Date(timeEnd).toISOString(),
-        picture_urls: ['https://example.com/dummy.jpg'],
+        picture_keys: ['https://example.com/dummy.jpg'],
       }),
     })
 
     const data = await res.json()
     console.log(data)
+    setLoading(false)
+
+    if (res.ok && (data.item || data.id)) {
+      const itemId = data.item?.id ?? data.id
+      router.push(`/art/${itemId}`)
+      return
+    }
+
+    setError(data?.error?.message || 'Request failed')
   }
 
   return (
@@ -231,10 +246,16 @@ export default function SellPage() {
             <button
               type="submit"
               form="sell-form"
-              className="mt-auto w-full py-3 rounded bg-purple-500 text-white text-lg font-medium"
+              disabled={loading}
+              className="mt-auto w-full py-3 rounded bg-purple-500 text-white text-lg font-medium disabled:opacity-50"
             >
-              Publish
+              {loading ? 'Publishing…' : 'Publish'}
             </button>
+            {error && (
+              <div className="mb-4 rounded-md border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm text-red-400">
+                {error}
+              </div>
+            )}
           </div>
         </div>
       </div>

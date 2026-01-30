@@ -3,7 +3,7 @@ RETURNS TRIGGER AS $$
 BEGIN
     UPDATE items
     SET
-        highest_bid_amount = NEW.amount,
+        highest_bid_amount = NEW.price,
         highest_bidder_id  = NEW.user_id,
         highest_bid_at     = NEW.created_at
     WHERE id = NEW.item_id

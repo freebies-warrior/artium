@@ -9,3 +9,4 @@ CREATE TABLE IF NOT EXISTS bids (
 CREATE INDEX IF NOT EXISTS bids_item_id_timestamp_idx ON bids(item_id, timestamp DESC);
 CREATE INDEX IF NOT EXISTS bids_user_id_timestamp_idx ON bids(user_id, timestamp DESC);
 CREATE INDEX IF NOT EXISTS bids_item_price_desc_idx ON bids(item_id, price DESC);
+CREATE INDEX IF NOT EXISTS bids_item_PRICE_created_idx ON bids(item_id, price DESC, timestamp ASC);

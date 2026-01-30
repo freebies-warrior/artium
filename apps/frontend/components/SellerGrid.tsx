@@ -1,28 +1,91 @@
-'use client';
+'use client'
 
-import "../global.css";
-import { motion } from "framer-motion";
+import '../global.css'
+import { motion } from 'framer-motion'
 
 type Seller = {
-  id: number;
-  name: string;
-  username: string;
-  avatarLetter: string;
-  items: number;
-  volume: string; // keep as string like "12.4 ETH"
-};
+  id: number
+  name: string
+  username: string
+  avatarLetter: string
+  items: number
+  volume: string // keep as string like "12.4 ETH"
+}
 
 const sellers: Seller[] = [
-  { id: 1, name: "Shroomie", username: "@shroomie", avatarLetter: "S", items: 58, volume: "124.7 ETH" },
-  { id: 2, name: "BeKind2Robots", username: "@bekind2robots", avatarLetter: "B", items: 44, volume: "98.2 ETH" },
-  { id: 3, name: "Mr Fox", username: "@mrfox", avatarLetter: "M", items: 31, volume: "75.9 ETH" },
-  { id: 4, name: "Keepitreal", username: "@keepitreal", avatarLetter: "K", items: 29, volume: "63.1 ETH" },
-  { id: 5, name: "Robotica", username: "@robotica", avatarLetter: "R", items: 27, volume: "59.8 ETH" },
-  { id: 6, name: "MoonDancer", username: "@moondancer", avatarLetter: "M", items: 23, volume: "51.4 ETH" },
-  { id: 7, name: "NebulaKid", username: "@nebulakid", avatarLetter: "N", items: 21, volume: "49.2 ETH" },
-  { id: 8, name: "Animakid", username: "@animakid", avatarLetter: "A", items: 18, volume: "42.7 ETH" },
-  { id: 9, name: "Catch 22", username: "@catch22", avatarLetter: "C", items: 16, volume: "37.0 ETH" },
-];
+  {
+    id: 1,
+    name: 'Shroomie',
+    username: '@shroomie',
+    avatarLetter: 'S',
+    items: 58,
+    volume: '124.7 ETH',
+  },
+  {
+    id: 2,
+    name: 'BeKind2Robots',
+    username: '@bekind2robots',
+    avatarLetter: 'B',
+    items: 44,
+    volume: '98.2 ETH',
+  },
+  {
+    id: 3,
+    name: 'Mr Fox',
+    username: '@mrfox',
+    avatarLetter: 'M',
+    items: 31,
+    volume: '75.9 ETH',
+  },
+  {
+    id: 4,
+    name: 'Keepitreal',
+    username: '@keepitreal',
+    avatarLetter: 'K',
+    items: 29,
+    volume: '63.1 ETH',
+  },
+  {
+    id: 5,
+    name: 'Robotica',
+    username: '@robotica',
+    avatarLetter: 'R',
+    items: 27,
+    volume: '59.8 ETH',
+  },
+  {
+    id: 6,
+    name: 'MoonDancer',
+    username: '@moondancer',
+    avatarLetter: 'M',
+    items: 23,
+    volume: '51.4 ETH',
+  },
+  {
+    id: 7,
+    name: 'NebulaKid',
+    username: '@nebulakid',
+    avatarLetter: 'N',
+    items: 21,
+    volume: '49.2 ETH',
+  },
+  {
+    id: 8,
+    name: 'Animakid',
+    username: '@animakid',
+    avatarLetter: 'A',
+    items: 18,
+    volume: '42.7 ETH',
+  },
+  {
+    id: 9,
+    name: 'Catch 22',
+    username: '@catch22',
+    avatarLetter: 'C',
+    items: 16,
+    volume: '37.0 ETH',
+  },
+]
 
 function SellerCard({ seller, index }: { seller: Seller; index: number }) {
   return (
@@ -50,10 +113,9 @@ function SellerCard({ seller, index }: { seller: Seller; index: number }) {
             Visit
           </button>
         </div>
-
       </div>
     </motion.div>
-  );
+  )
 }
 
 export default function SellerGrid() {
@@ -67,5 +129,5 @@ export default function SellerGrid() {
         </div>
       </div>
     </section>
-  );
+  )
 }

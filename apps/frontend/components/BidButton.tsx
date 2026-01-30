@@ -1,72 +1,77 @@
-"use client";
+'use client'
 
-import * as React from "react";
-import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
-import { Button } from "./ui/Button";
+import * as React from 'react'
+import * as Dialog from '@radix-ui/react-dialog'
+import { X } from 'lucide-react'
+import { Button } from './ui/Button'
 
 type ItemForBid = {
-  id: string | undefined;
-  base_price: number | undefined;
-  increment: number | undefined;
-  title: string | undefined;
-};
-
-type BidButtonProps = {
-  item: ItemForBid;
-  triggerText?: string;
-};
-
-function fmtSGD(n: number) {
-  return n.toLocaleString();
+  id: string | undefined
+  base_price: number | undefined
+  increment: number | undefined
+  title: string | undefined
 }
 
-export default function BidButton({ item, triggerText = "Place Bid" }: BidButtonProps) {
-  const [bid, setBid] = React.useState<string>("");
-  const [submitting, setSubmitting] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+type BidButtonProps = {
+  item: ItemForBid
+  triggerText?: string
+}
 
-  const currentPrice = item.base_price ?? 0;
-  const increment = item.increment ?? 0;
-  const minBid = currentPrice + increment;
+function fmtSGD(n: number) {
+  return n.toLocaleString()
+}
 
-  const bidInt = bid === "" ? NaN : parseInt(bid, 10);
-  const canSubmit = Number.isFinite(bidInt) && bidInt >= minBid && !submitting;
+export default function BidButton({
+  item,
+  triggerText = 'Place Bid',
+}: BidButtonProps) {
+  const [bid, setBid] = React.useState<string>('')
+  const [submitting, setSubmitting] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const currentPrice = item.base_price ?? 0
+  const increment = item.increment ?? 0
+  const minBid = currentPrice + increment
+
+  const bidInt = bid === '' ? NaN : parseInt(bid, 10)
+  const canSubmit = Number.isFinite(bidInt) && bidInt >= minBid && !submitting
 
   async function submitBid() {
-    if (!canSubmit) return;
+    if (!canSubmit) return
     if (!item.id) {
-      setError("Missing item id.");
-      return;
+      setError('Missing item id.')
+      return
     }
 
-    setSubmitting(true);
-    setError(null);
+    setSubmitting(true)
+    setError(null)
 
     try {
       // ✅ call Next.js proxy route (server reads httpOnly cookie and adds Bearer)
       const res = await fetch(`/api/items/${item.id}/bids`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ price: bidInt }),
-      });
+      })
 
       if (!res.ok) {
-        const text = await res.text();
-        const data = text ? JSON.parse(text) : {};
+        const text = await res.text()
+        const data = text ? JSON.parse(text) : {}
         throw new Error(
           data?.error?.message ??
             data?.message ??
-            (res.status === 401 ? "Please log in to place a bid." : "Failed to place bid")
-        );
+            (res.status === 401
+              ? 'Please log in to place a bid.'
+              : 'Failed to place bid')
+        )
       }
 
-      setBid("");
-      alert("Bid placed successfully!");
+      setBid('')
+      alert('Bid placed successfully!')
     } catch (e: any) {
-      setError(e?.message ?? "Failed to place bid");
+      setError(e?.message ?? 'Failed to place bid')
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
   }
 
@@ -82,10 +87,12 @@ export default function BidButton({ item, triggerText = "Place Bid" }: BidButton
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" />
 
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-neutral-800 p-6 shadow-lg">
-          <Dialog.Title className="mb-2 text-xl font-bold">Place a Bid</Dialog.Title>
+          <Dialog.Title className="mb-2 text-xl font-bold">
+            Place a Bid
+          </Dialog.Title>
 
           <Dialog.Description className="mb-6 text-sm text-muted-foreground">
-            You are bidding on{" "}
+            You are bidding on{' '}
             <span className="font-medium text-primary">{item.title}</span>
           </Dialog.Description>
 
@@ -97,7 +104,9 @@ export default function BidButton({ item, triggerText = "Place Bid" }: BidButton
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">Minimum Bid</p>
-                <p className="font-semibold text-primary">SGD {fmtSGD(minBid)}</p>
+                <p className="font-semibold text-primary">
+                  SGD {fmtSGD(minBid)}
+                </p>
               </div>
             </div>
 
@@ -108,7 +117,7 @@ export default function BidButton({ item, triggerText = "Place Bid" }: BidButton
                   type="text"
                   inputMode="numeric"
                   value={bid}
-                  onChange={(e) => setBid(e.target.value.replace(/[^\d]/g, ""))}
+                  onChange={(e) => setBid(e.target.value.replace(/[^\d]/g, ''))}
                   className="w-full rounded-md border border-border bg-background px-3 py-2 pr-14"
                   placeholder="Enter amount"
                 />
@@ -125,7 +134,7 @@ export default function BidButton({ item, triggerText = "Place Bid" }: BidButton
             </Button>
 
             <Button fullWidth disabled={!canSubmit} onClick={submitBid}>
-              {submitting ? "Submitting…" : "Submit Bid"}
+              {submitting ? 'Submitting…' : 'Submit Bid'}
             </Button>
           </div>
 
@@ -137,5 +146,5 @@ export default function BidButton({ item, triggerText = "Place Bid" }: BidButton
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-  );
+  )
 }

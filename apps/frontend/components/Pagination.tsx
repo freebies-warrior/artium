@@ -1,19 +1,19 @@
-"use client";
+'use client'
 
 type PaginationProps = {
-  page: number;
-  hasNext?: boolean;        // clearer name
-  onPageChange: (p: number) => void;
-};
+  page: number
+  hasNext?: boolean // clearer name
+  onPageChange: (p: number) => void
+}
 
 export default function Pagination({
   page,
   hasNext = false,
   onPageChange,
 }: PaginationProps) {
-  const clamp = (p: number) => Math.max(1, p);
-  const goTo = (p: number) => onPageChange(clamp(p));
-  const next = () => goTo(page + 1);
+  const clamp = (p: number) => Math.max(1, p)
+  const goTo = (p: number) => onPageChange(clamp(p))
+  const next = () => goTo(page + 1)
 
   return (
     <div className="mt-8 flex flex-col items-center gap-3">
@@ -27,5 +27,5 @@ export default function Pagination({
         </button>
       </div>
     </div>
-  );
+  )
 }

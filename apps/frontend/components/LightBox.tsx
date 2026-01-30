@@ -1,12 +1,12 @@
-'use client';
+'use client'
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react'
+import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 type Img = {
-  src: string;
-  alt?: string;
-};
+  src: string
+  alt?: string
+}
 
 export default function Lightbox({
   images,
@@ -14,64 +14,66 @@ export default function Lightbox({
   isOpen,
   onClose,
 }: {
-  images: Img[];
-  initialIndex?: number;
-  isOpen: boolean;
-  onClose: () => void;
+  images: Img[]
+  initialIndex?: number
+  isOpen: boolean
+  onClose: () => void
 }) {
-  const safeImages = useMemo(() => images?.filter(Boolean) ?? [], [images]);
-  const [index, setIndex] = useState(() => Math.min(Math.max(0, initialIndex), safeImages.length - 1));
+  const safeImages = useMemo(() => images?.filter(Boolean) ?? [], [images])
+  const [index, setIndex] = useState(() =>
+    Math.min(Math.max(0, initialIndex), safeImages.length - 1)
+  )
 
   // Keep index in sync when opening / changing initialIndex
   useEffect(() => {
-    if (!isOpen) return;
-    const next = Math.min(Math.max(0, initialIndex), safeImages.length - 1);
-    setIndex(next);
-  }, [isOpen, initialIndex, safeImages.length]);
+    if (!isOpen) return
+    const next = Math.min(Math.max(0, initialIndex), safeImages.length - 1)
+    setIndex(next)
+  }, [isOpen, initialIndex, safeImages.length])
 
-  const hasMany = safeImages.length > 1;
+  const hasMany = safeImages.length > 1
 
   const goPrev = () => {
-    if (!hasMany) return;
-    setIndex((i) => (i - 1 + safeImages.length) % safeImages.length);
-  };
+    if (!hasMany) return
+    setIndex((i) => (i - 1 + safeImages.length) % safeImages.length)
+  }
 
   const goNext = () => {
-    if (!hasMany) return;
-    setIndex((i) => (i + 1) % safeImages.length);
-  };
+    if (!hasMany) return
+    setIndex((i) => (i + 1) % safeImages.length)
+  }
 
   // Keyboard controls + lock scroll
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) return
 
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowLeft') goPrev();
-      if (e.key === 'ArrowRight') goNext();
-    };
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowLeft') goPrev()
+      if (e.key === 'ArrowRight') goNext()
+    }
 
-    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keydown', onKeyDown)
     return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = prevOverflow;
-    };
+      window.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = prevOverflow
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, safeImages.length]);
+  }, [isOpen, safeImages.length])
 
-  if (!isOpen || safeImages.length === 0) return null;
+  if (!isOpen || safeImages.length === 0) return null
 
-  const current = safeImages[index];
+  const current = safeImages[index]
 
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80"
       onMouseDown={(e) => {
         // click outside image to close
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) onClose()
       }}
       aria-modal="true"
       role="dialog"
@@ -144,5 +146,5 @@ export default function Lightbox({
         </div>
       </div>
     </div>
-  );
+  )
 }

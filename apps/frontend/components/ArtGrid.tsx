@@ -1,19 +1,19 @@
-'use client';
+'use client'
 
-import '../global.css';
-import * as React from 'react';
-import { motion } from 'framer-motion';
-import Link from 'next/link';
+import '../global.css'
+import * as React from 'react'
+import { motion } from 'framer-motion'
+import Link from 'next/link'
 
-import artApe from '../assets/nft-ape.jpg';
+import artApe from '../assets/nft-ape.jpg'
 
 export type ArtUI = {
-  id: string;
-  title: string;
-  author: string;
-  highestBid: string;
-  due: string;
-};
+  id: string
+  title: string
+  author: string
+  highestBid: string
+  due: string
+}
 
 const ArtCard = ({ art, index }: { art: ArtUI; index: number }) => {
   return (
@@ -57,14 +57,14 @@ const ArtCard = ({ art, index }: { art: ArtUI; index: number }) => {
         </div>
       </motion.div>
     </Link>
-  );
-};
+  )
+}
 
 type ArtGridProps = {
-  items: ArtUI[];
-  loading?: boolean;
-  error?: string | null;
-};
+  items: ArtUI[]
+  loading?: boolean
+  error?: string | null
+}
 
 export default function ArtGrid({ items, loading, error }: ArtGridProps) {
   return (
@@ -88,5 +88,5 @@ export default function ArtGrid({ items, loading, error }: ArtGridProps) {
         )}
       </div>
     </section>
-  );
+  )
 }

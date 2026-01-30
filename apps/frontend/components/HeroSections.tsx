@@ -1,14 +1,14 @@
-'use client';
-import '../global.css';
+'use client'
+import '../global.css'
 
-import { Search } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Search } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 type HeroSectionProps = {
-  search: string;
-  onSearchChange: (value: string) => void;
-  onSearchSubmit?: () => void;
-};
+  search: string
+  onSearchChange: (value: string) => void
+  onSearchSubmit?: () => void
+}
 
 export default function HeroSection({
   search,
@@ -46,7 +46,7 @@ export default function HeroSection({
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') onSearchSubmit?.();
+                if (e.key === 'Enter') onSearchSubmit?.()
               }}
             />
             <button
@@ -60,5 +60,5 @@ export default function HeroSection({
         </motion.div>
       </div>
     </section>
-  );
+  )
 }

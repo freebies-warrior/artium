@@ -1,62 +1,62 @@
-"use client";
+'use client'
 
-import * as React from "react";
-import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
-import { Button } from "./ui/Button";
+import * as React from 'react'
+import * as Dialog from '@radix-ui/react-dialog'
+import { X } from 'lucide-react'
+import { Button } from './ui/Button'
 
 type PreviewButtonProps = {
-  nftName?: string;
-  triggerText?: string;
-  onSubmit?: (file: File) => void; // optional hook for later
-};
+  nftName?: string
+  triggerText?: string
+  onSubmit?: (file: File) => void // optional hook for later
+}
 
 export default function PreviewButton({
-  nftName = "The Orbitians",
-  triggerText = "View in your space",
+  nftName = 'The Orbitians',
+  triggerText = 'View in your space',
   onSubmit,
 }: PreviewButtonProps) {
-  const [file, setFile] = React.useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+  const [file, setFile] = React.useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null)
 
-  const canSubmit = !!file;
+  const canSubmit = !!file
 
   function pickFile(next: File | null) {
-    if (!next) return;
+    if (!next) return
 
     // ✅ Only 1 photo allowed: replace existing
-    setFile(next);
+    setFile(next)
 
-    const url = URL.createObjectURL(next);
+    const url = URL.createObjectURL(next)
     setPreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return url;
-    });
+      if (prev) URL.revokeObjectURL(prev)
+      return url
+    })
   }
 
   function clearFile() {
-    setFile(null);
+    setFile(null)
     setPreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return null;
-    });
+      if (prev) URL.revokeObjectURL(prev)
+      return null
+    })
   }
 
   function handleSubmit() {
-    if (!file) return;
+    if (!file) return
 
     // Placeholder logic; replace later with your upload/generation call
-    console.log("Submit room photo for:", nftName, file);
+    console.log('Submit room photo for:', nftName, file)
 
-    onSubmit?.(file);
+    onSubmit?.(file)
   }
 
   // Cleanup on unmount
   React.useEffect(() => {
     return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-  }, [previewUrl]);
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+    }
+  }, [previewUrl])
 
   return (
     <Dialog.Root
@@ -95,7 +95,7 @@ export default function PreviewButton({
               Preview in your space
             </Dialog.Title>
             <Dialog.Description className="text-sm text-muted-foreground">
-              Upload 1 photo of your room to preview{" "}
+              Upload 1 photo of your room to preview{' '}
               <span className="text-primary font-medium">{nftName}</span>.
             </Dialog.Description>
           </div>
@@ -117,8 +117,12 @@ export default function PreviewButton({
                   htmlFor="room-photo"
                   className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-background/40 px-4 py-8 text-center hover:bg-muted transition"
                 >
-                  <div className="text-sm font-medium">Click to upload a room photo</div>
-                  <div className="text-xs text-muted-foreground">PNG / JPG • 1 photo only</div>
+                  <div className="text-sm font-medium">
+                    Click to upload a room photo
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    PNG / JPG • 1 photo only
+                  </div>
                 </label>
               ) : (
                 <div className="space-y-3">
@@ -132,7 +136,8 @@ export default function PreviewButton({
 
                   <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
                     <p className="text-xs text-muted-foreground">
-                      Selected: <span className="text-foreground">{file?.name}</span>
+                      Selected:{' '}
+                      <span className="text-foreground">{file?.name}</span>
                     </p>
 
                     <div className="flex gap-2">
@@ -153,7 +158,8 @@ export default function PreviewButton({
                   </div>
 
                   <p className="text-xs text-muted-foreground">
-                    Tip: Use a well-lit photo with a clear wall for best results.
+                    Tip: Use a well-lit photo with a clear wall for best
+                    results.
                   </p>
                 </div>
               )}
@@ -181,5 +187,5 @@ export default function PreviewButton({
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-  );
+  )
 }

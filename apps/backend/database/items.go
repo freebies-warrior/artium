@@ -333,6 +333,11 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
 	return items, next, nil
 }
 
+func (r *ItemDatabase) UpdateItemStatus(ctx context.Context, itemID string) error {
+	_, err := r.db.ExecContext(ctx, `SELECT refresh_item_status($1::uuid)`, itemID)
+	return err
+}
+
 func (r *ItemDatabase) Exists(ctx context.Context, itemID string) (bool, error) {
 	var exists bool
 	err := r.db.QueryRowContext(ctx,

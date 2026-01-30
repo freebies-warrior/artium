@@ -30,7 +30,7 @@ Rules:
 2) Scale the artwork realistically relative to furniture/wall space.
 3) Align the artwork to the wall perspective (do not look "floating").
 4) Add subtle realistic shadow/contact lighting.
-5) If the artwork is a painting, add a simple tasteful frame that fits the room style.
+5) If the artwork is a painting, add a suitable frame that fits the room style.
 6) Do not add extra paintings or duplicates.
 7) If the room has no suitable wall space, place the artwork on an easel or leaning against a wall.
 8) Ensure that the original room elements are visible, INCLUDING OTHER WALL DECOR (do not cover or remove them).

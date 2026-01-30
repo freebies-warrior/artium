@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS items (
 	highest_bid_id uuid,
 	highest_bid_amount BIGINT,
 	highest_bidder_id uuid REFERENCES users(id),
-	hightest_bid_time timestamptz,
+	highest_bid_time timestamptz,
 	created_at timestamptz NOT NULL DEFAULT now(),
 	updated_at timestamptz NOT NULL DEFAULT now(),
 	CHECK (time_end > time_start)

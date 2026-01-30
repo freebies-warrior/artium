@@ -51,25 +51,30 @@ def run_pipeline_langgraph(cfg: VisualizerConfig, room_path: str, art_path: str)
     }
 
     def node_judge(s: VizState) -> VizState:
+        print("Judge")
         s["room_quality"] = room_judge(s["client"], s["cfg"], s["room_img"])
         return s
 
     def node_enhance(s: VizState) -> VizState:
+        print("Enhance")
         if s["cfg"].enhance_if_low_quality and s["room_quality"].verdict == "NEEDS_ENHANCEMENT":
             s["room_img"] = room_enhance(s["client"], s["cfg"], s["room_img"])
             s["used_enhancement"] = True
         return s
 
     def node_composite(s: VizState) -> VizState:
+        print("Composite")
         s["out_img"] = composite_install(s["client"], s["cfg"], s["room_img"], s["art_img"])
         s["placement"] = locate_artwork(s["client"], s["cfg"], s["room_img"], s["out_img"])
         return s
 
     def node_critic(s: VizState) -> VizState:
+        print("Critic")
         s["critic"] = critic(s["client"], s["cfg"], s["out_img"])
         return s
 
     def node_retry(s: VizState) -> VizState:
+        print("Retry")
         s["retries_used"] += 1
         fix = s["critic"].suggested_fix or "Improve realism of scale, perspective, and shadow. Keep it photorealistic. Do not remove anything from the original room."
         s["out_img"] = composite_install(s["client"], s["cfg"], s["room_img"], s["art_img"], extra_fix_instruction=fix)
@@ -77,6 +82,7 @@ def run_pipeline_langgraph(cfg: VisualizerConfig, room_path: str, art_path: str)
         return s
     
     def node_appraisal(s: VizState) -> VizState:
+        print("Appraisal")
         s["appraisal"] = appraise_installation(s["client"], s["cfg"], s["out_img"], s["placement"])
         return s
 

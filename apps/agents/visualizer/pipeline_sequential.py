@@ -31,7 +31,9 @@ def _load_image(path: str) -> Image.Image:
 
 
 def room_judge(client: GeminiClient, cfg: VisualizerConfig, room_img: Image.Image) -> RoomQualityReport:
+    print("Asking room judge: waiting")
     data = client.generate_json(cfg.gemini_text_model, ROOM_JUDGE_PROMPT, image=room_img)
+    print("Room judge responded")
     verdict = data.get("verdict", "OK")
     reasons = data.get("reasons", "")
     if verdict not in ("OK", "NEEDS_ENHANCEMENT"):

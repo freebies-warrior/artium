@@ -44,11 +44,13 @@ class GeminiClient:
         elif image is not None:
             contents.append(self._img_part(image))
 
+        print("Before client")
         resp = self.client.models.generate_content(
             model=model,
             contents=contents,
             config=types.GenerateContentConfig(response_mime_type="application/json"),
         )
+        print("Client responded")
         text = (resp.text or "").strip()
         text = text.removeprefix("```json").removeprefix("```").split("```")[0].strip()
         return json.loads(text)

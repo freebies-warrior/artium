@@ -3,7 +3,10 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Optional
+from io import BytesIO
+from urllib.parse import urlparse
 
+import requests
 from PIL import Image
 
 from .config import VisualizerConfig
@@ -13,6 +16,29 @@ from .pipeline_sequential import run_pipeline_sequential
 
 def _ensure_parent_dir(path: str) -> None:
     Path(path).parent.mkdir(parents=True, exist_ok=True)
+
+
+def _save_image(out_img: Image.Image, out_path: str) -> str:
+    """Save image to local path or upload via PUT if out_path is an HTTP(S) URL."""
+    parsed = urlparse(out_path)
+    if parsed.scheme in {"http", "https"}:
+        buf = BytesIO()
+        out_img.save(buf, format="JPEG")
+        buf.seek(0)
+        print("Uploading image to remote path")
+        resp = requests.put(
+            out_path,
+            data=buf.getvalue(),
+            headers={"Content-Type": "image/jpeg"},
+            timeout=30,
+        )
+        print("Upload response:", resp.status_code, resp.text)
+        resp.raise_for_status()
+        return out_path
+
+    _ensure_parent_dir(out_path)
+    out_img.save(out_path, format="JPEG")
+    return out_path
 
 
 def visualize_installation(
@@ -26,12 +52,15 @@ def visualize_installation(
     Will use LangGraph if installed, else sequential fallback.
     """
     cfg = cfg or VisualizerConfig()
-    _ensure_parent_dir(out_path)
 
     # Prefer langgraph if available
     use_langgraph = os.getenv("VISUALIZER_USE_LANGGRAPH", "1") == "1"
+    placement = None
+    appraisal = None
+
     if use_langgraph:
         try:
+            print("Trying langgraph pipeline")
             from .pipeline_langgraph import run_pipeline_langgraph  # noqa
             final = run_pipeline_langgraph(cfg, room_path, art_path)
             out_img = final["out_img"]
@@ -39,8 +68,8 @@ def visualize_installation(
             retries_used = int(final.get("retries_used", 0))
             room_quality = final["room_quality"]
             crit = final["critic"]
-            placement = final.get("placement", None)
-            appraisal = final.get("appraisal", None)
+            placement = final.get("placement")
+            appraisal = final.get("appraisal")
         except Exception as e:
             print(f"LangGraph pipeline failed with error: {e}")
             # fallback silently
@@ -53,10 +82,10 @@ def visualize_installation(
             cfg, room_path, art_path
         )
 
-    out_img.save(out_path)
+    saved_path = _save_image(out_img, out_path)
 
     return VisualizerResult(
-        out_path=out_path,
+        out_path=saved_path,
         used_enhancement=used_enhancement,
         retries_used=retries_used,
         room_quality=room_quality,

@@ -21,7 +21,7 @@ func NewItemDatabase(db *sql.DB) *ItemDatabase {
 type Item struct {
 	ID               string          `json:"id"`
 	SellerID         string          `json:"seller_id"`
-	SellerUsername   *string         `json:"seller_username,omitempty"` // filled in handler
+	SellerUsername   *string         `json:"seller_username,omitempty"`
 	Title            string          `json:"title"`
 	Description      *string         `json:"description,omitempty"`
 	Author           *string         `json:"author,omitempty"`
@@ -88,7 +88,13 @@ func (r *ItemDatabase) CreateItem(ctx context.Context, a CreateItemArgs) (Item, 
 		outYear sql.NullInt32
 		outH    sql.NullFloat64
 		outW    sql.NullFloat64
-		feat    []byte
+
+		outHighestBidID     sql.NullString
+		outHighestBidAmount sql.NullInt64
+		outHighestBidderID  sql.NullString
+		outHighestBidTime   sql.NullTime
+
+		featStr string
 	)
 
 	var it Item
@@ -121,12 +127,12 @@ func (r *ItemDatabase) CreateItem(ctx context.Context, a CreateItemArgs) (Item, 
 	).Scan(
 		&it.ID, &it.SellerID,
 		&it.Title, &outDesc, &outAuth,
-		&feat,
+		&featStr,
 		&outYear, &outH, &outW,
 		&it.BasePrice, &it.Increment, &it.Status,
 		&it.TimeStart, &it.TimeEnd,
-		&it.HighestBidId, &it.HighestBidAmount,
-		&it.HighestBidderId, &it.HighestBidTime,
+		&outHighestBidID, &outHighestBidAmount,
+		&outHighestBidderID, &outHighestBidTime,
 		&it.CreatedAt, &it.UpdatedAt,
 	)
 	if err != nil {
@@ -151,8 +157,24 @@ func (r *ItemDatabase) CreateItem(ctx context.Context, a CreateItemArgs) (Item, 
 		v := outW.Float64
 		it.Width = &v
 	}
+	if outHighestBidID.Valid {
+		v := outHighestBidID.String
+		it.HighestBidId = &v
+	}
+	if outHighestBidAmount.Valid {
+		v := outHighestBidAmount.Int64
+		it.HighestBidAmount = &v
+	}
+	if outHighestBidderID.Valid {
+		v := outHighestBidderID.String
+		it.HighestBidderId = &v
+	}
+	if outHighestBidTime.Valid {
+		v := outHighestBidTime.Time
+		it.HighestBidTime = &v
+	}
 
-	// features left nil for now
+	_ = featStr // features left nil for now
 	return it, nil
 }
 
@@ -165,7 +187,15 @@ func (r *ItemDatabase) GetItemByID(ctx context.Context, itemID string) (Item, er
 		outYear sql.NullInt32
 		outH    sql.NullFloat64
 		outW    sql.NullFloat64
-		feat    []byte
+
+		outSellerUsername sql.NullString
+
+		outHighestBidID     sql.NullString
+		outHighestBidAmount sql.NullInt64
+		outHighestBidderID  sql.NullString
+		outHighestBidTime   sql.NullTime
+
+		featStr string
 	)
 
 	var it Item
@@ -181,20 +211,19 @@ func (r *ItemDatabase) GetItemByID(ctx context.Context, itemID string) (Item, er
 			i.highest_bid_id::text, i.highest_bid_amount,
 			i.highest_bidder_id::text, i.highest_bid_time,
 			i.created_at, i.updated_at
-		FROM items i, users u
-		WHERE
-			i.id = $1::uuid
-			AND u.id = i.seller_id::uuid;
+		FROM items i
+		JOIN users u ON u.id = i.seller_id
+		WHERE i.id = $1::uuid
 	`, itemID).Scan(
 		&it.ID, &it.SellerID,
-		&it.SellerUsername,
+		&outSellerUsername,
 		&it.Title, &outDesc, &outAuth,
-		&feat,
+		&featStr,
 		&outYear, &outH, &outW,
 		&it.BasePrice, &it.Increment, &it.Status,
 		&it.TimeStart, &it.TimeEnd,
-		&it.HighestBidId, &it.HighestBidAmount,
-		&it.HighestBidderId, &it.HighestBidTime,
+		&outHighestBidID, &outHighestBidAmount,
+		&outHighestBidderID, &outHighestBidTime,
 		&it.CreatedAt, &it.UpdatedAt,
 	)
 	if err != nil {
@@ -204,6 +233,9 @@ func (r *ItemDatabase) GetItemByID(ctx context.Context, itemID string) (Item, er
 		return Item{}, err
 	}
 
+	if outSellerUsername.Valid {
+		it.SellerUsername = &outSellerUsername.String
+	}
 	if outDesc.Valid {
 		it.Description = &outDesc.String
 	}
@@ -222,7 +254,24 @@ func (r *ItemDatabase) GetItemByID(ctx context.Context, itemID string) (Item, er
 		v := outW.Float64
 		it.Width = &v
 	}
+	if outHighestBidID.Valid {
+		v := outHighestBidID.String
+		it.HighestBidId = &v
+	}
+	if outHighestBidAmount.Valid {
+		v := outHighestBidAmount.Int64
+		it.HighestBidAmount = &v
+	}
+	if outHighestBidderID.Valid {
+		v := outHighestBidderID.String
+		it.HighestBidderId = &v
+	}
+	if outHighestBidTime.Valid {
+		v := outHighestBidTime.Time
+		it.HighestBidTime = &v
+	}
 
+	_ = featStr
 	return it, nil
 }
 
@@ -265,7 +314,6 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
 		limit = 100
 	}
 
-	// status: convert "" -> NULL (so SQL can do $1::item_status IS NULL)
 	status := strings.ToLower(strings.TrimSpace(p.Status))
 	var statusParam any = nil
 	if status != "" {
@@ -286,7 +334,6 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
 	q := strings.TrimSpace(p.Query)
 	qLike := "%" + q + "%"
 
-	// cursor: avoid casting NULL to uuid in SQL by using a boolean flag
 	hasCursor := false
 	var curT time.Time
 	var curID string
@@ -299,7 +346,6 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
 		curT = *t
 		curID = *id
 	} else {
-		// dummy values (won't be used because hasCursor=false)
 		curT = time.Unix(0, 0).UTC()
 		curID = "00000000-0000-0000-0000-000000000000"
 	}
@@ -318,7 +364,7 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
         FROM items i
 		JOIN users u ON u.id = i.seller_id
         WHERE
-            ($1::item_status IS NULL OR status = $1::item_status)
+            ($1::item_status IS NULL OR i.status = $1::item_status)
 			AND ($2::uuid IS NULL OR i.seller_id = $2::uuid)
             AND ($3 = '' OR i.title ILIKE $4 OR COALESCE(i.author, '') ILIKE $4)
             AND (NOT $5 OR (i.created_at, i.id) < ($6, $7::uuid))
@@ -333,23 +379,67 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
 	items := make([]Item, 0, limit+1)
 	for rows.Next() {
 		var it Item
+
+		var outSellerUsername sql.NullString
 		var author sql.NullString
+		var outYear sql.NullInt32
+		var outH sql.NullFloat64
+		var outW sql.NullFloat64
+
+		var outHighestBidID sql.NullString
+		var outHighestBidAmount sql.NullInt64
+		var outHighestBidderID sql.NullString
+		var outHighestBidTime sql.NullTime
+
 		if err := rows.Scan(
 			&it.ID, &it.SellerID,
-			&it.SellerUsername,
+			&outSellerUsername,
 			&it.Title, &author,
 			&it.BasePrice, &it.Increment, &it.Status,
-			&it.YearCreated, &it.Height, &it.Width,
+			&outYear, &outH, &outW,
 			&it.TimeStart, &it.TimeEnd,
-			&it.HighestBidId, &it.HighestBidAmount,
-			&it.HighestBidderId, &it.HighestBidTime,
+			&outHighestBidID, &outHighestBidAmount,
+			&outHighestBidderID, &outHighestBidTime,
 			&it.CreatedAt, &it.UpdatedAt,
 		); err != nil {
 			return nil, nil, err
 		}
+
+		if outSellerUsername.Valid {
+			it.SellerUsername = &outSellerUsername.String
+		}
 		if author.Valid {
 			it.Author = &author.String
 		}
+		if outYear.Valid {
+			v := int(outYear.Int32)
+			it.YearCreated = &v
+		}
+		if outH.Valid {
+			v := outH.Float64
+			it.Height = &v
+		}
+		if outW.Valid {
+			v := outW.Float64
+			it.Width = &v
+		}
+		if outHighestBidID.Valid {
+			v := outHighestBidID.String
+			it.HighestBidId = &v
+		}
+		if outHighestBidAmount.Valid {
+			v := outHighestBidAmount.Int64
+			it.HighestBidAmount = &v
+		}
+		if outHighestBidderID.Valid {
+			v := outHighestBidderID.String
+			it.HighestBidderId = &v
+		}
+		if outHighestBidTime.Valid {
+			v := outHighestBidTime.Time
+			it.HighestBidTime = &v
+		}
+
 		items = append(items, it)
 	}
 	if err := rows.Err(); err != nil {

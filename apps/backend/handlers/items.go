@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -17,10 +18,11 @@ import (
 type ItemsHandler struct {
 	items    *database.ItemDatabase
 	pictures *database.PictureDatabase
+	uploads  *UploadHandler
 }
 
-func NewItemsHandler(items *database.ItemDatabase, pictures *database.PictureDatabase) *ItemsHandler {
-	return &ItemsHandler{items: items, pictures: pictures}
+func NewItemsHandler(items *database.ItemDatabase, pictures *database.PictureDatabase, uploads *UploadHandler) *ItemsHandler {
+	return &ItemsHandler{items: items, pictures: pictures, uploads: uploads}
 }
 
 type postItemReq struct {
@@ -48,6 +50,17 @@ type getItemResp struct {
 type listItemsResp struct {
 	Items      []database.Item `json:"items"`
 	NextCursor *string         `json:"next_cursor"`
+}
+
+func (h *ItemsHandler) presignPictures(ctx context.Context, pics []database.PicturePublic) error {
+	for i := range pics {
+		signed, err := h.uploads.PresignGetURL(ctx, pics[i].Key, 72*time.Hour)
+		if err != nil {
+			return err
+		}
+		pics[i].URL = signed
+	}
+	return nil
 }
 
 var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
@@ -155,6 +168,10 @@ func (h *ItemsHandler) GetItem(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to fetch pictures", nil))
 		return
 	}
+	if err := h.presignPictures(c.Request.Context(), pics); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to sign image urls", nil))
+		return
+	}
 	it.Pictures = pics
 
 	c.JSON(http.StatusOK, getItemResp{Item: it})
@@ -219,6 +236,13 @@ func (h *ItemsHandler) ListItems(c *gin.Context) {
 			items[i].Pictures = []database.PicturePublic{p}
 		} else {
 			items[i].Pictures = []database.PicturePublic{}
+		}
+	}
+
+	for i := range items {
+		if err := h.presignPictures(c.Request.Context(), items[i].Pictures); err != nil {
+			c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to sign image urls", nil))
+			return
 		}
 	}
 

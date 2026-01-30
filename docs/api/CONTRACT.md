@@ -473,6 +473,54 @@ Create a new auction item. Seller supplies basic info + image URLs (uploaded sep
 
 ---
 
+## Upload Endpoints
+
+## Get Presigned Upload Link
+
+- **Method:** `POST`
+- **Path:** `/uploads/presign`
+- **Auth:** none
+
+### Request
+
+```json
+{
+  "filename": "example.jpg",
+  "content_type": "image/jpeg"
+}
+```
+
+### Response `200`
+
+```json
+{
+  "key": "uploads/<uid>/20260130T120000Z-acde1234abcd5678.jpg",
+  "upload_url": "https://<accountid>.r2.cloudflarestorage.com/<bucket>/uploads/...?...signature...",
+  "view_url": "https://<accountid>.r2.cloudflarestorage.com/<bucket>/uploads/...?...signature..."
+}
+```
+
+### Errors
+
+- `400 VALIDATION_ERROR` (invalid file type)
+- `500 INTERNAL_ERROR`
+
+### Notes
+
+Purpose:
+- Generate a presigned PUT URL for uploading an image to R2.
+- Generate a presigned GET URL for preview as well
+- Return an object key which will later be stored in DB for item pictures.
+
+Auth:
+- Protected (requires user auth) so uploads are associated with a user.
+
+Notes:
+- upload_url and view_url expires (example: 10 minutes).
+- Backend validates content_type starts with "image/".
+
+---
+
 ## Bid Endpoints
 
 ## Place Bid

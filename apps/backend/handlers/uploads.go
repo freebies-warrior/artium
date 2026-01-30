@@ -105,7 +105,7 @@ func (h *UploadHandler) PresignPut(c *gin.Context) {
 			ContentType: aws.String(ct),
 		},
 		func(o *s3.PresignOptions) {
-			o.Expires = 10 * time.Minute
+			o.Expires = 72 * time.Hour
 		},
 	)
 	if err != nil {

@@ -5,11 +5,11 @@ BEGIN
     SET
         highest_bid_amount = NEW.price,
         highest_bidder_id  = NEW.user_id,
-        highest_bid_at     = NEW.created_at
+        highest_bid_time   = NEW.created_at
     WHERE id = NEW.item_id
         AND (
             highest_bid_amount IS NULL
-            OR NEW.amount > highest_bid_amount
+            OR NEW.price > highest_bid_amount
         );
 
     RETURN NEW;

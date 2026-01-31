@@ -38,6 +38,7 @@ INTERNAL_TOKEN = os.getenv("INTERNAL_TOKEN", "").strip()
 
 from feature_extractor.tools.image_tool import fetch_and_standardize_image  # noqa: E402
 from feature_extractor.types import ArtworkMetadata, FeatureState  # noqa: E402
+from feature_extractor.single_select import get_primary_image_index
 from visualizer.config import VisualizerConfig  # noqa: E402
 from visualizer.pipeline_langgraph import VizState  # noqa: E402
 from visualizer.pipeline_sequential import _load_image  # noqa: E402
@@ -244,6 +245,12 @@ def extract_features(req: FeatureExtractionRequest) -> FeatureExtractionResponse
     logger.info("feature extraction request", extra={"image_url": str(req.image_url)})
 
     try:
+        selected_index = get_primary_image_index(
+            images = [fetch_and_standardize_image(str(image_url), target_size = (512, 512))[0] for image_url in req.image_urls]
+        )
+
+        image_url = req.image_urls[selected_index]
+
         # Prepare metadata
         md = ArtworkMetadata(
             title=req.title or "Unknown",
@@ -254,7 +261,7 @@ def extract_features(req: FeatureExtractionRequest) -> FeatureExtractionResponse
 
         # Fetch and standardize image
         image_bytes, image_mode, image_size = fetch_and_standardize_image(
-            str(req.image_url), target_size=(1024, 1024)
+            str(image_url), target_size=(1024, 1024)
         )
 
         # Build initial state (artwork_type will be determined by classifier node)

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 export default function SellPage() {
   const router = useRouter()
@@ -15,6 +16,8 @@ export default function SellPage() {
   const [width, setWidth] = useState('')
   const [timeStart, setTimeStart] = useState('')
   const [timeEnd, setTimeEnd] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -24,11 +27,51 @@ export default function SellPage() {
     setError(null)
 
     if (!timeStart || !timeEnd) {
-      alert('Please select start and end time')
+      setError('Please select start and end time')
+      return
+    }
+
+    if (!imageFile) {
+      setError('Please upload an artwork image')
       return
     }
 
     setLoading(true)
+
+    const presignRes = await fetch('/api/uploads/presign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: imageFile.name,
+        content_type: imageFile.type,
+      }),
+    })
+
+    const text = await presignRes.text()
+    const presignData = text ? JSON.parse(text) : null
+
+    if (!presignRes.ok) {
+      setError(presignData?.message || 'Failed to get upload URL')
+      setLoading(false)
+      return
+    }
+
+    const { upload_url, key } = presignData
+
+    // 2️⃣ Upload file directly to S3
+    const putRes = await fetch(upload_url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': imageFile.type,
+      },
+      body: imageFile,
+    })
+
+    if (!putRes.ok) {
+      setError('Failed to upload image')
+      setLoading(false)
+      return
+    }
 
     const res = await fetch('/api/items', {
       method: 'POST',
@@ -46,7 +89,7 @@ export default function SellPage() {
         width: width ? Number(width) : null,
         time_start: new Date(timeStart).toISOString(),
         time_end: new Date(timeEnd).toISOString(),
-        picture_keys: ['https://example.com/dummy.jpg'],
+        picture_keys: [key],
       }),
     })
 
@@ -227,17 +270,36 @@ export default function SellPage() {
           <div className="flex flex-col h-full">
             {/* Top content */}
             <div className="space-y-4">
-              <div className="h-100 rounded-lg border border-neutral-700 bg-neutral-900 flex items-center justify-center text-neutral-500">
-                Image Preview
-              </div>
+              <label className="block mb-2 text-xs text-neutral-400">
+                Artwork Image <span className="text-red-500">*</span>
+              </label>
 
-              <div>
-                <label className="block mb-1 text-xs text-neutral-400">
-                  Artwork Image
-                </label>
+              <div className="space-y-3">
+                <div className="relative h-100 rounded-lg border border-neutral-700 bg-neutral-900 overflow-hidden">
+                  {imagePreview ? (
+                    <Image
+                      src={imagePreview}
+                      alt="Artwork preview"
+                      fill
+                      className="object-contain"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-neutral-500 text-sm">
+                      Image Preview
+                    </div>
+                  )}
+                </div>
+
                 <input
                   type="file"
+                  accept="image/*"
                   className="w-full text-sm text-neutral-400"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    setImageFile(file)
+                    setImagePreview(URL.createObjectURL(file))
+                  }}
                 />
               </div>
             </div>

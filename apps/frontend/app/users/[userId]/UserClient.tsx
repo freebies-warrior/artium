@@ -1,15 +1,13 @@
 'use client'
 
-import '../global.css'
 import { useEffect, useState } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 
-import Footer from '@/components/Footer'
-import HeroSection from '@/components/HeroSections'
-import Tabs from '@/components/Tabs'
 import ArtGrid, { type ArtUI } from '@/components/ArtGrid'
-import SellerGrid from '@/components/SellerGrid'
 import Pagination from '@/components/Pagination'
+
+import UserHeader from './components/UserHeader'
+import UserStats from './components/UserStats'
 
 type ItemDTO = {
   id: string
@@ -26,7 +24,7 @@ type ListItemsResponse =
   | { data: ItemDTO[]; next_cursor?: string | null }
   | ItemDTO[]
 
-const LIMIT = 4
+const LIMIT = 12
 
 function normalize(res: ListItemsResponse): {
   items: ItemDTO[]
@@ -56,35 +54,9 @@ function formatBid(n: number | string | undefined) {
   return `${num.toLocaleString()} SGD`
 }
 
-export default function HomeClient() {
-  const [activeTab, setActiveTab] = useState<'arts' | 'sellers'>('arts')
-
-  const params = useSearchParams()
-  const router = useRouter()
-  const verifyStatus = params.get('verify')
-
-  const [dismissed, setDismissed] = useState(false)
-
-  let banner: { message: string; type: 'success' | 'error' } | null = null
-
-  if (!dismissed) {
-    if (verifyStatus === 'failed') {
-      banner = {
-        message: 'This verification link is invalid or has expired.',
-        type: 'error',
-      }
-    } else if (verifyStatus === 'success') {
-      banner = {
-        message:
-          'Your email has been verified successfully. You may now log in.',
-        type: 'success',
-      }
-    }
-  }
-
-  // search typing + submitted query
-  const [search, setSearch] = useState('')
-  const [appliedQuery, setAppliedQuery] = useState('')
+export default function UserClient() {
+  const params = useParams<{ userId: string }>()
+  const userId = params?.userId
 
   // cursor pagination state
   const [page, setPage] = useState(1)
@@ -96,28 +68,15 @@ export default function HomeClient() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function handleTabChange(tab: 'arts' | 'sellers') {
-    setActiveTab(tab)
-    setPage(1)
-  }
-
-  const onSearchSubmit = () => {
-    setAppliedQuery(search.trim())
-    setPage(1)
-  }
-
-  // ✅ use Next.js proxy route
   const buildUrl = (cursor: string | null) => {
     const qs = new URLSearchParams()
     qs.set('limit', String(LIMIT))
-    if (appliedQuery) qs.set('q', appliedQuery)
 
-    // IMPORTANT:
-    // Keep this param name aligned with your backend.
-    // If backend expects "cursor", keep as-is.
-    // If backend expects "next_cursor", change to qs.set('next_cursor', cursor)
+    // your backend param name can be userId / seller_id / sellerId, etc.
+    // choose ONE and keep it consistent with your Next.js route handler.
+    qs.set('seller_id', userId)
+
     if (cursor) qs.set('cursor', cursor)
-
     return `/api/items?${qs.toString()}`
   }
 
@@ -128,17 +87,14 @@ export default function HomeClient() {
     const isReset = opts.mode === 'reset'
 
     try {
-      if (isReset) {
-        setLoading(true)
-      } else {
-        setLoadingMore(true)
-      }
+      isReset ? setLoading(true) : setLoadingMore(true)
       setError(null)
 
       const r = await fetch(buildUrl(opts.cursor), {
         method: 'GET',
         cache: 'no-store',
       })
+
       if (!r.ok) {
         const text = await r.text()
         let msg = `Request failed (${r.status})`
@@ -175,19 +131,21 @@ export default function HomeClient() {
       setLoadingMore(false)
     }
   }
-  // Initial load + when user submits a new search query
+
+  // initial load / when userId changes
   useEffect(() => {
-    if (activeTab !== 'arts') return
+    if (!userId) return
+    setPage(1)
+    setNextCursor(null)
     fetchPage({ mode: 'reset', cursor: null })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, appliedQuery])
+  }, [userId])
 
-  // When user clicks "See More" (page increments)
+  // when clicking "See More"
   useEffect(() => {
-    if (activeTab !== 'arts') return
+    if (!userId) return
     if (page === 1) return
     if (!nextCursor) return
-
     fetchPage({ mode: 'append', cursor: nextCursor })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page])
@@ -195,61 +153,23 @@ export default function HomeClient() {
   const hasNext = !!nextCursor && !loading && !loadingMore
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="pt-16">
-        {banner && (
-          <div className="fixed top-20 left-0 right-0 z-40 flex justify-center px-4">
-            <div
-              className={`relative w-full max-w-4xl rounded-lg px-4 py-3 text-center shadow
-        ${
-          banner.type === 'success'
-            ? 'bg-green-100 border border-green-300 text-green-700'
-            : 'bg-red-100 border border-red-300 text-red-700'
-        }`}
-            >
-              <span>{banner.message}</span>
+    <div className="min-h-screen bg-background pt-20">
+      <div className="container mx-auto px-6">
+        <UserHeader userId={userId} />
+        <UserStats />
 
-              <button
-                onClick={() => {
-                  setDismissed(true)
-                  router.replace('/', { scroll: false })
-                }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 font-bold"
-                aria-label="Close banner"
-              >
-                ×
-              </button>
-            </div>
+        <ArtGrid items={items} loading={loading} error={error} />
+
+        <div className="mt-8 flex justify-center">
+          <Pagination page={page} hasNext={hasNext} onPageChange={setPage} />
+        </div>
+
+        {loadingMore && (
+          <div className="mt-3 text-center text-sm text-muted-foreground">
+            Loading more...
           </div>
         )}
-        <HeroSection
-          search={search}
-          onSearchChange={setSearch}
-          onSearchSubmit={onSearchSubmit}
-        />
-        <Tabs activeTab={activeTab} onTabChange={handleTabChange} />
-        {activeTab === 'arts' ? (
-          <>
-            <ArtGrid items={items} loading={loading} error={error} />
-            <div className="container mx-auto px-4 pb-8">
-              <Pagination
-                page={page}
-                hasNext={hasNext}
-                onPageChange={setPage}
-              />
-              {loadingMore && (
-                <div className="mt-3 text-center text-sm text-muted-foreground">
-                  Loading more...
-                </div>
-              )}
-            </div>
-          </>
-        ) : (
-          <SellerGrid />
-        )}
-      </main>
-
-      <Footer />
+      </div>
     </div>
   )
 }

@@ -77,6 +77,16 @@ More details: [`docs/architecture.md`](docs/architecture.md)
     docker compose stop
     ```
 
+### Mailpit
+
+To access the local SMTP testing server (Mailpit):
+1. Make sure Docker is running
+2. From the repo root, run:
+   ```bash
+   docker compose up -d mailpit
+   ```
+3. Access Mailpit UI at: [http://localhost:8025](http://localhost:8025)
+
 #### Resetting the DB
 
 To reset the database (drops all data and recreates tables):

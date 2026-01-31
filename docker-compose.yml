@@ -49,6 +49,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      mailpit:
+        condition: service_started
 
   frontend:
     build:
@@ -81,6 +83,15 @@ services:
     depends_on:
       backend:
         condition: service_started
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: artium-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"  # Web UI
+      - "1025:1025"  # SMTP
+
 
 volumes:
   pgdata:

@@ -1,7 +1,6 @@
 'use client'
 
 import '../global.css'
-import * as React from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 
@@ -16,7 +15,6 @@ export type ArtUI = {
   highestBid?: string
   due: string
 }
-
 
 const ArtCard = ({ art, index }: { art: ArtUI; index: number }) => {
   return (
@@ -44,13 +42,19 @@ const ArtCard = ({ art, index }: { art: ArtUI; index: number }) => {
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-900 text-sm font-semibold text-foreground">
               {art.seller_username.charAt(0).toUpperCase()}
             </div>
-            <span className="text-sm text-muted-foreground">{art.seller_username}</span>
+            <span className="text-sm text-muted-foreground">
+              {art.seller_username}
+            </span>
           </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground">{art.highestBid ? "Highest Bid" : "Base Price"}</p>
-              <p className="font-mono text-sm font-medium">{art.highestBid ?? art.basePrice}</p>
+              <p className="text-xs text-muted-foreground">
+                {art.highestBid ? 'Highest Bid' : 'Base Price'}
+              </p>
+              <p className="font-mono text-sm font-medium">
+                {art.highestBid ?? art.basePrice}
+              </p>
             </div>
             <div className="text-right">
               <p className="text-xs text-muted-foreground">Due</p>

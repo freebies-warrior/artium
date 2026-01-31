@@ -17,6 +17,8 @@ import BidButton from '@/components/BidButton'
 import Lightbox from '@/components/LightBox'
 import PreviewButton from '@/components/PreviewButton'
 
+import Image from 'next/image'
+
 type Item = {
   id: string
   seller_id: string
@@ -224,9 +226,11 @@ export default function ItemPage() {
               setIsOpen(true)
             }}
           >
-            <img
+            <Image
               src={itemImages[0].src}
-              className="w-full h-full object-cover"
+              alt={item?.title ?? 'Item image'}
+              fill
+              className="object-cover"
             />
           </button>
         </div>

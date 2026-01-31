@@ -1,6 +1,6 @@
 import AddItemButton from './AddItemButton'
 
-export default function UserHeader() {
+export default function UserHeader({ userId }: { userId: string }) {
   return (
     <div className="flex items-center gap-6 mb-8">
       <div className="h-24 w-24 rounded-full bg-neutral-700" />
@@ -10,7 +10,7 @@ export default function UserHeader() {
         <p className="text-neutral-400">Manage your listings</p>
       </div>
 
-      <AddItemButton />
+      <AddItemButton userId={userId} />
     </div>
   )
 }

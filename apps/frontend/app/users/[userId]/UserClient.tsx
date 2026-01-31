@@ -31,8 +31,10 @@ function normalize(res: ListItemsResponse): {
   next_cursor: string | null
 } {
   if (Array.isArray(res)) return { items: res, next_cursor: null }
-  if ('items' in res) return { items: res.items, next_cursor: res.next_cursor ?? null }
-  if ('data' in res) return { items: res.data, next_cursor: res.next_cursor ?? null }
+  if ('items' in res)
+    return { items: res.items, next_cursor: res.next_cursor ?? null }
+  if ('data' in res)
+    return { items: res.data, next_cursor: res.next_cursor ?? null }
   return { items: [], next_cursor: null }
 }
 
@@ -78,7 +80,10 @@ export default function UserClient() {
     return `/api/items?${qs.toString()}`
   }
 
-  async function fetchPage(opts: { mode: 'reset' | 'append'; cursor: string | null }) {
+  async function fetchPage(opts: {
+    mode: 'reset' | 'append'
+    cursor: string | null
+  }) {
     const isReset = opts.mode === 'reset'
 
     try {
@@ -150,7 +155,7 @@ export default function UserClient() {
   return (
     <div className="min-h-screen bg-background pt-20">
       <div className="container mx-auto px-6">
-        <UserHeader />
+        <UserHeader userId={userId} />
         <UserStats />
 
         <ArtGrid items={items} loading={loading} error={error} />

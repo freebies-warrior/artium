@@ -60,6 +60,11 @@ func (h *BidsHandler) PlaceBid(c *gin.Context) {
 		return
 	}
 
+	if err := h.items.UpdateItemStatus(c.Request.Context(), itemID); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to update item status", nil))
+		return
+	}
+
 	bid, err := h.bids.CreateBid(c.Request.Context(), userID, itemID, req.Price)
 	if err != nil {
 		if pgErr, ok := database.PgError(err); ok {

@@ -28,9 +28,15 @@ func NewRouter(h *handlers.HandlerSet, jwtSecret []byte) *gin.Engine {
 	r.GET("/items/:item_id", h.Items.GetItem)
 	r.POST("/items", middlewares.RequireAuth(jwtSecret), h.Items.PostItem)
 
+	// Upload Image
+	r.POST("/uploads/presign", h.Uploads.PresignPut)
+
 	// Bids
 	r.POST("/items/:item_id/bids", middlewares.RequireAuth(jwtSecret), h.Bids.PlaceBid)
 	r.GET("/items/:item_id/bids", h.Bids.ListBids)
+
+	// Users
+	r.GET("/users", h.Users.ListUsers)
 
 	return r
 }

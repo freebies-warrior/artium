@@ -1,13 +1,21 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"backend/app"
 	"backend/database"
 	"backend/handlers"
+	"backend/internal/sweeper"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/joho/godotenv"
 )
 
@@ -18,6 +26,14 @@ func main() {
 	secret := mustEnv("JWT_SECRET")
 
 	appBaseURL := getenv("APP_BASE_URL", "http://localhost:3000")
+	sweeperIntervalStr := getenv("ITEM_STATUS_SWEEPER_INTERVAL", "1m")
+	sweeperInterval, err := time.ParseDuration(sweeperIntervalStr)
+	if err != nil {
+		log.Fatalf("invalid ITEM_STATUS_SWEEPER_INTERVAL: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	db := app.MustOpenDB(dsn)
 	defer db.Close()
@@ -28,6 +44,38 @@ func main() {
 	pictureDatabase := database.NewPictureDatabase(db)
 	bidDatabase := database.NewBidDatabase(db)
 
+	r2AccountID := mustEnv("R2_ACCOUNT_ID")
+	r2AccessKey := mustEnv("R2_ACCESS_KEY_ID")
+	r2SecretKey := mustEnv("R2_SECRET_ACCESS_KEY")
+	r2Bucket := mustEnv("R2_BUCKET")
+
+	storageEndpoint := fmt.Sprintf("https://%s.r2.cloudflarestorage.com", r2AccountID)
+
+	endpointResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
+		if service == s3.ServiceID {
+			return aws.Endpoint{
+				URL:               storageEndpoint,
+				SigningRegion:     "auto",
+				HostnameImmutable: true,
+			}, nil
+		}
+		return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+	})
+
+	cfg, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithRegion("auto"),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(r2AccessKey, r2SecretKey, "")),
+		config.WithEndpointResolverWithOptions(endpointResolver),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+	})
+
 	h := handlers.NewHandlerSet(
 		userDatabase,
 		tokenDatabase,
@@ -36,9 +84,13 @@ func main() {
 		bidDatabase,
 		[]byte(secret),
 		appBaseURL,
+		r2Bucket,
+		s3Client,
 	)
 
 	r := app.NewRouter(h, []byte(secret))
+
+	sweeper.Start(ctx, db, sweeperInterval)
 
 	log.Println("listening on :8080")
 	if err := r.Run(":8080"); err != nil {

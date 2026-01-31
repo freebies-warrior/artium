@@ -906,52 +906,6 @@ Recommend similar items based on the clicked item (ignore price range).
 
 ---
 
-## Preview Artwork in a Room (Generate / Compose)
-
-Generate a preview image showing the artwork placed in the user's room.
-
-- **Method:** `POST`
-- **Path:** `/ai/preview-in-room`
-- **Auth:** required (or none for demo)
-
-### Request
-
-```json
-{
-  "room_image_url": "https://.../room.jpg",
-  "item_id": "uuid"
-}
-```
-
-### Response `200`
-
-```json
-{
-  "preview_image_url": "https://.../preview.jpg",
-  "description": "A warm-toned landscape piece that complements neutral interiors...",
-  "notes": [
-    "Preview is not scale-accurate (no AR sizing).",
-    "Lighting and color may vary from real life."
-  ],
-  "quality": {
-    "accepted": true,
-    "checks": {
-      "brightness_ok": true,
-      "blur_ok": true,
-      "wall_detected": true
-    }
-  }
-}
-```
-
-### Errors
-
-- `400 VALIDATION_ERROR`
-- `422 AI_REJECTED_INPUT` (image too dark/blur/no wall detected and no manual box)
-- `500 INTERNAL_ERROR`
-
----
-
 ## Frontend Page → Endpoint Mapping (MVP)
 
 ### Auth page

@@ -232,6 +232,7 @@ The Feature Extraction feature analyzes an item’s uploaded images to generate 
    - `image_keys`
    - `image_get_urls` (presigned)
    - `callback_url` (internal endpoint to store features)
+   - `metadata` (image metadata, e.g. title, author, year)
 7. AI Backend downloads the images using the presigned GET URLs and extracts a JSON `features` payload.
 8. AI Backend calls the Backend internal endpoint to update the item:
    - Backend writes `items.features = <features JSON>` (JSONB)

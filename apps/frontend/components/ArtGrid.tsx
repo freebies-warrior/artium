@@ -17,7 +17,7 @@ export type ArtUI = {
   due: string
 }
 
-const ArtCard = ({ art, index }: { art: ArtUI; index: number }) => {
+const ArtCard = ({ item, index }: { item: ArtUI; index: number }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -27,40 +27,40 @@ const ArtCard = ({ art, index }: { art: ArtUI; index: number }) => {
       whileTap={{ scale: 0.98 }}
       className="art-card cursor-pointer"
     >
-      <Link href={`/art/${art.id}`} className="block">
+      <Link href={`/items/${item.id}`} className="block">
         <div className="relative aspect-square overflow-hidden">
           <Image
             src={artApe}
-            alt={art.title}
+            alt={item.title}
             fill
             className="object-cover transition-transform duration-500 hover:scale-110"
           />
         </div>
 
         <div className="p-4">
-          <h3 className="mb-2 font-semibold text-foreground">{art.title}</h3>
+          <h3 className="mb-2 font-semibold text-foreground">{item.title}</h3>
 
           <div className="mb-4 flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-900 text-sm font-semibold text-foreground">
-              {art.seller_username.charAt(0).toUpperCase()}
+              {item.seller_username.charAt(0).toUpperCase()}
             </div>
             <span className="text-sm text-muted-foreground">
-              {art.seller_username}
+              {item.seller_username}
             </span>
           </div>
 
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground">
-                {art.highestBid ? 'Highest Bid' : 'Base Price'}
+                {item.highestBid ? 'Highest Bid' : 'Base Price'}
               </p>
               <p className="font-mono text-sm font-medium">
-                {art.highestBid ?? art.basePrice}
+                {item.highestBid ?? item.basePrice}
               </p>
             </div>
             <div className="text-right">
               <p className="text-xs text-muted-foreground">Due</p>
-              <p className="font-mono text-sm font-medium">{art.due}</p>
+              <p className="font-mono text-sm font-medium">{item.due}</p>
             </div>
           </div>
         </div>
@@ -90,8 +90,8 @@ export default function ArtGrid({ items, loading, error }: ArtGridProps) {
           <div className="text-sm text-muted-foreground">Loading...</div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {items.map((art, index) => (
-              <ArtCard key={art.id} art={art} index={index} />
+            {items.map((item, index) => (
+              <ArtCard key={item.id} item={item} index={index} />
             ))}
           </div>
         )}

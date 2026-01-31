@@ -5,7 +5,7 @@ BEGIN
     SET
         highest_bid_amount = NEW.price,
         highest_bidder_id  = NEW.user_id,
-        highest_bid_time   = NEW.created_at
+        highest_bid_time   = NEW.timestamp
     WHERE id = NEW.item_id
         AND (
             highest_bid_amount IS NULL

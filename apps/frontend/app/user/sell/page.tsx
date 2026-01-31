@@ -58,7 +58,6 @@ export default function SellPage() {
 
     const { upload_url, key } = presignData
 
-    // 2️⃣ Upload file directly to S3
     const putRes = await fetch(upload_url, {
       method: 'PUT',
       headers: {

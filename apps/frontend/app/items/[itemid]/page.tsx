@@ -100,12 +100,9 @@ function stringifyFeatures(features: any) {
   }
 }
 
-export default function ArtPage() {
+export default function ItemPage() {
   const params = useParams()
-  const itemId = useMemo(() => {
-    const raw = (params as any)?.item_id ?? (params as any)?.id
-    return typeof raw === 'string' ? raw : ''
-  }, [params])
+  const itemId = params.itemid
   const [refreshKey, setRefreshKey] = useState(0)
 
 
@@ -124,11 +121,9 @@ export default function ArtPage() {
   const [moreItems, setMoreItems] = useState<ArtUI[]>([])
   const [loadingMore, setLoadingMore] = useState(false)
   const [errorMore, setErrorMore] = useState<string | null>(null)
-
   /* ───────────── Fetch item ───────────── */
   useEffect(() => {
     let cancelled = false
-
     async function run() {
       setLoadingItem(true)
       setErrorItem(null)
@@ -197,7 +192,6 @@ export default function ArtPage() {
   }, [item?.time_end])
 
   const featuresText = stringifyFeatures(item?.features)
-  console.log("HAHA: " + item?.highest_bid_amount);
   return (
     <div className="min-h-screen bg-background pt-16">
       <Navbar />

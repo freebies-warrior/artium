@@ -3,6 +3,7 @@
 import '../global.css'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 
 import artApe from '../assets/nft-ape.jpg'
 
@@ -27,11 +28,12 @@ const ArtCard = ({ art, index }: { art: ArtUI; index: number }) => {
         whileTap={{ scale: 0.98 }}
         className="art-card cursor-pointer"
       >
-        <div className="aspect-square overflow-hidden">
-          <img
-            src={artApe.src}
+        <div className="relative aspect-square overflow-hidden">
+          <Image
+            src={artApe}
             alt={art.title}
-            className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
+            fill
+            className="object-cover transition-transform duration-500 hover:scale-110"
           />
         </div>
 

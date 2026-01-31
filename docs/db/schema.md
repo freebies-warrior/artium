@@ -253,6 +253,7 @@ Store structured attributes extracted from the artwork image. Example shape:
 | `id`                | `uuid`        | No       | Primary Key                                            |
 | `user_id`           | `uuid`        | No       | Foreign Key → `users.id` (who requested the job)       |
 | `item_id`           | `uuid`        | No       | Foreign Key → `items.id`                               |
+| `item_image_key`    | `text`        | No       | R2 object key for the uploaded item image              |
 | `room_image_key`    | `text`        | No       | R2 object key for the uploaded room image              |
 | `status`            | `text`        | No       | `queued`, `processing`, `succeeded`, `failed`          |
 | `result_image_key`  | `text`        | Yes      | R2 object key for the merged output image              |

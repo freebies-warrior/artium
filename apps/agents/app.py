@@ -16,7 +16,7 @@ from api.service import agent_service_lifespan
 logger = logging.getLogger(__name__)
 
 def require_internal_token(
-    internal_token: str = Header(..., alias="internal-token"),
+    internal_token: str = Header(..., alias="X-Internal-Token"),
 ) -> None:
     expected = os.getenv("INTERNAL_TOKEN")
     if not expected:

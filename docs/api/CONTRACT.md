@@ -1,6 +1,6 @@
-# API Contract
+# Go Backend API Contract
 
-This document is the **human-readable API contract** between the Next.js frontend and the Go backend.
+This document is the **human-readable API contract** that the Go backend provides.
 
 - **Base URL (local):** `http://localhost:8080`
 - **Content-Type:** `application/json`
@@ -135,6 +135,23 @@ For example:
   "item_id": "uuid",
   "price": 10500,
   "timestamp": "2026-01-27T13:22:10Z"
+}
+```
+
+### Visualization Job
+
+```json
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "item_id": "uuid",
+  "room_image_key": "rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+  "status": "queued",
+  "result_image_key": null,
+  "result_description": null,
+  "error_message": null,
+  "created_at": "2026-01-31T12:00:00Z",
+  "updated_at": "2026-01-31T12:00:00Z"
 }
 ```
 
@@ -479,7 +496,7 @@ Create a new auction item. Seller supplies basic info + image URLs (uploaded sep
 
 - **Method:** `POST`
 - **Path:** `/uploads/presign`
-- **Auth:** none
+- **Auth:** required
 
 ### Request
 
@@ -604,9 +621,276 @@ Fetch recent bids for an item.
 
 ---
 
-## AI Endpoints (Buyer Support)
+## Users Endpoints
 
-> Note: These are **support features** for buyer experience. They do not alter auction outcomes directly.
+---
+
+## List Users
+
+---
+
+Returns all users (public-safe fields only).
+
+- **Method:** `GET`
+- **Path:** `/users`
+- **Auth:** none
+
+**Query Parameters**
+- `limit` (optional, int)
+  - Default: `20`
+  - Max: `100`
+- `q` (optional, string)
+  - Username search (case-insensitive, partial match).
+  - Example: `q=fer` matches usernames containing `fer`.
+- `cursor` (optional, string)
+  - Cursor-based pagination token returned by this endpoint (`next_cursor`).
+  - Opaque to clients (do not try to parse/modify).
+
+### Response (200)
+```json
+{
+  "data": [
+    {
+      "id": "uuid-string",
+      "username": "string",
+      "created_at": "RFC3339 timestamp"
+    }
+  ],
+  "next_cursor": "string-or-null"
+}
+```
+
+### Errors
+- `400 VALIDATION_ERROR` if `limit` is not a valid integer.
+- `400 VALIDATION_ERROR` if query params are invalid (e.g., malformed cursor).
+
+### Notes
+- Results are sorted by `created_at` descending, then `id` descending.
+- If there are more results, `next_cursor` will be returned. Pass it into the next request as `cursor`.
+- If there are no more results, `next_cursor` will be `null`.
+
+### Examples
+- First page:
+  - `GET /users?limit=20`
+- Search by username:
+  - `GET /users?q=fer&limit=20`
+- Next page:
+  - `GET /users?limit=20&cursor=<next_cursor_from_previous_response>`
+
+---
+
+## AI Endpoints (Visualizer)
+
+> Note: Visualizer is **asynchronous**. The frontend creates a job, then polls for status/result.
+
+---
+
+## Create Visualizer Job (Preview in Room)
+
+Create a new visualization job to merge an item image with a room photo.
+
+- **Method:** `POST`
+- **Path:** `/visualizations`
+- **Auth:** required
+
+### Request
+
+```json
+{
+  "item_id": "uuid",
+  "item_image_key": "items/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+  "room_image_key": "rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+  "item_dimensions": {
+    "width_cm": 60,
+    "height_cm": 40
+  }
+}
+```
+
+### Response `201`
+
+```json
+{
+  "job": {
+    "id": "uuid",
+    "user_id": "uuid",
+    "item_id": "uuid",
+    "item_image_key": "items/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+    "room_image_key": "rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+    "status": "queued",
+    "result_image_key": null,
+    "result_description": null,
+    "error_message": null,
+    "created_at": "2026-01-31T12:00:00Z",
+    "updated_at": "2026-01-31T12:00:00Z"
+  }
+}
+```
+
+### Errors
+
+- `400 VALIDATION_ERROR` (missing/invalid `item_id`, missing/invalid `room_image_key`)
+- `401 UNAUTHORIZED`
+- `403 FORBIDDEN` (user not allowed to preview this item)
+- `404 NOT_FOUND` (item not found)
+- `409 CONFLICT` (item has no image / item not eligible)
+
+### Notes
+
+- `room_image_key` is obtained by uploading a room photo to R2 via `/uploads/presign`.
+- Do not send arbitrary external URLs to the AI service; pass **keys**.
+
+---
+
+## Get Visualizer Job Status
+
+Fetch job state and (if completed) the output.
+
+- **Method:** `GET`
+- **Path:** `/visualizations/{job_id}`
+- **Auth:** required
+
+### Response `200` (queued / processing)
+
+```json
+{
+  "job": {
+    "id": "uuid",
+    "user_id": "uuid",
+    "item_id": "uuid",
+    "item_image_key": "items/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+    "room_image_key": "rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+    "status": "processing",
+    "result_image_key": null,
+    "result_description": null,
+    "error_message": null,
+    "created_at": "2026-01-31T12:00:00Z",
+    "updated_at": "2026-01-31T12:01:10Z"
+  }
+}
+```
+
+### Response `200` (succeeded)
+
+```json
+{
+  "job": {
+    "id": "uuid",
+    "user_id": "uuid",
+    "item_id": "uuid",
+    "item_image_key": "items/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+    "room_image_key": "rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+    "status": "succeeded",
+    "result_image_key": "visualizations/<job_id>/result.jpg",
+    "result_image_url": "https://.../visualizations/<job_id>/result.jpg",
+    "result_description": "A warm-toned landscape piece displayed above a modern sofa...",
+    "error_message": null,
+    "created_at": "2026-01-31T12:00:00Z",
+    "updated_at": "2026-01-31T12:02:30Z"
+  }
+}
+```
+
+### Response `200` (failed)
+
+```json
+{
+  "job": {
+    "id": "uuid",
+    "user_id": "uuid",
+    "item_id": "uuid",
+    "item_image_key": "items/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+    "room_image_key": "rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+    "status": "failed",
+    "result_image_key": null,
+    "result_description": null,
+    "error_message": "Unable to process images",
+    "created_at": "2026-01-31T12:00:00Z",
+    "updated_at": "2026-01-31T12:02:30Z"
+  }
+}
+```
+
+### Errors
+
+- `401 UNAUTHORIZED`
+- `403 FORBIDDEN`
+- `404 NOT_FOUND` (job not found)
+
+---
+
+## List Visualizer Jobs (Optional)
+
+List visualizer jobs for the current user (useful for UI history).
+
+- **Method:** `GET`
+- **Path:** `/visualizations`
+- **Auth:** required
+
+### Query Params
+
+- `limit` (optional, int, default 20, max 100)
+- `cursor` (optional, string)
+- `item_id` (optional, uuid)
+
+### Response `200`
+
+```json
+{
+  "jobs": [
+    {
+      "id": "uuid",
+      "item_id": "uuid",
+      "status": "succeeded",
+      "result_image_key": "visualizations/<job_id>/result.jpg",
+      "result_description": "..."
+    }
+  ],
+  "next_cursor": "opaque-string-or-null"
+}
+```
+
+### Errors
+
+- `400 VALIDATION_ERROR`
+- `401 UNAUTHORIZED`
+
+## Update Visualizer Job
+(Update is internal only; frontend cannot call this.)
+
+- **Method:** `PUT`
+- **Path:** `/visualizations/{job_id}`
+- **Auth:** internal only
+
+### Request
+
+```json
+{
+  "status": "succeeded",
+  "result_description": "A warm-toned landscape piece displayed above a modern sofa...",
+  "error_message": null
+}
+```
+
+### Response (200)
+
+```json
+{
+  "ok": true
+}
+```
+
+### Errors
+
+- `400 VALIDATION_ERROR`
+- `404 NOT_FOUND`
+
+### Notes
+
+- Used by AI backend to update job status/results.
+- Only `status`, `result_description`, and `error_message` can be updated.
+
+---
 
 ## Get Similar Items
 
@@ -663,55 +947,41 @@ Recommend similar items based on the clicked item (ignore price range).
 
 ---
 
-## Preview Artwork in a Room (Generate / Compose)
+## AI Feature Extractor Endpoints
 
-Generate a preview image showing the artwork placed in the user's room.
+## Update Item Features (Internal Only)
 
-- **Method:** `POST`
-- **Path:** `/ai/preview-in-room`
-- **Auth:** required (or none for demo)
+Update an item’s `features` column after AI extraction.
 
-### Request
+- Method: PUT
+- Path: `/items/{item_id}/features`
+- Auth: internal only
 
-```json
-{
-  "room_image_url": "https://.../room.jpg",
-  "item_id": "uuid"
-}
-```
+Request:
 
-### Response `200`
-
-```json
-{
-  "preview_image_url": "https://.../preview.jpg",
-  "description": "A warm-toned landscape piece that complements neutral interiors...",
-  "notes": [
-    "Preview is not scale-accurate (no AR sizing).",
-    "Lighting and color may vary from real life."
-  ],
-  "quality": {
-    "accepted": true,
-    "checks": {
-      "brightness_ok": true,
-      "blur_ok": true,
-      "wall_detected": true
+    {
+      "features": features_json
     }
-  }
-}
-```
 
-### Errors
+Response 200:
 
-- `400 VALIDATION_ERROR`
-- `422 AI_REJECTED_INPUT` (image too dark/blur/no wall detected and no manual box)
-- `500 INTERNAL_ERROR`
+    { "ok": true }
+
+Errors:
+- 400 VALIDATION_ERROR (invalid item_id, missing/invalid `features`)
+- 401 UNAUTHORIZED (missing/invalid internal token)
+- 404 NOT_FOUND (item not found)
+- 500 INTERNAL_ERROR
+
+Notes:
+- This endpoint overwrites `items.features` with the provided JSON object.
+- Keep error messages short and do not include secrets, tokens, or presigned URLs.
 
 ---
 
 ## Frontend Page → Endpoint Mapping (MVP)
 
-### Login page
+### Auth page
 
 - `POST /auth/signup`
 - `POST /auth/login`
@@ -728,5 +998,104 @@ Generate a preview image showing the artwork placed in the user's room.
 - `GET /items/{item_id}/bids` (bid history)
 - `POST /ai/preview-in-room` (generate combined image)
 - `GET /ai/similar?item_id=...` (similar items)
+- `POST /uploads/presign` (upload room photo to R2)
+- `POST /visualizations` (create async visualizer job)
+- `GET /visualizations/{job_id}` (poll status + fetch result)
 
 ---
+
+# AI Backend API Contract
+
+This document is the **human-readable API contract** that the AI microservice provides.
+
+---
+
+## AI Visualizer Endpoints
+
+---
+
+## Visualize in Room
+
+---
+
+Start a visualization job to merge an artwork image with a room photo.
+
+- **Method:** `POST`
+- **Path:** `/agents/visualizer/visualize_installation`
+
+### Request
+
+```json
+{
+  "room_url": "https://.../rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+  "art_url": "https://.../items/<item_id>/main.jpg",
+  "upload_image_url": "https://.../visualizations/<job_id>/result.jpg",
+  "result_image_key": "visualizations/<job_id>/result.jpg",
+  "item_dimensions": {
+    "width": 60,
+    "height": 40
+  },
+  "job_id": "uuid",
+}
+```
+
+### Response `200`
+
+```json
+{
+  "ok": true
+}
+```
+
+### Errors
+- `400 VALIDATION_ERROR` (missing/invalid fields)
+- `500 INTERNAL_ERROR` (unexpected / processing failure)
+
+### Notes
+- `room_url` and `art_url` are presigned GET URLs to R2 objects.
+- The AI service downloads the images, processes them, and uploads the result back to R2.
+- The AI service does **not** return the result directly; it updates the job state in the Go backend via DB or another mechanism.
+
+---
+
+## AI Feature Extractor Endpoints
+
+## Extract Item Features
+
+Start feature extraction for an item using its images.
+
+- Method: POST
+- Path: `/agents/feature_extractor/extract_item_features`
+
+Request (example):
+```json
+    {
+      "item_id": "uuid",
+      "image_keys": [
+        "uploads/<uid>/20260130T120000Z-acde1234abcd5678.jpg",
+        "uploads/<uid>/20260130T120000Z-acde1234abcd9999.jpg"
+      ],
+      "image_get_urls": [
+        "https://<accountid>.r2.cloudflarestorage.com/<bucket>/uploads/...?...signature...",
+        "https://<accountid>.r2.cloudflarestorage.com/<bucket>/uploads/...?...signature..."
+      ],
+      "callback_url": "https://<go-backend>/internal/items/<item_id>/features",
+      "metadata" : {
+        "author"  : "artwork-author", // can be [null]
+        "title"   : "artwork-title", // can be [null]
+        "year"    : "artwork-year-created" //can be [null]
+      }
+    }
+```
+
+Response 200:
+
+    { "ok": true }
+
+Errors:
+- 400 VALIDATION_ERROR (missing/invalid fields, empty image list, non-image URLs)
+- 500 INTERNAL_ERROR
+
+Notes:
+- `image_get_urls` are presigned GET URLs generated by the Go backend.
+- The AI worker should download images using `image_get_urls`, then call `callback_url` once features are extracted.

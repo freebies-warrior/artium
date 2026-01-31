@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(h *handlers.HandlerSet, jwtSecret []byte) *gin.Engine {
+func NewRouter(h *handlers.HandlerSet, jwtSecret []byte, internalToken string) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 
@@ -27,9 +27,15 @@ func NewRouter(h *handlers.HandlerSet, jwtSecret []byte) *gin.Engine {
 	r.GET("/items", h.Items.ListItems)
 	r.GET("/items/:item_id", h.Items.GetItem)
 	r.POST("/items", middlewares.RequireAuth(jwtSecret), h.Items.PostItem)
+	r.PUT("/items/:item_id/features", middlewares.RequireInternalToken(internalToken), h.Items.PutItemFeatures)
 
 	// Upload Image
-	r.POST("/uploads/presign", h.Uploads.PresignPut)
+	r.POST("/uploads/presign", middlewares.RequireAuth(jwtSecret), h.Uploads.PresignPut)
+
+	// Visualization
+	r.POST("/visualizations", middlewares.RequireAuth(jwtSecret), h.Visualizations.Create)
+	r.GET("/visualizations/:job_id", middlewares.RequireAuth(jwtSecret), h.Visualizations.Get)
+	r.PUT("/visualizations/:job_id", middlewares.RequireInternalToken(internalToken), h.Visualizations.UpdateInternal)
 
 	// Bids
 	r.POST("/items/:item_id/bids", middlewares.RequireAuth(jwtSecret), h.Bids.PlaceBid)
@@ -37,6 +43,7 @@ func NewRouter(h *handlers.HandlerSet, jwtSecret []byte) *gin.Engine {
 
 	// Users
 	r.GET("/users", h.Users.ListUsers)
+	r.GET("/users/:user_id", h.Users.GetUserDetails)
 
 	return r
 }

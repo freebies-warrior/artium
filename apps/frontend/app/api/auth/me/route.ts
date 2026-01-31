@@ -5,12 +5,12 @@ export async function GET(req: Request) {
     .get('cookie')
     ?.split('; ')
     .find((c) => c.startsWith('token='))
-    ?.slice(6);
+    ?.slice(6)
 
   if (!token) {
     return NextResponse.json({ error: 'Missing token' }, { status: 401 })
   }
-  console.log(token);
+  console.log(token)
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as any
 

@@ -179,7 +179,7 @@ export default function ItemPage() {
     return () => {
       cancelled = true
     }
-  }, [item?.seller_username, itemId])
+  }, [item?.seller_id, itemId])
 
   /* ───────────── Auction ended logic ───────────── */
   const auctionEnded = useMemo(() => {

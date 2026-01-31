@@ -954,7 +954,7 @@ Recommend similar items based on the clicked item (ignore price range).
 Update an item’s `features` column after AI extraction.
 
 - Method: PUT
-- Path: `/internal/items/{item_id}/features`
+- Path: `/items/{item_id}/features`
 - Auth: internal only
 
 Request:

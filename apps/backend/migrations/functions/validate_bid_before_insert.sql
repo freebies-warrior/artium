@@ -6,7 +6,7 @@ DECLARE
 	v_min_required bigint;
 BEGIN
 	-- Lock the item row so concurrent bids serialize correctly
-	SELECT id, seller_id, status, time_start, time_end, base_price, increment
+	SELECT id, seller_id, status, time_start, time_end, base_price, increment, highest_bid_amount
 	INTO v_item
 	FROM items
 	WHERE id = NEW.item_id
@@ -16,9 +16,9 @@ BEGIN
 		RAISE EXCEPTION 'Item not found' USING ERRCODE = 'P0001';
 	END IF;
 
-	-- Basic auction state checks
-	IF v_item.status <> 'active' THEN
-		RAISE EXCEPTION 'Auction not active' USING ERRCODE = 'P0001';
+	-- Cancelled is always blocked
+	IF v_item.status = 'cancelled' THEN
+		RAISE EXCEPTION 'Auction cancelled' USING ERRCODE = 'P0001';
 	END IF;
 
 	IF now() < v_item.time_start THEN
@@ -34,12 +34,13 @@ BEGIN
 		RAISE EXCEPTION 'Seller cannot bid on own item' USING ERRCODE = 'P0001';
 	END IF;
 
-	-- Find current highest bid (fast with the index above)
-	SELECT price INTO v_highest
-	FROM bids
-	WHERE item_id = NEW.item_id
-	ORDER BY price DESC
-	LIMIT 1;
+	-- Basic sanity
+	IF NEW.price <= 0 THEN
+		RAISE EXCEPTION 'Bid must be positive' USING ERRCODE = 'P0001';
+	END IF;
+
+	-- Use denormalized highest bid on items (no scan of bids needed)
+	v_highest := v_item.highest_bid_amount;
 
 	IF v_highest IS NULL THEN
 		v_min_required := v_item.base_price;
@@ -49,12 +50,7 @@ BEGIN
 
 	IF NEW.price < v_min_required THEN
 		RAISE EXCEPTION 'Bid too low. Minimum required: %', v_min_required
-	  	USING ERRCODE = 'P0001';
-	END IF;
-
-	-- Basic sanity
-	IF NEW.price <= 0 THEN
-		RAISE EXCEPTION 'Bid must be positive' USING ERRCODE = 'P0001';
+		USING ERRCODE = 'P0001';
 	END IF;
 
 	RETURN NEW;

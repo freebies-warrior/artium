@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -16,10 +18,11 @@ import (
 type ItemsHandler struct {
 	items    *database.ItemDatabase
 	pictures *database.PictureDatabase
+	uploads  *UploadHandler
 }
 
-func NewItemsHandler(items *database.ItemDatabase, pictures *database.PictureDatabase) *ItemsHandler {
-	return &ItemsHandler{items: items, pictures: pictures}
+func NewItemsHandler(items *database.ItemDatabase, pictures *database.PictureDatabase, uploads *UploadHandler) *ItemsHandler {
+	return &ItemsHandler{items: items, pictures: pictures, uploads: uploads}
 }
 
 type postItemReq struct {
@@ -33,7 +36,7 @@ type postItemReq struct {
 	Width       *float64 `json:"width"`
 	TimeStart   string   `json:"time_start"`
 	TimeEnd     string   `json:"time_end"`
-	PictureURLs []string `json:"picture_urls"`
+	PictureKeys []string `json:"picture_keys"`
 }
 
 type postItemResp struct {
@@ -48,6 +51,19 @@ type listItemsResp struct {
 	Items      []database.Item `json:"items"`
 	NextCursor *string         `json:"next_cursor"`
 }
+
+func (h *ItemsHandler) presignPictures(ctx context.Context, pics []database.PicturePublic) error {
+	for i := range pics {
+		signed, err := h.uploads.PresignGetURL(ctx, pics[i].Key, 72*time.Hour)
+		if err != nil {
+			return err
+		}
+		pics[i].URL = signed
+	}
+	return nil
+}
+
+var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
 func (h *ItemsHandler) PostItem(c *gin.Context) {
 	uidAny, ok := c.Get(middlewares.CtxUserIDKey)
@@ -97,8 +113,8 @@ func (h *ItemsHandler) PostItem(c *gin.Context) {
 	}
 
 	// optional: require at least 1 picture
-	if len(req.PictureURLs) == 0 {
-		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "at least one picture_urls is required", map[string]any{"field": "picture_urls"}))
+	if len(req.PictureKeys) == 0 {
+		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "at least one picture_keys is required", map[string]any{"field": "picture_keys"}))
 		return
 	}
 
@@ -120,7 +136,7 @@ func (h *ItemsHandler) PostItem(c *gin.Context) {
 		return
 	}
 
-	pics, err := h.pictures.CreatePictures(c.Request.Context(), it.ID, req.PictureURLs)
+	pics, err := h.pictures.CreatePictures(c.Request.Context(), it.ID, req.PictureKeys)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to create pictures", nil))
 		return
@@ -152,6 +168,10 @@ func (h *ItemsHandler) GetItem(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to fetch pictures", nil))
 		return
 	}
+	if err := h.presignPictures(c.Request.Context(), pics); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to sign image urls", nil))
+		return
+	}
 	it.Pictures = pics
 
 	c.JSON(http.StatusOK, getItemResp{Item: it})
@@ -169,14 +189,32 @@ func (h *ItemsHandler) ListItems(c *gin.Context) {
 	}
 
 	status := strings.TrimSpace(c.Query("status"))
+	if status != "" {
+		switch strings.ToLower(status) {
+		case "draft", "active", "ended", "cancelled":
+		default:
+			c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid status", map[string]any{"field": "status"}))
+			return
+		}
+	}
+
+	sellerID := strings.TrimSpace(c.Query("seller_id"))
+	if sellerID != "" {
+		if !uuidPattern.MatchString(sellerID) {
+			c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid seller_id", map[string]any{"field": "seller_id"}))
+			return
+		}
+	}
+
 	q := strings.TrimSpace(c.Query("q"))
 	cursor := strings.TrimSpace(c.Query("cursor"))
 
 	items, next, err := h.items.ListItems(c.Request.Context(), database.ListItemsParams{
-		Limit:  limit,
-		Cursor: cursor,
-		Status: status,
-		Query:  q,
+		Limit:    limit,
+		Cursor:   cursor,
+		Status:   status,
+		SellerID: sellerID,
+		Query:    q,
 	})
 	if err != nil {
 		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid query params", nil))
@@ -198,6 +236,13 @@ func (h *ItemsHandler) ListItems(c *gin.Context) {
 			items[i].Pictures = []database.PicturePublic{p}
 		} else {
 			items[i].Pictures = []database.PicturePublic{}
+		}
+	}
+
+	for i := range items {
+		if err := h.presignPictures(c.Request.Context(), items[i].Pictures); err != nil {
+			c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to sign image urls", nil))
+			return
 		}
 	}
 

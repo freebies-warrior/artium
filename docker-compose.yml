@@ -32,6 +32,42 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin
 
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+      args:
+        MAIN_PKG: .
+        BIN_NAME: server
+    env_file:
+      - ./apps/backend/.env
+    environment:
+      PORT: "8080"
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/artium?sslmode=disable"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    env_file:
+      - ./apps/frontend/.env
+    environment:
+      BACKEND_URL: "http://backend:8080"
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_started
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+      - /app/.next
+
 volumes:
   pgdata:
   pgadmin_data:

@@ -19,23 +19,28 @@ func NewItemDatabase(db *sql.DB) *ItemDatabase {
 }
 
 type Item struct {
-	ID          string          `json:"id"`
-	SellerID    string          `json:"seller_id"`
-	Title       string          `json:"title"`
-	Description *string         `json:"description,omitempty"`
-	Author      *string         `json:"author,omitempty"`
-	Features    any             `json:"features,omitempty"`
-	YearCreated *int            `json:"year_created,omitempty"`
-	Height      *float64        `json:"height,omitempty"`
-	Width       *float64        `json:"width,omitempty"`
-	BasePrice   int64           `json:"base_price"`
-	Increment   int64           `json:"increment"`
-	Status      string          `json:"status"`
-	TimeStart   time.Time       `json:"time_start"`
-	TimeEnd     time.Time       `json:"time_end"`
-	CreatedAt   time.Time       `json:"created_at"`
-	UpdatedAt   time.Time       `json:"updated_at"`
-	Pictures    []PicturePublic `json:"pictures,omitempty"` // filled in handler
+	ID               string          `json:"id"`
+	SellerID         string          `json:"seller_id"`
+	SellerUsername   *string         `json:"seller_username,omitempty"`
+	Title            string          `json:"title"`
+	Description      *string         `json:"description,omitempty"`
+	Author           *string         `json:"author,omitempty"`
+	Features         any             `json:"features,omitempty"`
+	YearCreated      *int            `json:"year_created,omitempty"`
+	Height           *float64        `json:"height,omitempty"`
+	Width            *float64        `json:"width,omitempty"`
+	BasePrice        int64           `json:"base_price"`
+	Increment        int64           `json:"increment"`
+	Status           string          `json:"status"`
+	TimeStart        time.Time       `json:"time_start"`
+	TimeEnd          time.Time       `json:"time_end"`
+	HighestBidId     *string         `json:"highest_bid_id,omitempty"`
+	HighestBidAmount *int64          `json:"highest_bid_amount,omitempty"`
+	HighestBidderId  *string         `json:"highest_bidder_id,omitempty"`
+	HighestBidTime   *time.Time      `json:"highest_bid_time,omitempty"`
+	CreatedAt        time.Time       `json:"created_at"`
+	UpdatedAt        time.Time       `json:"updated_at"`
+	Pictures         []PicturePublic `json:"pictures,omitempty"` // filled in handler
 }
 
 type CreateItemArgs struct {
@@ -83,7 +88,13 @@ func (r *ItemDatabase) CreateItem(ctx context.Context, a CreateItemArgs) (Item, 
 		outYear sql.NullInt32
 		outH    sql.NullFloat64
 		outW    sql.NullFloat64
-		feat    []byte
+
+		outHighestBidID     sql.NullString
+		outHighestBidAmount sql.NullInt64
+		outHighestBidderID  sql.NullString
+		outHighestBidTime   sql.NullTime
+
+		featStr string
 	)
 
 	var it Item
@@ -106,6 +117,8 @@ func (r *ItemDatabase) CreateItem(ctx context.Context, a CreateItemArgs) (Item, 
 			year_created, height, width,
 			base_price, increment, status::text,
 			time_start, time_end,
+			highest_bid_id::text, highest_bid_amount,
+			highest_bidder_id::text, highest_bid_time,
 			created_at, updated_at
 	`, a.SellerID, a.TimeStart, a.TimeEnd,
 		a.Title, desc, auth,
@@ -114,10 +127,12 @@ func (r *ItemDatabase) CreateItem(ctx context.Context, a CreateItemArgs) (Item, 
 	).Scan(
 		&it.ID, &it.SellerID,
 		&it.Title, &outDesc, &outAuth,
-		&feat,
+		&featStr,
 		&outYear, &outH, &outW,
 		&it.BasePrice, &it.Increment, &it.Status,
 		&it.TimeStart, &it.TimeEnd,
+		&outHighestBidID, &outHighestBidAmount,
+		&outHighestBidderID, &outHighestBidTime,
 		&it.CreatedAt, &it.UpdatedAt,
 	)
 	if err != nil {
@@ -142,8 +157,24 @@ func (r *ItemDatabase) CreateItem(ctx context.Context, a CreateItemArgs) (Item, 
 		v := outW.Float64
 		it.Width = &v
 	}
+	if outHighestBidID.Valid {
+		v := outHighestBidID.String
+		it.HighestBidId = &v
+	}
+	if outHighestBidAmount.Valid {
+		v := outHighestBidAmount.Int64
+		it.HighestBidAmount = &v
+	}
+	if outHighestBidderID.Valid {
+		v := outHighestBidderID.String
+		it.HighestBidderId = &v
+	}
+	if outHighestBidTime.Valid {
+		v := outHighestBidTime.Time
+		it.HighestBidTime = &v
+	}
 
-	// features left nil for now
+	_ = featStr // features left nil for now
 	return it, nil
 }
 
@@ -156,28 +187,43 @@ func (r *ItemDatabase) GetItemByID(ctx context.Context, itemID string) (Item, er
 		outYear sql.NullInt32
 		outH    sql.NullFloat64
 		outW    sql.NullFloat64
-		feat    []byte
+
+		outSellerUsername sql.NullString
+
+		outHighestBidID     sql.NullString
+		outHighestBidAmount sql.NullInt64
+		outHighestBidderID  sql.NullString
+		outHighestBidTime   sql.NullTime
+
+		featStr string
 	)
 
 	var it Item
 	err := r.db.QueryRowContext(ctx, `
 		SELECT
-			id::text, seller_id::text,
-			title, description, author,
-			COALESCE(features::text, '')::text,
-			year_created, height, width,
-			base_price, increment, status::text,
-			time_start, time_end,
-			created_at, updated_at
-		FROM items
-		WHERE id = $1::uuid
+			i.id::text, i.seller_id::text, 
+			u.username AS seller_username,
+			i.title, i.description, i.author,
+			COALESCE(i.features::text, '')::text,
+			i.year_created, i.height, i.width,
+			i.base_price, i.increment, i.status::text,
+			i.time_start, i.time_end,
+			i.highest_bid_id::text, i.highest_bid_amount,
+			i.highest_bidder_id::text, i.highest_bid_time,
+			i.created_at, i.updated_at
+		FROM items i
+		JOIN users u ON u.id = i.seller_id
+		WHERE i.id = $1::uuid
 	`, itemID).Scan(
 		&it.ID, &it.SellerID,
+		&outSellerUsername,
 		&it.Title, &outDesc, &outAuth,
-		&feat,
+		&featStr,
 		&outYear, &outH, &outW,
 		&it.BasePrice, &it.Increment, &it.Status,
 		&it.TimeStart, &it.TimeEnd,
+		&outHighestBidID, &outHighestBidAmount,
+		&outHighestBidderID, &outHighestBidTime,
 		&it.CreatedAt, &it.UpdatedAt,
 	)
 	if err != nil {
@@ -187,6 +233,9 @@ func (r *ItemDatabase) GetItemByID(ctx context.Context, itemID string) (Item, er
 		return Item{}, err
 	}
 
+	if outSellerUsername.Valid {
+		it.SellerUsername = &outSellerUsername.String
+	}
 	if outDesc.Valid {
 		it.Description = &outDesc.String
 	}
@@ -205,15 +254,33 @@ func (r *ItemDatabase) GetItemByID(ctx context.Context, itemID string) (Item, er
 		v := outW.Float64
 		it.Width = &v
 	}
+	if outHighestBidID.Valid {
+		v := outHighestBidID.String
+		it.HighestBidId = &v
+	}
+	if outHighestBidAmount.Valid {
+		v := outHighestBidAmount.Int64
+		it.HighestBidAmount = &v
+	}
+	if outHighestBidderID.Valid {
+		v := outHighestBidderID.String
+		it.HighestBidderId = &v
+	}
+	if outHighestBidTime.Valid {
+		v := outHighestBidTime.Time
+		it.HighestBidTime = &v
+	}
 
+	_ = featStr
 	return it, nil
 }
 
 type ListItemsParams struct {
-	Limit  int
-	Cursor string
-	Status string
-	Query  string
+	Limit    int
+	Cursor   string
+	Status   string
+	SellerID string
+	Query    string
 }
 
 func makeCursor(createdAt time.Time, id string) string {
@@ -247,7 +314,6 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
 		limit = 100
 	}
 
-	// status: convert "" -> NULL (so SQL can do $1::item_status IS NULL)
 	status := strings.ToLower(strings.TrimSpace(p.Status))
 	var statusParam any = nil
 	if status != "" {
@@ -259,10 +325,15 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
 		}
 	}
 
+	sellerID := strings.TrimSpace(p.SellerID)
+	var sellerParam any = nil
+	if sellerID != "" {
+		sellerParam = sellerID
+	}
+
 	q := strings.TrimSpace(p.Query)
 	qLike := "%" + q + "%"
 
-	// cursor: avoid casting NULL to uuid in SQL by using a boolean flag
 	hasCursor := false
 	var curT time.Time
 	var curID string
@@ -275,26 +346,31 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
 		curT = *t
 		curID = *id
 	} else {
-		// dummy values (won't be used because hasCursor=false)
 		curT = time.Unix(0, 0).UTC()
 		curID = "00000000-0000-0000-0000-000000000000"
 	}
 
 	rows, err := r.db.QueryContext(ctx, `
         SELECT
-            id::text, seller_id::text,
-            title, author,
-            base_price, increment, status::text,
-            time_start, time_end,
-            created_at, updated_at
-        FROM items
+            i.id::text, i.seller_id::text,
+			u.username AS seller_username,
+            i.title, i.author,
+            i.base_price, i.increment, i.status::text,
+			i.year_created, i.height, i.width,
+            i.time_start, i.time_end,
+			i.highest_bid_id::text, i.highest_bid_amount,
+			i.highest_bidder_id::text, i.highest_bid_time,
+            i.created_at, i.updated_at
+        FROM items i
+		JOIN users u ON u.id = i.seller_id
         WHERE
-            ($1::item_status IS NULL OR status = $1::item_status)
-            AND ($2 = '' OR title ILIKE $3 OR COALESCE(author, '') ILIKE $3)
-            AND (NOT $4 OR (created_at, id) < ($5, $6::uuid))
-        ORDER BY created_at DESC, id DESC
-        LIMIT $7
-    `, statusParam, q, qLike, hasCursor, curT, curID, limit+1)
+            ($1::item_status IS NULL OR i.status = $1::item_status)
+			AND ($2::uuid IS NULL OR i.seller_id = $2::uuid)
+            AND ($3 = '' OR i.title ILIKE $4 OR COALESCE(i.author, '') ILIKE $4)
+            AND (NOT $5 OR (i.created_at, i.id) < ($6, $7::uuid))
+        ORDER BY i.created_at DESC, i.id DESC
+        LIMIT $8
+    `, statusParam, sellerParam, q, qLike, hasCursor, curT, curID, limit+1)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -303,19 +379,67 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
 	items := make([]Item, 0, limit+1)
 	for rows.Next() {
 		var it Item
+
+		var outSellerUsername sql.NullString
 		var author sql.NullString
+		var outYear sql.NullInt32
+		var outH sql.NullFloat64
+		var outW sql.NullFloat64
+
+		var outHighestBidID sql.NullString
+		var outHighestBidAmount sql.NullInt64
+		var outHighestBidderID sql.NullString
+		var outHighestBidTime sql.NullTime
+
 		if err := rows.Scan(
 			&it.ID, &it.SellerID,
+			&outSellerUsername,
 			&it.Title, &author,
 			&it.BasePrice, &it.Increment, &it.Status,
+			&outYear, &outH, &outW,
 			&it.TimeStart, &it.TimeEnd,
+			&outHighestBidID, &outHighestBidAmount,
+			&outHighestBidderID, &outHighestBidTime,
 			&it.CreatedAt, &it.UpdatedAt,
 		); err != nil {
 			return nil, nil, err
 		}
+
+		if outSellerUsername.Valid {
+			it.SellerUsername = &outSellerUsername.String
+		}
 		if author.Valid {
 			it.Author = &author.String
 		}
+		if outYear.Valid {
+			v := int(outYear.Int32)
+			it.YearCreated = &v
+		}
+		if outH.Valid {
+			v := outH.Float64
+			it.Height = &v
+		}
+		if outW.Valid {
+			v := outW.Float64
+			it.Width = &v
+		}
+		if outHighestBidID.Valid {
+			v := outHighestBidID.String
+			it.HighestBidId = &v
+		}
+		if outHighestBidAmount.Valid {
+			v := outHighestBidAmount.Int64
+			it.HighestBidAmount = &v
+		}
+		if outHighestBidderID.Valid {
+			v := outHighestBidderID.String
+			it.HighestBidderId = &v
+		}
+		if outHighestBidTime.Valid {
+			v := outHighestBidTime.Time
+			it.HighestBidTime = &v
+		}
+
 		items = append(items, it)
 	}
 	if err := rows.Err(); err != nil {
@@ -331,6 +455,11 @@ func (r *ItemDatabase) ListItems(ctx context.Context, p ListItemsParams) ([]Item
 	}
 
 	return items, next, nil
+}
+
+func (r *ItemDatabase) UpdateItemStatus(ctx context.Context, itemID string) error {
+	_, err := r.db.ExecContext(ctx, `SELECT refresh_item_status($1::uuid)`, itemID)
+	return err
 }
 
 func (r *ItemDatabase) Exists(ctx context.Context, itemID string) (bool, error) {

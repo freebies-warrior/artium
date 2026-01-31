@@ -62,18 +62,17 @@ erDiagram
 ## Tables
 
 ## `users`
-
 **Purpose:** Store buyer/seller accounts.
 
-| column        | type        | nullable | notes                          |
+| Column        | Type        | Nullable | Notes                          |
 | ------------- | ----------- | -------- | ------------------------------ |
-| id            | uuid        | no       | PK                             |
-| email         | text        | no       | unique                         |
-| username      | text        | no       | unique                         |
-| password_hash | text        | no       | hashed password (no plaintext) |
-| verified      | boolean     | no       | default `false`                |
-| created_at    | timestamptz | no       | default `now()`                |
-| updated_at    | timestamptz | no       | default `now()`                |
+| `id`          | `uuid`      | No       | Primary Key                    |
+| `email`       | `text`      | No       | Unique                         |
+| `username`    | `text`      | No       | Unique                         |
+| `password_hash` | `text`    | No       | Hashed password (no plaintext) |
+| `verified`    | `boolean`   | No       | Default `false`                |
+| `created_at`  | `timestamptz` | No     | Default `now()`                |
+| `updated_at`  | `timestamptz` | No     | Default `now()`                |
 
 **Constraints**
 
@@ -92,14 +91,14 @@ erDiagram
 
 **Purpose:** Store single-use, expiring tokens used to verify a user’s email address after signup (or after a resend request).
 
-| column     | type        | nullable | notes                                           |
-| ---------- | ----------- | -------- | ----------------------------------------------- |
-| id         | uuid        | no       | PK                                              |
-| user_id    | uuid        | no       | FK → `users.id`                                 |
-| token_hash | bytea       | no       | SHA-256 hash of the raw token (store hash only) |
-| expires_at | timestamptz | no       | token expiry time                               |
-| used_at    | timestamptz | yes      | set when token is consumed (single-use)         |
-| created_at | timestamptz | no       | default `now()`                                 |
+| Column      | Type        | Nullable | Notes                                           |
+| ----------- | ----------- | -------- | ----------------------------------------------- |
+| `id`        | `uuid`      | No       | Primary Key                                     |
+| `user_id`   | `uuid`      | No       | Foreign Key → `users.id`                       |
+| `token_hash`| `bytea`     | No       | SHA-256 hash of the raw token (store hash only) |
+| `expires_at`| `timestamptz` | No     | Token expiry time                               |
+| `used_at`   | `timestamptz` | Yes    | Set when token is consumed (single-use)         |
+| `created_at`| `timestamptz` | No     | Default `now()`                                 |
 
 **Constraints**
 
@@ -125,30 +124,32 @@ erDiagram
 ## `items`
 
 **Purpose:** Auction listings for artworks.
-
-| column       | type        | nullable | notes                                            |
-| ------------ | ----------- | -------- | ------------------------------------------------ |
-| id           | uuid        | no       | PK                                               |
-| seller_id    | uuid        | no       | FK → `users.id`                                  |
-| time_start   | timestamptz | no       | auction start time                               |
-| time_end     | timestamptz | no       | auction end time                                 |
-| title        | text        | no       | listing title                                    |
-| description  | text        | yes      | seller-provided description                      |
-| author       | text        | yes      | artist/author name (if known)                    |
-| features     | jsonb       | yes      | AI-extracted + user-edited structured attributes |
-| year_created | integer     | yes      | year the artwork was created (if known)          |
-| height       | float       | yes      | height in cm (if known)                          |
-| width        | float       | yes      | width in cm (if known)                           |
-| base_price   | bigint      | no       | starting price in dollars                        |
-| increment    | bigint      | no       | minimum bid increment in dollars                 |
-| status       | text        | no       | e.g., `draft`, `active`, `ended`, `cancelled`    |
-| created_at   | timestamptz | no       | default `now()`                                  |
-| updated_at   | timestamptz | no       | default `now()`                                  |
+| Column              | Type        | Nullable | Notes                                            |
+| ------------------- | ----------- | -------- | ------------------------------------------------ |
+| `id`                | `uuid`      | No       | Primary Key                                      |
+| `seller_id`         | `uuid`      | No       | Foreign Key → `users.id`                        |
+| `time_start`        | `timestamptz` | No     | Auction start time                               |
+| `time_end`          | `timestamptz` | No     | Auction end time                                 |
+| `title`             | `text`      | No       | Listing title                                    |
+| `description`       | `text`      | Yes      | Seller-provided description                      |
+| `author`            | `text`      | Yes      | Artist/author name (if known)                   |
+| `features`          | `jsonb`     | Yes      | AI-extracted + user-edited structured attributes |
+| `year_created`      | `integer`   | Yes      | Year the artwork was created (if known)         |
+| `height`            | `float`     | Yes      | Height in cm (if known)                         |
+| `width`             | `float`     | Yes      | Width in cm (if known)                          |
+| `base_price`        | `bigint`    | No       | Starting price in dollars                       |
+| `increment`         | `bigint`    | No       | Minimum bid increment in dollars                |
+| `status`            | `text`      | No       | E.g., `draft`, `active`, `ended`, `cancelled`   |
+| `highest_bid_amount`| `bigint`   | Yes      | Current highest bid in dollars                  |
+| `highest_bidder_id` | `uuid`      | Yes      | Foreign Key → `users.id` (current highest bidder) |
+| `highest_bid_time`  | `timestamptz` | Yes    | Timestamp of current highest bid                |
+| `created_at`        | `timestamptz` | No     | Default `now()`                                 |
+| `updated_at`        | `timestamptz` | No     | Default `now()`                                 |
 
 **Constraints**
 
 - `PRIMARY KEY (id)`
-- `FOREIGN KEY (seller_id) REFERENCES users(id)`
+- `FOREIGN KEY (highest_bidder_id) REFERENCES users(id)`
 - `time_end > time_start`
 - `base_price >= 0`
 - `increment > 0`
@@ -158,6 +159,9 @@ erDiagram
 
 - `items_seller_id_idx` on `(seller_id)`
 - `items_status_time_end_idx` on `(status, time_end)` (useful for showing active auctions ending soon)
+- `items_highest_bid_amount_idx` on `(highest_bid_amount DESC)` (for leaderboard queries)
+- `idx_items_draft_time_start` on `items (time_start)` where `status = 'draft'` (useful to update drafts that are scheduled to be active)
+- `idx_items_draft_active_time_end` on `items (time_end)` where `status IN ('draft','active')` (useful to update auctions status to end)
 
 **Notes on `features`**
 Store structured attributes extracted from the artwork image. Example shape:
@@ -183,13 +187,16 @@ Store structured attributes extracted from the artwork image. Example shape:
 ## `pictures`
 
 **Purpose:** Store images associated with an item (artwork photos, thumbnails, etc.).
+## `pictures`
 
-| column     | type        | nullable | notes                           |
-| ---------- | ----------- | -------- | ------------------------------- |
-| id         | uuid        | no       | PK                              |
-| item_id    | uuid        | no       | FK → `items.id`                 |
-| url        | text        | no       | image URL or object storage key |
-| created_at | timestamptz | no       | default `now()`                 |
+**Purpose:** Store images associated with an item (artwork photos, thumbnails, etc.).
+
+| Column      | Type        | Nullable | Notes                           |
+| ----------- | ----------- | -------- | ------------------------------- |
+| `id`        | `uuid`      | No       | Primary Key                     |
+| `item_id`   | `uuid`      | No       | Foreign Key → `items.id`        |
+| `key`       | `text`      | No       | Image storage key               |
+| `created_at`| `timestamptz` | No     | Default `now()`                 |
 
 **Constraints**
 
@@ -205,14 +212,13 @@ Store structured attributes extracted from the artwork image. Example shape:
 ## `bids`
 
 **Purpose:** Record bid history for each auction item.
-
-| column    | type        | nullable | notes                           |
+| Column    | Type        | Nullable | Notes                           |
 | --------- | ----------- | -------- | ------------------------------- |
-| id        | uuid        | no       | PK, default `gen_random_uuid()` |
-| user_id   | uuid        | no       | FK → `users.id`                 |
-| item_id   | uuid        | no       | FK → `items.id`                 |
-| price     | bigint      | no       | bid amount in dollars           |
-| timestamp | timestamptz | no       | default `now()`                 |
+| `id`      | `uuid`      | No       | Primary Key, default `gen_random_uuid()` |
+| `user_id` | `uuid`      | No       | Foreign Key → `users.id`        |
+| `item_id` | `uuid`      | No       | Foreign Key → `items.id`        |
+| `price`   | `bigint`    | No       | Bid amount in dollars           |
+| `timestamp` | `timestamptz` | No    | Default `now()`                 |
 
 **Constraints**
 
@@ -227,5 +233,6 @@ Store structured attributes extracted from the artwork image. Example shape:
 - `bids_item_id_timestamp_idx` on `(item_id, timestamp DESC)` (fast bid history for item page)
 - `bids_user_id_timestamp_idx` on `(user_id, timestamp DESC)` (user activity)
 - `bids_item_price_desc_idx` on `(item_id, price DESC)` (fast highest bid lookup)
+- `bids_item_price_created_idx` on `(item_id, price, timestamp)` (for validating new bids)
 
 ---

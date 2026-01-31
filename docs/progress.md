@@ -14,8 +14,8 @@ Legend:
 - [x] Repo structure + docs bootstrap (README, architecture, API contract, DB schema)
 - [x] Dockerized Postgres
 - [x] Dockerized pgAdmin
-- [ ] Dockerized Go backend
-- [ ] Dockerized Next.js frontend
+- [x] Dockerized Go backend
+- [x] Dockerized Next.js frontend
 
 ## Database (Schema + Integrity)
 - [x] Enable `pgcrypto` (DB-generated UUIDs)
@@ -41,12 +41,12 @@ Legend:
 - [x] `GET /items` (browse + pagination)
 - [x] `GET /items/{id}` (item detail)
 - [x] `POST /items` (create listing)
-- [ ] Status transitions (`draft → active → ended/cancelled`)
+- [x] Status transitions (`draft → active → ended/cancelled`)
 
 ### Bids
 - [x] `POST /items/{id}/bids` (place bid)
 - [x] `GET /items/{id}/bids` (history)
-- [ ] Concurrency-safe bidding (DB transaction + row lock OR DB trigger)
+- [x] Concurrency-safe bidding (DB transaction + row lock OR DB trigger)
 
 ### Uploads / Pictures
 - [ ] `POST /uploads` (optional signed URL)
@@ -59,8 +59,8 @@ Legend:
 ## Frontend (Next.js)
 - [ ] Pages:
   - [ ] `/` browse items
-  - [ ] `/login`
-  - [ ] `/signup`
+  - [x] `/login`
+  - [x] `/signup`
   - [ ] `/items/[itemId]`
   - [ ] `/items/new`
 

@@ -10,7 +10,7 @@ import artApe from '../assets/nft-ape.jpg'
 export type ArtUI = {
   id: string
   title: string
-  author: string
+  seller_username: string
   basePrice: string
   highestBid: string | undefined
   due: string
@@ -40,9 +40,9 @@ const ArtCard = ({ art, index }: { art: ArtUI; index: number }) => {
 
           <div className="mb-4 flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-900 text-sm font-semibold text-foreground">
-              {art.author.charAt(0).toUpperCase()}
+              {art.seller_username.charAt(0).toUpperCase()}
             </div>
-            <span className="text-sm text-muted-foreground">{art.author}</span>
+            <span className="text-sm text-muted-foreground">{art.seller_username}</span>
           </div>
 
           <div className="flex items-center justify-between">

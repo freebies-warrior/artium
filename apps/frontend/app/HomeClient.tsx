@@ -14,6 +14,7 @@ import Pagination from '@/components/Pagination'
 type ItemDTO = {
   id: string
   title: string
+  seller_username: string | null
   author: string | null
   time_end: string
   base_price: number | string
@@ -150,6 +151,7 @@ export default function HomeClient() {
       const mapped: ArtUI[] = raw.map((it) => ({
         id: it.id,
         title: it.title,
+        seller_username: it.seller_username?.trim() || 'Unknown',
         author: it.author?.trim() || 'Unknown',
         basePrice: formatBid(it.base_price),
         highestBid: formatBid(it.highest_bid_amount),

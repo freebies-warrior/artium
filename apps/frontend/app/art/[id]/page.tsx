@@ -21,6 +21,7 @@ import PreviewButton from '@/components/PreviewButton'
 type Item = {
   id: string
   seller_id: string
+  seller_username: string
   title: string
   description?: string
   author?: string
@@ -48,7 +49,8 @@ type ListItemsResponse = {
   items: Array<{
     id: string
     title: string
-    author?: string
+    seller_username: string
+    author: string
     base_price?: number
     highest_bid_amount?: number
     time_end?: string
@@ -149,14 +151,13 @@ export default function ArtPage() {
   /* ───────────── Fetch more from same author ───────────── */
   useEffect(() => {
     let cancelled = false
-    const author = item?.author?.trim()
-    if (!author) return
+    const seller_id = item?.seller_id;
 
     async function run() {
       setLoadingMore(true)
       setErrorMore(null)
       try {
-        const url = `/api/items?q=${encodeURIComponent(author ?? '')}`
+        const url = `/api/items?seller_id=${encodeURIComponent(seller_id ?? '')}`
         const data = await fetchJson<ListItemsResponse>(url)
 
         if (!cancelled) {
@@ -164,13 +165,11 @@ export default function ArtPage() {
             data.items
               .filter((x) => x.id !== itemId)
               .map((x) => {
-                const safeAuthor =
-                  x.author?.trim() || author?.trim() || 'Unknown'
-
                 return {
                   id: x.id,
                   title: x.title,
-                  author: safeAuthor, // ✅ always string
+                  seller_username: x.seller_username,
+                  author: x.author, 
                   highestBid: formatHighestBid(x.highest_bid_amount ?? x.base_price),
                   due: formatDue(x.time_end),
                 }
@@ -188,7 +187,7 @@ export default function ArtPage() {
     return () => {
       cancelled = true
     }
-  }, [item?.author, itemId])
+  }, [item?.seller_username, itemId])
 
   /* ───────────── Auction ended logic ───────────── */
   const auctionEnded = useMemo(() => {
@@ -255,7 +254,7 @@ export default function ArtPage() {
               <p className="text-muted-foreground text-sm">Seller</p>
               <div className="flex items-center gap-2">
                 <Gem className="w-5 h-5 text-primary" />
-                <span>{item?.author}</span>
+                <span>{item?.seller_username}</span>
               </div>
             </div>
 

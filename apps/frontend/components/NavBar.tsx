@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 
 export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userId, setUserId] = useState("");
   const router = useRouter()
 
   // 🔍 Check login status
@@ -15,9 +16,11 @@ export default function Navbar() {
         const res = await fetch('/api/auth/me', {
           credentials: 'include',
         })
-        setIsLoggedIn(res.ok)
+        const data = await res.json()
+        setUserId(data.user_id);
+        setIsLoggedIn(res.ok);
       } catch {
-        setIsLoggedIn(false)
+        setIsLoggedIn(false);
       }
     }
 
@@ -64,7 +67,7 @@ export default function Navbar() {
         ) : (
           <>
             <Link
-              href="/user"
+              href={"/user/" + userId}
               className="px-4 py-2 rounded-full bg-purple-500 text-white leading-none"
             >
               Profile

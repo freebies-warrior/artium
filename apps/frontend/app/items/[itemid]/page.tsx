@@ -113,8 +113,6 @@ export default function ItemPage() {
   ]
 
   const [item, setItem] = useState<Item | null>(null)
-  const [loadingItem, setLoadingItem] = useState(true)
-  const [errorItem, setErrorItem] = useState<string | null>(null)
 
   const [moreItems, setMoreItems] = useState<ArtUI[]>([])
   const [loadingMore, setLoadingMore] = useState(false)
@@ -128,17 +126,10 @@ export default function ItemPage() {
   /* ───────────── Fetch item ───────────── */
   useEffect(() => {
     let cancelled = false
+
     async function run() {
-      setLoadingItem(true)
-      setErrorItem(null)
-      try {
-        const data = await fetchJson<GetItemResponse>(`/api/items/${itemId}`)
-        if (!cancelled) setItem(data.item)
-      } catch (e: any) {
-        if (!cancelled) setErrorItem(e.message)
-      } finally {
-        if (!cancelled) setLoadingItem(false)
-      }
+      const data = await fetchJson<GetItemResponse>(`/api/items/${itemId}`)
+      if (!cancelled) setItem(data.item)
     }
 
     if (itemId) run()

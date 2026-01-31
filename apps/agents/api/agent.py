@@ -18,13 +18,13 @@ import sys
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 import requests
 from fastapi import APIRouter, BackgroundTasks, HTTPException
-from pydantic import BaseModel, HttpUrl, List, Dict, Any
+from pydantic import BaseModel, HttpUrl
 from enum import Enum
 
 load_dotenv()
@@ -85,6 +85,9 @@ class AsyncPreviewResponse(BaseModel):
     ok: bool = True
     job_id: str
 
+class AsyncFeatureExtractionResponse(BaseModel):
+    ok: bool = True
+
 class JobStatus(str, Enum):
     QUEUED = "queued"
     PROCESSING = "processing"
@@ -114,7 +117,7 @@ def _download_to_temp(url: str, suffix: str) -> Path:
     tmp.close()
     return Path(tmp.name)
 
-def _notify_backend(
+def _notify_backend_preview(
     job_id: str,
     status: JobStatus,
     result_description: Optional[str],
@@ -140,6 +143,29 @@ def _notify_backend(
             )
     except Exception:
         logger.exception("failed to send visualizer job update", extra={"job_id": job_id})
+
+def _notify_backend_feature_extraction(
+    item_id: uuid.UUID,
+    feature_json: dict[str, Any],
+) -> None:
+    url = f"{BACKEND_URL}/items/{item_id}/features"
+    payload = {
+        "features" : feature_json
+    }
+
+    headers = {}
+    if INTERNAL_TOKEN:
+        headers["Authorization"] = f"Bearer {INTERNAL_TOKEN}"
+
+    try:
+        resp = requests.put(url, json=payload, headers=headers, timeout=10)
+        if resp.status_code >= 400:
+            logger.warning(
+                "failed to update feature extraction job",
+                extra={"item_id": item_id, "status": resp.status_code},
+            )
+    except Exception:
+        logger.exception("failed to send feature extraction job update", extra={"item_id": item_id})
 
 
 @system_router.get("/health")
@@ -223,7 +249,7 @@ def _run_preview(req: VisualizerRequest) -> None:
         logger.exception("visualization failed")
     finally:
         logger.info("result_description: %s", result_description)
-        _notify_backend(req.job_id, status=status, result_description=result_description, error_message=error_message)
+        _notify_backend_preview(req.job_id, status=status, result_description=result_description, error_message=error_message)
         try:
             for f in tmp_dir.iterdir():
                 f.unlink()
@@ -240,17 +266,24 @@ def preview(
     return AsyncPreviewResponse(job_id=req.job_id)
 
 
-@feature_extractor_router.post("/extract", response_model=FeatureExtractionResponse)
-def extract_features(req: FeatureExtractionRequest) -> FeatureExtractionResponse:
+@feature_extractor_router.post("/extract", response_model=AsyncFeatureExtractionResponse)
+def extract_features(
+    req: FeatureExtractionRequest, background_tasks : BackgroundTasks
+) -> AsyncFeatureExtractionResponse:
+    background_tasks.add_task(_extract_features, req)
+    return AsyncFeatureExtractionResponse()
+
+
+def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionResponse:
     """Extract visual and market features from artwork image. Automatically determines if painting or sculpture."""
-    logger.info("feature extraction request", extra={"image_url": str(req.image_url)})
+    logger.info("feature extraction request", extra={"image_urls": str(req.image_get_urls)})
 
     try:
         selected_index = get_primary_image_index(
-            images = [fetch_and_standardize_image(str(image_url), target_size = (512, 512))[0] for image_url in req.image_urls]
+            images = [fetch_and_standardize_image(str(image_url), target_size = (512, 512))[0] for image_url in req.image_get_urls]
         )
 
-        image_url = req.image_urls[selected_index]
+        image_url = req.image_get_urls[selected_index]
 
         # Prepare metadata
         md = ArtworkMetadata(
@@ -279,17 +312,60 @@ def extract_features(req: FeatureExtractionRequest) -> FeatureExtractionResponse
         service = get_agent_service()
         final = service.extract_features(initial_state)
 
-        # Build response (exclude image_bytes)
-        return FeatureExtractionResponse(
-            metadata=final.get("metadata", {}),
-            artwork_type=final.get("artwork_type", "UNKNOWN"),
-            image_mode=final.get("image_mode", ""),
-            image_size=list(final.get("image_size", (0, 0))),
-            vision_features=final.get("vision_features"),
-            market_features=final.get("market_features"),
-            errors=final.get("errors", []),
-        )
+        feature_json = final
+        
+        # Run price valuation pipeline
+        valuation_result = None
+        try:
+            artwork_type = final.get("artwork_type", "").lower()
+            if artwork_type in ("painting", "sculpture"):
+                logger.info(f"Running price valuation for {artwork_type}")
+                
+                # Build valuation state
+                valuation_state = {
+                    "artwork_features": final,
+                    "metadata": md,
+                    "artwork_type": artwork_type,
+                    "image_bytes": image_bytes,
+                    "errors": [],
+                }
+                
+                # Run valuation through service (graph is cached)
+                valuation_result = service.valuate_artwork(valuation_state)
+                
+                logger.info(f"Price valuation complete: ${valuation_result.get('price_range', {}).get('mid', 0):,.2f}")
+            else:
+                if artwork_type == "NOT_AN_ARTWORK":
+                    logger.info("Skipping price valuation - input image not recognized as artwork")
+                else:
+                    logger.info(f"Skipping price valuation - artwork_type '{artwork_type}' not supported")
+        except Exception as valuation_exc:
+            logger.exception(f"Price valuation failed: {valuation_exc}")
+            # Continue even if valuation fails
+        
+        # Combine results
+        combined_result = {
+            **feature_json,
+            "valuation": valuation_result if valuation_result else None,
+        }
 
-    except Exception as exc:
-        logger.exception("Feature extraction failed")
-        raise HTTPException(status_code=500, detail=f"Feature extraction failed: {exc}")
+        # # Build response (exclude image_bytes)
+        # return FeatureExtractionResponse(
+        #     metadata=final.get("metadata", {}),
+        #     artwork_type=final.get("artwork_type", "UNKNOWN"),
+        #     image_mode=final.get("image_mode", ""),
+        #     image_size=list(final.get("image_size", (0, 0))),
+        #     vision_features=final.get("vision_features"),
+        #     market_features=final.get("market_features"),
+        #     errors=final.get("errors", []),
+        # )
+
+    except Exception as exc:  # pragma: no cover - handled at runtime
+        error_message = str(exc)
+        logger.exception(f"feature extraction failed, {error_message}")
+        combined_result = {}
+    finally:
+        logger.info("feature extraction complete")
+        if not combined_result:
+            combined_result = {}
+        _notify_backend_feature_extraction(req.item_id, feature_json = combined_result)

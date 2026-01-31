@@ -9,6 +9,8 @@ from typing import Any
 from feature_extractor.graph import build_graph
 from feature_extractor.llm_client import GeminiVisionClient
 from feature_extractor.types import FeatureState
+from price_valuator.graph import build_valuation_graph
+from price_valuator.types import ValuationState
 from visualizer.client import GeminiClient
 from visualizer.pipeline_langgraph import (  # maaf iya ni emang jelek soalnya mau cepet hehe
     VizState,
@@ -19,21 +21,23 @@ logger = logging.getLogger(__name__)
 
 
 class AgentService:
-    """Unified service for managing both feature extraction and visualization graphs."""
+    """Unified service for managing feature extraction, visualization, and price valuation graphs."""
 
     def __init__(self):
         self.feature_graph = None
         self.visualizer_graph = None
+        self.valuation_graph = None
         self.feature_client = None
         self.visualizer_client = None
 
     def initialize(self):
-        """Initialize both graphs and clients (called once at startup)."""
+        """Initialize all graphs and clients (called once at startup)."""
         logger.info("Initializing AgentService...")
         self.feature_client = GeminiVisionClient()
         self.feature_graph = build_graph(vision_llm=self.feature_client)
         self.visualizer_client = GeminiClient()
         self.visualizer_graph = build_visualization_graph()
+        self.valuation_graph = build_valuation_graph()
         logger.info("AgentService initialized successfully.")
 
     def shutdown(self):
@@ -41,6 +45,7 @@ class AgentService:
         logger.info("Shutting down AgentService...")
         self.feature_graph = None
         self.visualizer_graph = None
+        self.valuation_graph = None
         self.feature_client = None
         self.visualizer_client = None
         logger.info("AgentService shut down.")
@@ -65,6 +70,16 @@ class AgentService:
         logger.info("Running visualization pipeline...")
         result = self.visualizer_graph.invoke(state)
         logger.info("Visualization complete.")
+        return result
+
+    def valuate_artwork(self, state: ValuationState) -> ValuationState:
+        """Run price valuation pipeline using the cached valuation graph."""
+        if self.valuation_graph is None:
+            raise RuntimeError("AgentService not initialized. Call initialize() first.")
+
+        logger.info("Running price valuation pipeline...")
+        result = self.valuation_graph.invoke(state)
+        logger.info("Price valuation complete.")
         return result
 
 

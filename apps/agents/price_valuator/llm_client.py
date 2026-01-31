@@ -6,7 +6,7 @@ import json
 import logging
 from typing import Any, Dict
 
-from apps.agents.feature_extractor.llm_client import VisionLLMClient
+from feature_extractor.llm_client import VisionLLMClient
 
 logger = logging.getLogger(__name__)
 

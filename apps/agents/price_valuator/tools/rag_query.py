@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List
 
-from apps.agents.RAG.settings import EnvSettings, load_config
-from apps.agents.RAG.pinecone_store import build_pinecone_client, get_index, index_name
-from apps.agents.RAG.embedder.openai_embed import OpenAITextEmbedder
-from apps.agents.RAG.context.canonicalize import canonicalize_feature_state
+from RAG.settings import EnvSettings, load_config
+from RAG.pinecone_store import build_pinecone_client, get_index, index_name
+from RAG.embedder.openai_embed import OpenAITextEmbedder
+from RAG.context.canonicalize import canonicalize_feature_state
 
 logger = logging.getLogger(__name__)
 

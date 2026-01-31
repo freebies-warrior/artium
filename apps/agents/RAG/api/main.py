@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+import sys
 import json
 import logging
 from typing import Any, Dict, Optional
@@ -8,18 +10,29 @@ import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from apps.agents.RAG.settings import EnvSettings, load_config
-from apps.agents.RAG.utils.logging import setup_logging
-from apps.agents.RAG.utils.image_io import data_url_to_bytes
-from apps.agents.RAG.utils.hashing import sha256_hex
+# Ensure RAG package is importable
+CURRENT_DIR = Path(__file__).resolve().parent
+RAG_ROOT = CURRENT_DIR.parent.parent  # .../apps/agents
+if str(RAG_ROOT) not in sys.path:
+    sys.path.insert(0, str(RAG_ROOT))
 
-from apps.agents.RAG.pinecone_store import build_pinecone_client, get_index, index_name
-from apps.agents.RAG.context.canonicalize import canonicalize_feature_state
-from apps.agents.RAG.context.manus import ManusCanonicalizer
-from apps.agents.RAG.embedder.openai_embed import OpenAITextEmbedder
-from apps.agents.RAG.embedder.numeric import NumericFeatureEmbedder
-from apps.agents.RAG.embedder.clip_image import ClipImageEmbedder
+from RAG.settings import EnvSettings, load_config  # noqa: E402
+from RAG.utils.logging import setup_logging  # noqa: E402
+from RAG.utils.image_io import data_url_to_bytes  # noqa: E402
+from RAG.utils.hashing import sha256_hex  # noqa: E402
 
+from RAG.pinecone_store import build_pinecone_client, get_index, index_name  # noqa: E402
+from RAG.context.canonicalize import canonicalize_feature_state  # noqa: E402
+from RAG.context.manus import ManusCanonicalizer  # noqa: E402
+from RAG.embedder.openai_embed import OpenAITextEmbedder  # noqa: E402
+from RAG.embedder.numeric import NumericFeatureEmbedder  # noqa: E402
+from RAG.embedder.clip_image import ClipImageEmbedder  # noqa: E402
+
+
+CURRENT_DIR = Path(__file__).resolve().parent
+RAG_ROOT = CURRENT_DIR.parent  # .../apps/agents
+if str(RAG_ROOT) not in sys.path:
+    sys.path.insert(0, str(RAG_ROOT))
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +89,6 @@ index_clients = {
     "sculpture": get_index(pc, index_name(prefix, mode, "sculpture")),
 }
 
-
 class QueryRequest(BaseModel):
     artwork_type: str = Field(..., description="painting or sculpture")
     top_k: int = Field(10, ge=1, le=50)
@@ -123,6 +135,7 @@ app = FastAPI(title="Arium VectorDB Agent", version="0.1.0")
 @app.get("/health")
 def health() -> Dict[str, Any]:
     return {"ok": True, "embedding_mode": mode}
+
 @app.post("/upsert", response_model=UpsertResponse)
 def upsert(req: UpsertRequest) -> UpsertResponse:
     artwork_type = req.artwork_type.lower().strip()
@@ -216,9 +229,6 @@ def upsert(req: UpsertRequest) -> UpsertResponse:
         record_id=rid,
         upserted=True,
     )
-
-
-
 
 @app.post("/query", response_model=QueryResponse)
 def query(req: QueryRequest) -> QueryResponse:

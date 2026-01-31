@@ -49,7 +49,8 @@ class AppConfig:
 
 def load_config(config_path: str | os.PathLike = None) -> AppConfig:
     if config_path is None:
-        config_path = os.getenv("VECTORDB_CONFIG", "apps/agents/RAG/config.yaml")
+        # config_path = os.getenv("VECTORDB_CONFIG", "apps/agents/RAG/config.yaml")
+        config_path = os.getenv("VECTORDB_CONFIG", "RAG/config.yaml")
     p = Path(config_path)
     data = yaml.safe_load(p.read_text(encoding="utf-8"))
     if not isinstance(data, dict): 

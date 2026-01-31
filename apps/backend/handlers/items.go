@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -250,4 +251,49 @@ func (h *ItemsHandler) ListItems(c *gin.Context) {
 		Items:      items,
 		NextCursor: next,
 	})
+}
+
+type putItemFeaturesReq struct {
+	Features json.RawMessage `json:"features"`
+}
+
+func (h *ItemsHandler) PutItemFeatures(c *gin.Context) {
+	itemID := strings.TrimSpace(c.Param("item_id"))
+	if itemID == "" || !uuidPattern.MatchString(itemID) {
+		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid item_id", map[string]any{"field": "item_id"}))
+		return
+	}
+
+	var req putItemFeaturesReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid json", nil))
+		return
+	}
+
+	if len(req.Features) == 0 || string(req.Features) == "null" {
+		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "features is required", map[string]any{"field": "features"}))
+		return
+	}
+
+	// Ensure "features" is a JSON object
+	var v any
+	if err := json.Unmarshal(req.Features, &v); err != nil {
+		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "features must be valid json", map[string]any{"field": "features"}))
+		return
+	}
+	if _, ok := v.(map[string]any); !ok {
+		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "features must be a JSON object", map[string]any{"field": "features"}))
+		return
+	}
+
+	if err := h.items.UpdateItemFeatures(c.Request.Context(), itemID, string(req.Features)); err != nil {
+		if err == database.ErrNotFound {
+			c.JSON(http.StatusNotFound, utils.NewError("NOT_FOUND", "item not found", nil))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to update item features", nil))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ok": true})
 }

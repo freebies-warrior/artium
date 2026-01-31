@@ -27,6 +27,7 @@ func NewRouter(h *handlers.HandlerSet, jwtSecret []byte, internalToken string) *
 	r.GET("/items", h.Items.ListItems)
 	r.GET("/items/:item_id", h.Items.GetItem)
 	r.POST("/items", middlewares.RequireAuth(jwtSecret), h.Items.PostItem)
+	r.PUT("/items/:item_id/features", middlewares.RequireInternalToken(internalToken), h.Items.PutItemFeatures)
 
 	// Upload Image
 	r.POST("/uploads/presign", middlewares.RequireAuth(jwtSecret), h.Uploads.PresignPut)

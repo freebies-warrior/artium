@@ -37,14 +37,17 @@ from feature_extractor.tools.image_tool import fetch_and_standardize_image  # no
 from .service import get_agent_service  # noqa: E402
 
 
-class PreviewRequest(BaseModel):
+class ItemDimensions(BaseModel):
+    width: int
+    height: int
+
+class VisualizerRequest(BaseModel):
     room_url: HttpUrl
     art_url: HttpUrl
-    output_filename: Optional[str] = None  # default created in temp dir
-    max_retries: Optional[int] = None
-    image_model: Optional[str] = None
-    text_model: Optional[str] = None
-    no_enhance: bool = False
+    upload_image_url: Optional[str] = None  # default created in temp dir
+    upload_image_key: Optional[str] = None
+    item_dimensions: Optional[ItemDimensions] = None
+    job_id: str
 
 
 class FeatureExtractionRequest(BaseModel):
@@ -65,7 +68,7 @@ class FeatureExtractionResponse(BaseModel):
     errors: list
 
 
-class PreviewResponse(BaseModel):
+class VisualizerModelResponse(BaseModel):
     out_path: str
     preview_base64: str
     used_enhancement: bool
@@ -111,8 +114,8 @@ def get_config() -> dict:
     }
 
 
-@visualizer_router.post("/visualize_installation", response_model=PreviewResponse)
-def preview(req: PreviewRequest) -> PreviewResponse:
+@visualizer_router.post("/visualize_installation", response_model=VisualizerModelResponse)
+def preview(req: VisualizerRequest) -> VisualizerModelResponse:
     logger.info("preview request", extra={"room_url": str(req.room_url), "art_url": str(req.art_url)})
 
     # Prepare config overrides
@@ -124,10 +127,10 @@ def preview(req: PreviewRequest) -> PreviewResponse:
     art_path = _download_to_temp(str(req.art_url), suffix=Path(req.art_url.path).suffix or ".jpeg")
 
     # Decide output path (support presigned URL; otherwise shorten local filename)
-    if req.output_filename and urlparse(req.output_filename).scheme in {"http", "https"}:
-        out_path = req.output_filename
+    if req.upload_image_url and urlparse(req.upload_image_url).scheme in {"http", "https"}:
+        out_path = req.upload_image_url
     else:
-        base_name = Path(req.output_filename).name if req.output_filename else "preview.jpeg"
+        base_name = Path(req.upload_image_url).name if req.upload_image_url else "preview.jpeg"
         # Trim excessively long filenames
         if len(base_name) > 80:
             stem = Path(base_name).stem[:60]
@@ -181,7 +184,7 @@ def preview(req: PreviewRequest) -> PreviewResponse:
     except Exception:
         pass
 
-    return PreviewResponse(
+    return VisualizerModelResponse(
         out_path=str(out_path),
         preview_base64=f"data:image/jpeg;base64,{b64}",
         used_enhancement=result.get("used_enhancement", False),

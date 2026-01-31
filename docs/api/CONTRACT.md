@@ -604,6 +604,64 @@ Fetch recent bids for an item.
 
 ---
 
+## Users Endpoints
+
+---
+
+## List Users
+
+---
+
+Returns all users (public-safe fields only).
+
+- **Method:** `GET`
+- **Path:** `/users`
+- **Auth:** none
+
+**Query Parameters**
+- `limit` (optional, int)
+  - Default: `20`
+  - Max: `100`
+- `q` (optional, string)
+  - Username search (case-insensitive, partial match).
+  - Example: `q=fer` matches usernames containing `fer`.
+- `cursor` (optional, string)
+  - Cursor-based pagination token returned by this endpoint (`next_cursor`).
+  - Opaque to clients (do not try to parse/modify).
+
+### Response (200)
+```json
+{
+  "data": [
+    {
+      "id": "uuid-string",
+      "username": "string",
+      "created_at": "RFC3339 timestamp"
+    }
+  ],
+  "next_cursor": "string-or-null"
+}
+```
+
+### Errors
+- `400 VALIDATION_ERROR` if `limit` is not a valid integer.
+- `400 VALIDATION_ERROR` if query params are invalid (e.g., malformed cursor).
+
+### Notes
+- Results are sorted by `created_at` descending, then `id` descending.
+- If there are more results, `next_cursor` will be returned. Pass it into the next request as `cursor`.
+- If there are no more results, `next_cursor` will be `null`.
+
+### Examples
+- First page:
+  - `GET /users?limit=20`
+- Search by username:
+  - `GET /users?q=fer&limit=20`
+- Next page:
+  - `GET /users?limit=20&cursor=<next_cursor_from_previous_response>`
+
+---
+
 ## AI Endpoints (Buyer Support)
 
 > Note: These are **support features** for buyer experience. They do not alter auction outcomes directly.
@@ -711,7 +769,7 @@ Generate a preview image showing the artwork placed in the user's room.
 
 ## Frontend Page → Endpoint Mapping (MVP)
 
-### Login page
+### Auth page
 
 - `POST /auth/signup`
 - `POST /auth/login`

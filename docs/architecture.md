@@ -199,14 +199,12 @@ The Visualizer feature merges an item image with a user-provided â€œroom photoâ€
 4. Backend creates a row in `visualization_jobs` with `status='queued'` and triggers the AI Backend.
 5. AI Backend fetches the item image + room image using backend-approved access (signed GET or internal access).
 6. AI Backend generates the merged result image and description.
-7. AI Backend requests a signed PUT URL from Backend to upload the result image.
-8. AI Backend uploads the result to R2 and updates the job as `succeeded` (or `failed`) with:
+7. AI Backend uploads the result to R2 and updates the job as `succeeded` (or `failed`) with:
    - `result_image_key`
    - `result_description` (or `error_message`)
-9. Frontend polls `GET /visualizations/{job_id}` until completion, then renders the result.
+8. Frontend polls `GET /visualizations/{job_id}` until completion, then renders the result.
 
 ### Notes
-- Services should pass **R2 object keys** (or IDs), not arbitrary external URLs.
 - Do not store signed URLs in Postgres; store only keys and derive URLs or sign GET on demand.
 
 ---

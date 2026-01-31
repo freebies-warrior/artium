@@ -1,6 +1,6 @@
-# API Contract
+# Go Backend API Contract
 
-This document is the **human-readable API contract** between the Next.js frontend and the Go backend.
+This document is the **human-readable API contract** that the Go backend provides.
 
 - **Base URL (local):** `http://localhost:8080`
 - **Content-Type:** `application/json`
@@ -850,6 +850,42 @@ List visualizer jobs for the current user (useful for UI history).
 - `400 VALIDATION_ERROR`
 - `401 UNAUTHORIZED`
 
+## Update Visualizer Job
+(Update is internal only; frontend cannot call this.)
+
+- **Method:** `PUT`
+- **Path:** `/visualizations/{job_id}`
+- **Auth:** internal only
+
+### Request
+
+```json
+{
+  "status": "succeeded",
+  "result_description": "A warm-toned landscape piece displayed above a modern sofa...",
+  "error_message": null
+}
+```
+
+### Response (200)
+
+```json
+{
+  "ok": true
+}
+```
+
+### Errors
+
+- `400 VALIDATION_ERROR`
+- `404 NOT_FOUND`
+
+### Notes
+
+- Used by AI backend to update job status/results.
+- Only `status`, `result_description`, and `error_message` can be updated.
+
+---
 
 ## Get Similar Items
 
@@ -930,3 +966,55 @@ Recommend similar items based on the clicked item (ignore price range).
 - `GET /visualizations/{job_id}` (poll status + fetch result)
 
 ---
+
+# AI Backend API Contract
+
+This document is the **human-readable API contract** that the AI microservice provides.
+
+---
+
+## AI Visualizer Endpoints
+
+---
+
+## Visualize in Room
+
+---
+
+Start a visualization job to merge an artwork image with a room photo.
+
+- **Method:** `POST`
+- **Path:** `/agents/visualizer/visualize_installation
+
+### Request
+
+```json
+{
+  "room_url": "https://.../rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+  "art_url": "https://.../items/<item_id>/main.jpg",
+  "result_image_url": "https://.../visualizations/<job_id>/result.jpg",
+  "result_image_key": "visualizations/<job_id>/result.jpg",
+  "item_dimensions": {
+    "width": 60,
+    "height": 40
+  },
+  "job_id": "uuid",
+}
+```
+
+### Response `200`
+
+```json
+{
+  "ok": true
+}
+```
+
+### Errors
+- `400 VALIDATION_ERROR` (missing/invalid fields)
+- `500 INTERNAL_ERROR` (unexpected / processing failure)
+
+### Notes
+- `room_url` and `art_url` are presigned GET URLs to R2 objects.
+- The AI service downloads the images, processes them, and uploads the result back to R2.
+- The AI service does **not** return the result directly; it updates the job state in the Go backend via DB or another mechanism.

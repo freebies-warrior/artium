@@ -179,6 +179,36 @@ This guarantees no “double accepted” bids at the same price.
 
 ---
 
+## AI Visualizer (Async Job)
+
+The Visualizer feature merges an item image with a user-provided “room photo” to generate:
+- a merged visualization image (stored in Cloudflare R2)
+- a text description (stored in Postgres)
+
+### Components involved
+- **Frontend (Next.js)**: uploads room photo, starts job, polls for result
+- **Backend (Go API)**: issues signed URLs for uploads/downloads, owns job state, orchestrates AI calls
+- **AI Backend (FastAPI/Python)**: downloads inputs, runs visualization, uploads output
+- **Postgres**: stores job state + metadata in `visualization_jobs`
+- **Cloudflare R2**: stores room photo + result image as objects (referenced by `*_key`)
+
+### End-to-end flow
+1. Frontend requests a signed PUT URL from Backend to upload the room image.
+2. Frontend uploads the room image directly to R2 and obtains `room_image_key`.
+3. Frontend creates a visualization job via Backend (`POST /visualizations`).
+4. Backend creates a row in `visualization_jobs` with `status='queued'` and triggers the AI Backend (`/agents/visualizer/visualize_installation`).
+5. AI Backend fetches the item image + room image using backend-approved access (signed GET or internal access).
+6. AI Backend generates the merged result image and description.
+7. AI Backend uploads the result to R2 and updates the job as `succeeded` (or `failed`) with:
+   - `result_image_key`
+   - `result_description` (or `error_message`)
+8. Frontend polls `GET /visualizations/{job_id}` until completion, then renders the result.
+
+### Notes
+- Do not store signed URLs in Postgres; store only keys and derive URLs or sign GET on demand.
+
+---
+
 ## Optional Extensions (later)
 These are the future modules mentioned in the sketch. They will be added as separate endpoints/services, but are **not** specified here yet:
 - **Recommender**: show similar items on the item page.
@@ -188,8 +218,3 @@ These are the future modules mentioned in the sketch. They will be added as sepa
 For now, the API should be structured so these can be added without breaking core auction flows.
 
 ---
-
-## Operational Notes (MVP)
-- Local dev: `docker-compose.yml` provides Postgres and any required dependencies.
-- Logging: structured logs from Go API (request id, endpoint, status code).
-- Rate limits (optional): basic per-IP limits for uploads and bidding endpoints.

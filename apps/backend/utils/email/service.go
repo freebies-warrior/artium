@@ -33,12 +33,15 @@ func (s *Service) sendMail(to string, subject string, body string) error {
 
 	addr := fmt.Sprintf("%s:%d", s.cfg.Host, s.cfg.Port)
 
-	auth := smtp.PlainAuth(
-		"",
-		s.cfg.Username,
-		s.cfg.Password,
-		s.cfg.Host,
-	)
+	var auth smtp.Auth = nil
+	if s.cfg.Username != "" && s.cfg.Password != "" {
+		auth = smtp.PlainAuth(
+			"",
+			s.cfg.Username,
+			s.cfg.Password,
+			s.cfg.Host,
+		)
+	}
 
 	return smtp.SendMail(
 		addr,

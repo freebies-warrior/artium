@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"backend/app"
@@ -35,12 +36,16 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	smtpPort, err := strconv.Atoi(mustEnv("SMTP_PORT"))
+	if err != nil {
+		log.Fatalf("invalid SMTP_PORT: %v", err)
+	}
 
 	emailService := email.New(email.Config{
 		Host:     mustEnv("SMTP_HOST"),
-		Port:     587, // keep simple for now
-		Username: mustEnv("SMTP_USERNAME"),
-		Password: mustEnv("SMTP_PASSWORD"),
+		Port:     smtpPort,
+		Username: getenv("SMTP_USERNAME", ""),
+		Password: getenv("SMTP_PASSWORD", ""),
 		FromName: mustEnv("EMAIL_FROM_NAME"),
 		FromAddr: mustEnv("EMAIL_FROM_ADDRESS"),
 	})

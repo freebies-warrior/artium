@@ -1,18 +1,19 @@
 import AddItemButton from './AddItemButton'
 type userHeaderProps = {
-  username: string
+  userId: string
 }
-export default function UserHeader({username} : userHeaderProps) {
+
+export default function UserHeader({ userId }: userHeaderProps) {
   return (
     <div className="flex items-center gap-6 mb-8">
       <div className="h-24 w-24 rounded-full bg-neutral-700" />
 
       <div className="flex-1">
-        <h1 className="text-2xl font-bold">{username}</h1>
+        <h1 className="text-2xl font-bold">Your Profile</h1>
         <p className="text-neutral-400">Manage your listings</p>
       </div>
 
-      <AddItemButton />
+      <AddItemButton userId={userId} />
     </div>
   )
 }

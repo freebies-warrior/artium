@@ -38,10 +38,10 @@ export default function BidButton({
   const currentPrice = item.base_price ?? 0
   const highestBid = item.highest_bid_amount
   const increment = item.increment ?? 0
-  console.log(highestBid);
-  console.log("HIHI: " + currentPrice);
   const minBid = highestBid
     ? highestBid + increment
+    : currentPrice == 0
+    ? 1
     : currentPrice
 
   const bidInt = bid === '' ? NaN : parseInt(bid, 10)
@@ -128,7 +128,7 @@ export default function BidButton({
             <div className="flex justify-between rounded-lg bg-secondary/40 p-4">
               <div>
                 <p className="text-xs text-muted-foreground">
-                  {highestBid ? 'Highest Bid' : 'Base Price'}
+                  {highestBid && highestBid > 0 ? 'Highest Bid' : 'Base Price'}
                 </p>
 
                 <p className="font-semibold">

@@ -128,13 +128,9 @@ function toLightboxImages(pictures?: PictureDTO[] | null) {
   return imgs.length ? imgs : [{ src: fallbackImg.src, alt: 'Artwork image' }]
 }
 
-export default function ArtPage() {
+export default function ItemPage() {
   const params = useParams()
-  const itemId = useMemo(() => {
-    const raw = (params as any)?.item_id ?? (params as any)?.id
-    return typeof raw === 'string' ? raw : ''
-  }, [params])
-
+  const itemId = params.itemid;
   const [refreshKey, setRefreshKey] = useState(0)
 
   const [isOpen, setIsOpen] = useState(false)
@@ -228,7 +224,7 @@ export default function ArtPage() {
 
   // ✅ Hero image uses first backend image
   const heroSrc = itemImages[0]?.src ?? fallbackImg.src
-
+  console.log(itemImages);
   return (
     <div className="min-h-screen bg-background pt-16">
       <Navbar />
@@ -322,7 +318,7 @@ export default function ArtPage() {
               <pre className="border rounded-lg p-3 text-xs whitespace-pre-wrap">{featuresText}</pre>
             )}
 
-            <PreviewButton />
+            <PreviewButton itemName = {item?.title}/>
           </div>
 
           {/* Right */}

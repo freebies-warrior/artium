@@ -56,7 +56,9 @@ export default function SellPage() {
     replaceImages(trimmed)
 
     if (combined.length > MAX_IMAGES) {
-      setError(`You can upload up to ${MAX_IMAGES} images. Extra images were ignored.`)
+      setError(
+        `You can upload up to ${MAX_IMAGES} images. Extra images were ignored.`
+      )
     }
   }
 
@@ -119,7 +121,10 @@ export default function SellPage() {
           )
         }
 
-        const { upload_url, key } = presignData as { upload_url: string; key: string }
+        const { upload_url, key } = presignData as {
+          upload_url: string
+          key: string
+        }
 
         const putRes = await fetch(upload_url, {
           method: 'PUT',
@@ -162,7 +167,7 @@ export default function SellPage() {
 
       if (res.ok && (data.item || data.id)) {
         const itemId = data.item?.id ?? data.id
-        router.push(`/art/${itemId}`)
+        router.push(`/items/${itemId}`)
         return
       }
 
@@ -193,7 +198,8 @@ export default function SellPage() {
           {/* LEFT COLUMN — FORM */}
           <div>
             <p className="mb-4 text-sm text-neutral-400">
-              Fields marked with <span className="text-red-500">*</span> are required
+              Fields marked with <span className="text-red-500">*</span> are
+              required
             </p>
 
             <form id="sell-form" onSubmit={handleSubmit} className="space-y-4">
@@ -407,20 +413,27 @@ export default function SellPage() {
                   onChange={(e) => {
                     setError(null)
 
-                    const files = Array.from(e.target.files ?? [])
-                      .filter((f) => f.type.startsWith('image/'))
+                    const files = Array.from(e.target.files ?? []).filter((f) =>
+                      f.type.startsWith('image/')
+                    )
 
                     if (files.length === 0) return
 
                     // Enforce max total (allow adding in multiple selections)
                     if (imageFiles.length >= MAX_IMAGES) {
-                      setError(`You already selected ${MAX_IMAGES} images (max).`)
+                      setError(
+                        `You already selected ${MAX_IMAGES} images (max).`
+                      )
                       e.target.value = ''
                       return
                     }
 
-                    const tooLarge = files.filter((f) => f.size > MAX_FILE_SIZE_BYTES)
-                    const okSize = files.filter((f) => f.size <= MAX_FILE_SIZE_BYTES)
+                    const tooLarge = files.filter(
+                      (f) => f.size > MAX_FILE_SIZE_BYTES
+                    )
+                    const okSize = files.filter(
+                      (f) => f.size <= MAX_FILE_SIZE_BYTES
+                    )
 
                     if (tooLarge.length > 0) {
                       setError(

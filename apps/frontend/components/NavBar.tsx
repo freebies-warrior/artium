@@ -3,29 +3,38 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
+
+interface AuthMeResponse {
+  authenticated: boolean
+  user_id?: string
+}
 
 export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [userId, setUserId] = useState("");
+  const [userId, setUserId] = useState<string | null>(null)
   const router = useRouter()
+  const pathname = usePathname()
 
   // 🔍 Check login status
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        const res = await fetch('/api/auth/me', {
-          credentials: 'include',
-        })
-        const data = await res.json()
-        setUserId(data.user_id);
-        setIsLoggedIn(res.ok);
-      } catch {
-        setIsLoggedIn(false);
+      const res = await fetch('/api/auth/me', {
+        credentials: 'include',
+      })
+      const data: AuthMeResponse = await res.json()
+      console.log(data)
+      if (data.authenticated && data.user_id) {
+        setIsLoggedIn(true)
+        setUserId(data.user_id)
+      } else {
+        setIsLoggedIn(false)
+        setUserId(null)
       }
     }
 
     checkAuth()
-  }, [])
+  }, [pathname])
 
   // 🚪 Logout
   const handleLogout = async () => {
@@ -35,6 +44,7 @@ export default function Navbar() {
     })
 
     setIsLoggedIn(false)
+    setUserId(null)
     router.replace('/')
     router.refresh()
   }
@@ -66,12 +76,14 @@ export default function Navbar() {
           </>
         ) : (
           <>
-            <Link
-              href={"/users/" + userId}
-              className="px-4 py-2 rounded-full bg-purple-500 text-white leading-none"
-            >
-              Profile
-            </Link>
+            {userId && (
+              <Link
+                href={'/users/' + userId}
+                className="px-4 py-2 rounded-full bg-purple-500 text-white leading-none"
+              >
+                Profile
+              </Link>
+            )}
             <button
               onClick={handleLogout}
               className="px-4 py-2 rounded-full bg-purple-500 text-white leading-none"

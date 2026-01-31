@@ -56,7 +56,7 @@ export default function SellPage() {
 
     if (res.ok && (data.item || data.id)) {
       const itemId = data.item?.id ?? data.id
-      router.push(`/art/${itemId}`)
+      router.push(`/items/${itemId}`)
       return
     }
 

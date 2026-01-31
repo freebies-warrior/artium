@@ -16,17 +16,17 @@ func NewVisualizationJobDatabase(db *sql.DB) *VisualizationJobDatabase {
 }
 
 type VisualizationJob struct {
-	ID                string     `json:"id"`
-	UserID            string     `json:"user_id"`
-	ItemID            string     `json:"item_id"`
-	ItemImageKey      string     `json:"item_image_key"`
-	RoomImageKey      string     `json:"room_image_key"`
-	Status            string     `json:"status"`
-	ResultImageKey    *string    `json:"result_image_key,omitempty"`
-	ResultDescription *string    `json:"result_description,omitempty"`
-	ErrorMessage      *string    `json:"error_message,omitempty"`
-	CreatedAt         time.Time  `json:"created_at"`
-	UpdatedAt         time.Time  `json:"updated_at"`
+	ID                string    `json:"id"`
+	UserID            string    `json:"user_id"`
+	ItemID            string    `json:"item_id"`
+	ItemImageKey      string    `json:"item_image_key"`
+	RoomImageKey      string    `json:"room_image_key"`
+	Status            string    `json:"status"`
+	ResultImageKey    *string   `json:"result_image_key,omitempty"`
+	ResultDescription *string   `json:"result_description,omitempty"`
+	ErrorMessage      *string   `json:"error_message,omitempty"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 type CreateVisualizationJobArgs struct {
@@ -116,6 +116,51 @@ func (r *VisualizationJobDatabase) GetJobByID(ctx context.Context, jobID string)
 	}
 
 	return job, nil
+}
+
+type UpdateVisualizationJobArgs struct {
+	Status            string
+	ResultImageKey    *string
+	ResultDescription *string
+	ErrorMessage      *string
+}
+
+func (r *VisualizationJobDatabase) UpdateJobInternal(ctx context.Context, jobID string, a UpdateVisualizationJobArgs) error {
+	var rk sql.NullString
+	var rd sql.NullString
+	var em sql.NullString
+
+	if a.ResultImageKey != nil {
+		rk = sql.NullString{String: *a.ResultImageKey, Valid: true}
+	}
+	if a.ResultDescription != nil {
+		rd = sql.NullString{String: *a.ResultDescription, Valid: true}
+	}
+	if a.ErrorMessage != nil {
+		em = sql.NullString{String: *a.ErrorMessage, Valid: true}
+	}
+
+	res, err := r.db.ExecContext(ctx, `
+		UPDATE visualization_jobs
+		SET
+			status = $2,
+			result_image_key = $3,
+			result_description = $4,
+			error_message = $5
+		WHERE id = $1::uuid
+	`, jobID, a.Status, rk, rd, em)
+	if err != nil {
+		return err
+	}
+
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 func (r *VisualizationJobDatabase) ItemHasPictureKey(ctx context.Context, itemID string, pictureKey string) (bool, error) {

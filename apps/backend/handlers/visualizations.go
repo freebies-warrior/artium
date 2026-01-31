@@ -151,6 +151,59 @@ func (h *VisualizationsHandler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, jobResp{Job: toJobOut(job, signedURL)})
 }
 
+type updateVisualizationReq struct {
+	Status            string  `json:"status"`
+	ResultImageKey    *string `json:"result_image_key"`
+	ResultDescription *string `json:"result_description"`
+	ErrorMessage      *string `json:"error_message"`
+}
+
+func (h *VisualizationsHandler) UpdateInternal(c *gin.Context) {
+	jobID := strings.TrimSpace(c.Param("job_id"))
+	if !uuidRe.MatchString(jobID) {
+		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid job_id", map[string]any{"field": "job_id"}))
+		return
+	}
+
+	var req updateVisualizationReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid json", nil))
+		return
+	}
+
+	status := strings.TrimSpace(strings.ToLower(req.Status))
+	switch status {
+	case "queued", "processing", "succeeded", "failed":
+	default:
+		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid status", map[string]any{"field": "status"}))
+		return
+	}
+
+	// If succeeded, you almost always want a result_image_key.
+	if status == "succeeded" {
+		if req.ResultImageKey == nil || strings.TrimSpace(*req.ResultImageKey) == "" {
+			c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "result_image_key required when succeeded", map[string]any{"field": "result_image_key"}))
+			return
+		}
+	}
+
+	if err := h.jobs.UpdateJobInternal(c.Request.Context(), jobID, database.UpdateVisualizationJobArgs{
+		Status:            status,
+		ResultImageKey:    req.ResultImageKey,
+		ResultDescription: req.ResultDescription,
+		ErrorMessage:      req.ErrorMessage,
+	}); err != nil {
+		if err == database.ErrNotFound {
+			c.JSON(http.StatusNotFound, utils.NewError("NOT_FOUND", "job not found", nil))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to update job", nil))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
 func toJobOut(job database.VisualizationJob, signedResultURL *string) visualizationJobOut {
 	return visualizationJobOut{
 		ID:                job.ID,

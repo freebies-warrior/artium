@@ -49,6 +49,8 @@ Examples:
 - `items` 1—N `pictures` (an item has multiple images)
 - `users` 1—N `bids` (a user can place many bids)
 - `items` 1—N `bids` (an item receives many bids)
+- `users` 1-N `visualization_jobs` (a user can request many visualization jobs)
+- `items` 1-N `visualization_jobs` (an item can have many visualization jobs)
 
 ```mermaid
 erDiagram
@@ -57,6 +59,9 @@ erDiagram
   users ||--o{ bids : places
   items ||--o{ bids : receives
   users ||--o{ email_verification_tokens : has
+  users ||--o{ visualization_jobs : requests
+  items ||--o{ visualization_jobs : visualizes
+
 ```
 
 ## Tables
@@ -236,3 +241,43 @@ Store structured attributes extracted from the artwork image. Example shape:
 - `bids_item_price_created_idx` on `(item_id, price, timestamp)` (for validating new bids)
 
 ---
+
+## `visualization_jobs`
+
+**Purpose:** Track asynchronous AI “Visualizer” jobs that merge an item image + a room image, then produce:
+- a **result image** (stored in Cloudflare R2)
+- a **text description** (stored in Postgres)
+
+| Column              | Type          | Nullable | Notes                                                  |
+| ------------------- | ------------- | -------- | ------------------------------------------------------ |
+| `id`                | `uuid`        | No       | Primary Key                                            |
+| `user_id`           | `uuid`        | No       | Foreign Key → `users.id` (who requested the job)       |
+| `item_id`           | `uuid`        | No       | Foreign Key → `items.id`                               |
+| `room_image_key`    | `text`        | No       | R2 object key for the uploaded room image              |
+| `status`            | `text`        | No       | `queued`, `processing`, `succeeded`, `failed`          |
+| `result_image_key`  | `text`        | Yes      | R2 object key for the merged output image              |
+| `result_description`| `text`        | Yes      | Generated description/caption                          |
+| `error_message`     | `text`        | Yes      | Failure reason (keep short, no secrets/URLs)           |
+| `created_at`        | `timestamptz` | No       | Default `now()`                                        |
+| `updated_at`        | `timestamptz` | No       | Default `now()`                                        |
+
+**Constraints**
+- `PRIMARY KEY (id)`
+- `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- `FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE`
+- `status IN ('queued','processing','succeeded','failed')`
+
+**Indexes**
+- `visualization_jobs_user_id_created_at_idx` on `(user_id, created_at DESC)` (list a user’s jobs)
+- `visualization_jobs_item_id_created_at_idx` on `(item_id, created_at DESC)` (list jobs per item)
+- `visualization_jobs_status_updated_at_idx` on `(status, updated_at DESC)` (ops/debug, retry scanning)
+
+**Notes**
+- Store **R2 object keys** in DB (`*_key`). Do not store signed URLs in Postgres.
+- Frontend obtains a display URL by either:
+  - deriving from a public CDN base URL, or
+  - calling backend for a short-lived signed GET URL.
+- Recommended lifecycle:
+  - Create row with `status = 'queued'`
+  - Update to `processing` when AI starts
+  - Update to `succeeded` with `result_image_key` + `result_description`, or to `failed` with `error_message`

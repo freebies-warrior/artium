@@ -8,18 +8,28 @@ import Footer from '@/components/Footer'
 import HeroSection from '@/components/HeroSections'
 import Tabs from '@/components/Tabs'
 import ArtGrid, { type ArtUI } from '@/components/ArtGrid'
-import SellerGrid from '@/components/SellerGrid'
+import SellerGrid, { type SellerUI } from '@/components/SellerGrid'
 import Pagination from '@/components/Pagination'
+
+type PictureDTO = {
+  id: string
+  item_id: string
+  url: string
+  created_at: string
+}
 
 type ItemDTO = {
   id: string
   title: string
+  seller_id?: string
   seller_username: string | null
   author: string | null
   time_end: string
   base_price: number | string
   highest_bid_amount: number | string | undefined
+  pictures: PictureDTO[]   // ✅ ADD THIS
 }
+
 
 type ListItemsResponse =
   | { items: ItemDTO[]; next_cursor?: string | null }
@@ -33,10 +43,8 @@ function normalize(res: ListItemsResponse): {
   next_cursor: string | null
 } {
   if (Array.isArray(res)) return { items: res, next_cursor: null }
-  if ('items' in res)
-    return { items: res.items, next_cursor: res.next_cursor ?? null }
-  if ('data' in res)
-    return { items: res.data, next_cursor: res.next_cursor ?? null }
+  if ('items' in res) return { items: res.items, next_cursor: res.next_cursor ?? null }
+  if ('data' in res) return { items: res.data, next_cursor: res.next_cursor ?? null }
   return { items: [], next_cursor: null }
 }
 
@@ -49,11 +57,21 @@ function formatDue(iso: string) {
   return `${dd}-${mm}-${yyyy}`
 }
 
-function formatBid(n: number | string | undefined) {
-  if (n == undefined) return undefined;
+function toNumber(n: number | string | undefined | null): number | null {
+  if (n == null) return null
   const num = typeof n === 'string' ? Number(n) : n
-  if (!Number.isFinite(num)) return String(n)
-  return `${num.toLocaleString()} SGD`
+  return Number.isFinite(num) ? num : null
+}
+
+function formatMoneySGD(n: number) {
+  return `${n.toLocaleString()} SGD`
+}
+
+function pickDisplayPrice(it: ItemDTO) {
+  const hb = toNumber(it.highest_bid_amount)
+  const bp = toNumber(it.base_price)
+  if (hb != null) return hb
+  return bp ?? 0
 }
 
 export default function HomeClient() {
@@ -62,23 +80,14 @@ export default function HomeClient() {
   const params = useSearchParams()
   const router = useRouter()
   const verifyStatus = params.get('verify')
-
   const [dismissed, setDismissed] = useState(false)
 
   let banner: { message: string; type: 'success' | 'error' } | null = null
-
   if (!dismissed) {
     if (verifyStatus === 'failed') {
-      banner = {
-        message: 'This verification link is invalid or has expired.',
-        type: 'error',
-      }
+      banner = { message: 'This verification link is invalid or has expired.', type: 'error' }
     } else if (verifyStatus === 'success') {
-      banner = {
-        message:
-          'Your email has been verified successfully. You may now log in.',
-        type: 'success',
-      }
+      banner = { message: 'Your email has been verified successfully. You may now log in.', type: 'success' }
     }
   }
 
@@ -86,15 +95,20 @@ export default function HomeClient() {
   const [search, setSearch] = useState('')
   const [appliedQuery, setAppliedQuery] = useState('')
 
-  // cursor pagination state
+  // cursor pagination state (ARTS)
   const [page, setPage] = useState(1)
   const [nextCursor, setNextCursor] = useState<string | null>(null)
 
-  // data
+  // data (ARTS)
   const [items, setItems] = useState<ArtUI[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // data (SELLERS)
+  const [sellers, setSellers] = useState<SellerUI[]>([])
+  const [loadingSellers, setLoadingSellers] = useState(false)
+  const [errorSellers, setErrorSellers] = useState<string | null>(null)
 
   function handleTabChange(tab: 'arts' | 'sellers') {
     setActiveTab(tab)
@@ -107,34 +121,21 @@ export default function HomeClient() {
   }
 
   // ✅ use Next.js proxy route
-  const buildUrl = (cursor: string | null) => {
+  const buildUrl = (cursor: string | null, limit: number) => {
     const qs = new URLSearchParams()
-    qs.set('limit', String(LIMIT))
+    qs.set('limit', String(limit))
     if (appliedQuery) qs.set('q', appliedQuery)
-
-    // IMPORTANT:
-    // Keep this param name aligned with your backend.
-    // If backend expects "cursor", keep as-is.
-    // If backend expects "next_cursor", change to qs.set('next_cursor', cursor)
     if (cursor) qs.set('cursor', cursor)
-
     return `/api/items?${qs.toString()}`
   }
 
-  async function fetchPage(opts: {
-    mode: 'reset' | 'append'
-    cursor: string | null
-  }) {
+  async function fetchArtsPage(opts: { mode: 'reset' | 'append'; cursor: string | null }) {
     const isReset = opts.mode === 'reset'
-
     try {
       isReset ? setLoading(true) : setLoadingMore(true)
       setError(null)
 
-      const r = await fetch(buildUrl(opts.cursor), {
-        method: 'GET',
-        cache: 'no-store',
-      })
+      const r = await fetch(buildUrl(opts.cursor, LIMIT), { method: 'GET', cache: 'no-store' })
       if (!r.ok) {
         const text = await r.text()
         let msg = `Request failed (${r.status})`
@@ -153,9 +154,13 @@ export default function HomeClient() {
         title: it.title,
         seller_username: it.seller_username?.trim() || 'Unknown',
         author: it.author?.trim() || 'Unknown',
-        basePrice: formatBid(it.base_price),
-        highestBid: formatBid(it.highest_bid_amount),
+        basePrice: formatMoneySGD(toNumber(it.base_price) ?? 0),
+        highestBid:
+          toNumber(it.highest_bid_amount) != null
+            ? formatMoneySGD(toNumber(it.highest_bid_amount) ?? 0)
+            : undefined,
         due: formatDue(it.time_end),
+        img: it.pictures[0].url
       }))
 
       if (isReset) setItems(mapped)
@@ -171,10 +176,78 @@ export default function HomeClient() {
       setLoadingMore(false)
     }
   }
+
+  async function fetchSellers() {
+    try {
+      setLoadingSellers(true)
+      setErrorSellers(null)
+
+      // Fetch more items to build seller leaderboard
+      const SELLER_LIMIT = 200
+      const r = await fetch(buildUrl(null, SELLER_LIMIT), { method: 'GET', cache: 'no-store' })
+      if (!r.ok) {
+        const text = await r.text()
+        let msg = `Request failed (${r.status})`
+        try {
+          const data = text ? JSON.parse(text) : {}
+          msg = data?.error?.message ?? data?.message ?? msg
+        } catch {}
+        throw new Error(msg)
+      }
+
+      const json = (await r.json()) as ListItemsResponse
+      const { items: raw } = normalize(json)
+
+      // ✅ group by seller_id (REAL ID)
+      const map = new Map<string, { username: string; items: number; volume: number }>()
+      for (const it of raw) {
+        const sellerId = it.seller_id
+        const username = it.seller_username?.trim() || 'Unknown'
+
+        const cur = map.get(sellerId!) ?? { username, items: 0, volume: 0 }
+        cur.items += 1
+        cur.volume += pickDisplayPrice(it)
+
+        if (cur.username === 'Unknown' && username !== 'Unknown') cur.username = username
+        map.set(sellerId!, cur)
+      }
+
+      const sellerList: SellerUI[] = Array.from(map.entries()).map(([sellerId, agg]) => {
+        const clean = agg.username.replace(/^@+/, '')
+        const displayName = clean.length ? clean : 'Unknown'
+        const letter = displayName.charAt(0).toUpperCase() || 'U'
+
+        return {
+          id: sellerId, // ✅ REAL UUID
+          name: displayName,
+          username: agg.username.startsWith('@') ? agg.username : `@${agg.username}`,
+          avatarLetter: letter,
+          items: agg.items,
+          volume: formatMoneySGD(agg.volume),
+        }
+      })
+
+      // sort by volume desc, then items desc
+      sellerList.sort((a, b) => {
+        const va = toNumber(a.volume.replace(/[^0-9.]/g, '')) ?? 0
+        const vb = toNumber(b.volume.replace(/[^0-9.]/g, '')) ?? 0
+        if (vb !== va) return vb - va
+        return b.items - a.items
+      })
+
+      setSellers(sellerList)
+    } catch (e) {
+      setErrorSellers(e instanceof Error ? e.message : 'Unknown error')
+      setSellers([])
+    } finally {
+      setLoadingSellers(false)
+    }
+  }
+
   // Initial load + when user submits a new search query
   useEffect(() => {
     if (activeTab !== 'arts') return
-    fetchPage({ mode: 'reset', cursor: null })
+    fetchArtsPage({ mode: 'reset', cursor: null })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, appliedQuery])
 
@@ -183,10 +256,16 @@ export default function HomeClient() {
     if (activeTab !== 'arts') return
     if (page === 1) return
     if (!nextCursor) return
-
-    fetchPage({ mode: 'append', cursor: nextCursor })
+    fetchArtsPage({ mode: 'append', cursor: nextCursor })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page])
+
+  // Fetch sellers when switching to sellers tab (and when search query changes)
+  useEffect(() => {
+    if (activeTab !== 'sellers') return
+    fetchSellers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, appliedQuery])
 
   const hasNext = !!nextCursor && !loading && !loadingMore
 
@@ -197,11 +276,11 @@ export default function HomeClient() {
           <div className="fixed top-20 left-0 right-0 z-40 flex justify-center px-4">
             <div
               className={`relative w-full max-w-4xl rounded-lg px-4 py-3 text-center shadow
-        ${
-          banner.type === 'success'
-            ? 'bg-green-100 border border-green-300 text-green-700'
-            : 'bg-red-100 border border-red-300 text-red-700'
-        }`}
+              ${
+                banner.type === 'success'
+                  ? 'bg-green-100 border border-green-300 text-green-700'
+                  : 'bg-red-100 border border-red-300 text-red-700'
+              }`}
             >
               <span>{banner.message}</span>
 
@@ -218,30 +297,22 @@ export default function HomeClient() {
             </div>
           </div>
         )}
-        <HeroSection
-          search={search}
-          onSearchChange={setSearch}
-          onSearchSubmit={onSearchSubmit}
-        />
+
+        <HeroSection search={search} onSearchChange={setSearch} onSearchSubmit={onSearchSubmit} />
         <Tabs activeTab={activeTab} onTabChange={handleTabChange} />
+
         {activeTab === 'arts' ? (
           <>
             <ArtGrid items={items} loading={loading} error={error} />
             <div className="container mx-auto px-4 pb-8">
-              <Pagination
-                page={page}
-                hasNext={hasNext}
-                onPageChange={setPage}
-              />
+              <Pagination page={page} hasNext={hasNext} onPageChange={setPage} />
               {loadingMore && (
-                <div className="mt-3 text-center text-sm text-muted-foreground">
-                  Loading more...
-                </div>
+                <div className="mt-3 text-center text-sm text-muted-foreground">Loading more...</div>
               )}
             </div>
           </>
         ) : (
-          <SellerGrid />
+          <SellerGrid sellers={sellers} loading={loadingSellers} error={errorSellers} />
         )}
       </main>
 

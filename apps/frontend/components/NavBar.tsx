@@ -67,7 +67,7 @@ export default function Navbar() {
         ) : (
           <>
             <Link
-              href={"/user/" + userId}
+              href={"/users/" + userId}
               className="px-4 py-2 rounded-full bg-purple-500 text-white leading-none"
             >
               Profile

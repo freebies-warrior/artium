@@ -11,12 +11,18 @@ import { Gem } from 'lucide-react'
 import Footer from '@/components/Footer'
 import ArtGrid, { type ArtUI } from '@/components/ArtGrid'
 
-import heroNft from '@/assets/nft-hero-1.jpg'
-import heroNft2 from '@/assets/nft-ape.jpg'
+import fallbackImg from '@/assets/nft-ape.jpg' // ✅ fallback if no backend images
 
 import BidButton from '@/components/BidButton'
 import Lightbox from '@/components/LightBox'
 import PreviewButton from '@/components/PreviewButton'
+
+type PictureDTO = {
+  id: string
+  item_id: string
+  url: string
+  created_at: string
+}
 
 type Item = {
   id: string
@@ -41,8 +47,9 @@ type Item = {
   width?: number
   features?: any
 
-  // optional if your backend has it
   current_price?: number
+
+  pictures: PictureDTO[] // ✅ from backend
 }
 
 type ListItemsResponse = {
@@ -54,6 +61,7 @@ type ListItemsResponse = {
     base_price?: number
     highest_bid_amount?: number
     time_end?: string
+    pictures?: PictureDTO[] // ✅ include for "More From This User" images
   }>
   next_cursor: string | null
 }
@@ -100,22 +108,37 @@ function stringifyFeatures(features: any) {
   }
 }
 
+function pickFirstImageUrl(pictures?: PictureDTO[] | null) {
+  if (!pictures || pictures.length === 0) return fallbackImg.src
+  const url = pictures[0]?.url?.trim()
+  return url && url.length > 0 ? url : fallbackImg.src
+}
+
+function toLightboxImages(pictures?: PictureDTO[] | null) {
+  if (!pictures || pictures.length === 0) {
+    return [{ src: fallbackImg.src, alt: 'Artwork image' }]
+  }
+  const imgs = pictures
+    .map((p, i) => ({
+      src: (p.url || '').trim(),
+      alt: `Image ${i + 1}`,
+    }))
+    .filter((x) => x.src.length > 0)
+
+  return imgs.length ? imgs : [{ src: fallbackImg.src, alt: 'Artwork image' }]
+}
+
 export default function ArtPage() {
   const params = useParams()
   const itemId = useMemo(() => {
     const raw = (params as any)?.item_id ?? (params as any)?.id
     return typeof raw === 'string' ? raw : ''
   }, [params])
-  const [refreshKey, setRefreshKey] = useState(0)
 
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const [isOpen, setIsOpen] = useState(false)
   const [startIndex, setStartIndex] = useState(0)
-
-  const itemImages = [
-    { src: heroNft.src, alt: 'Image 1' },
-    { src: heroNft2.src, alt: 'Image 2' },
-  ]
 
   const [item, setItem] = useState<Item | null>(null)
   const [loadingItem, setLoadingItem] = useState(true)
@@ -148,16 +171,17 @@ export default function ArtPage() {
     }
   }, [itemId, refreshKey])
 
-  /* ───────────── Fetch more from same author ───────────── */
+  /* ───────────── Fetch more from same seller ───────────── */
   useEffect(() => {
     let cancelled = false
-    const seller_id = item?.seller_id;
+    const seller_id = item?.seller_id
 
     async function run() {
+      if (!seller_id) return
       setLoadingMore(true)
       setErrorMore(null)
       try {
-        const url = `/api/items?seller_id=${encodeURIComponent(seller_id ?? '')}`
+        const url = `/api/items?seller_id=${encodeURIComponent(seller_id)}`
         const data = await fetchJson<ListItemsResponse>(url)
 
         if (!cancelled) {
@@ -169,9 +193,10 @@ export default function ArtPage() {
                   id: x.id,
                   title: x.title,
                   seller_username: x.seller_username,
-                  author: x.author, 
+                  author: x.author,
                   highestBid: formatHighestBid(x.highest_bid_amount ?? x.base_price),
                   due: formatDue(x.time_end),
+                  img: pickFirstImageUrl(x.pictures), // ✅ IMPORTANT: image for cards
                 }
               })
           )
@@ -187,7 +212,7 @@ export default function ArtPage() {
     return () => {
       cancelled = true
     }
-  }, [item?.seller_username, itemId])
+  }, [item?.seller_id, itemId])
 
   /* ───────────── Auction ended logic ───────────── */
   const auctionEnded = useMemo(() => {
@@ -197,7 +222,13 @@ export default function ArtPage() {
   }, [item?.time_end])
 
   const featuresText = stringifyFeatures(item?.features)
-  console.log("HAHA: " + item?.highest_bid_amount);
+
+  // ✅ Build images dynamically from backend pictures
+  const itemImages = useMemo(() => toLightboxImages(item?.pictures), [item?.pictures])
+
+  // ✅ Hero image uses first backend image
+  const heroSrc = itemImages[0]?.src ?? fallbackImg.src
+
   return (
     <div className="min-h-screen bg-background pt-16">
       <Navbar />
@@ -212,10 +243,7 @@ export default function ArtPage() {
               setIsOpen(true)
             }}
           >
-            <img
-              src={itemImages[0].src}
-              className="w-full h-full object-cover"
-            />
+            <img src={heroSrc} alt={item?.title ?? 'Artwork'} className="w-full h-full object-cover" />
           </button>
         </div>
       </section>
@@ -232,7 +260,14 @@ export default function ArtPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left */}
           <div className="lg:col-span-2 space-y-6">
-            <h1 className="text-4xl font-bold">{item?.title}</h1>
+            {errorItem && (
+              <div className="rounded-lg border border-destructive/40 bg-card p-4 text-sm">
+                <div className="font-semibold">Failed to load item</div>
+                <div className="text-muted-foreground">{errorItem}</div>
+              </div>
+            )}
+
+            <h1 className="text-4xl font-bold">{item?.title ?? (loadingItem ? 'Loading...' : '—')}</h1>
 
             <div className="lg:hidden">
               <CountdownTimer targetDate={item?.time_end} />
@@ -241,11 +276,11 @@ export default function ArtPage() {
                   item={{
                     id: item?.id,
                     title: item?.title,
-                    base_price:  item?.base_price,
+                    base_price: item?.base_price,
                     increment: item?.increment ?? 1,
                     highest_bid_amount: item?.highest_bid_amount,
                   }}
-                  setRefreshKey= {() => setRefreshKey(refreshKey + 1)}
+                  setRefreshKey={() => setRefreshKey((k) => k + 1)}
                 />
               )}
             </div>
@@ -254,13 +289,13 @@ export default function ArtPage() {
               <p className="text-muted-foreground text-sm">Seller</p>
               <div className="flex items-center gap-2">
                 <Gem className="w-5 h-5 text-primary" />
-                <span>{item?.seller_username}</span>
+                <span>{item?.seller_username ?? '—'}</span>
               </div>
             </div>
 
             <div>
               <p className="text-muted-foreground text-sm mb-2">Description</p>
-              <p>{item?.description}</p>
+              <p>{item?.description ?? '—'}</p>
             </div>
 
             {/* Details */}
@@ -279,14 +314,12 @@ export default function ArtPage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Status</p>
-                <p>{item?.status}</p>
+                <p>{item?.status ?? '—'}</p>
               </div>
             </div>
 
             {featuresText && (
-              <pre className="border rounded-lg p-3 text-xs whitespace-pre-wrap">
-                {featuresText}
-              </pre>
+              <pre className="border rounded-lg p-3 text-xs whitespace-pre-wrap">{featuresText}</pre>
             )}
 
             <PreviewButton />
@@ -298,13 +331,13 @@ export default function ArtPage() {
             {!auctionEnded && (
               <BidButton
                 item={{
-                    id: item?.id,
-                    title: item?.title,
-                    base_price:  item?.base_price,
-                    increment: item?.increment ?? 1,
-                    highest_bid_amount: item?.highest_bid_amount,
+                  id: item?.id,
+                  title: item?.title,
+                  base_price: item?.base_price,
+                  increment: item?.increment ?? 1,
+                  highest_bid_amount: item?.highest_bid_amount,
                 }}
-                setRefreshKey= {() => setRefreshKey(refreshKey + 1)}
+                setRefreshKey={() => setRefreshKey((k) => k + 1)}
               />
             )}
           </div>

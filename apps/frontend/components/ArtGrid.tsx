@@ -15,6 +15,7 @@ export type ArtUI = {
   basePrice?: string
   highestBid?: string
   due: string
+  img: string
 }
 
 
@@ -31,7 +32,7 @@ const ArtCard = ({ art, index }: { art: ArtUI; index: number }) => {
       >
         <div className="aspect-square overflow-hidden">
           <img
-            src={artApe.src}
+            src={art.img}
             alt={art.title}
             className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
           />

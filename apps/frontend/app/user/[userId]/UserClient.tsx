@@ -9,15 +9,25 @@ import Pagination from '@/components/Pagination'
 import UserHeader from './components/UserHeader'
 import UserStats from './components/UserStats'
 
+type PictureDTO = {
+  id: string
+  item_id: string
+  url: string
+  created_at: string
+}
+
 type ItemDTO = {
   id: string
   title: string
+  seller_id?: string
   seller_username: string | null
   author: string | null
   time_end: string
   base_price: number | string
   highest_bid_amount: number | string | undefined
+  pictures: PictureDTO[]   // ✅ ADD THIS
 }
+
 
 type ListItemsResponse =
   | { items: ItemDTO[]; next_cursor?: string | null }
@@ -111,6 +121,7 @@ export default function UserClient() {
         basePrice: formatBid(it.base_price),
         highestBid: formatBid(it.highest_bid_amount),
         due: formatDue(it.time_end),
+        img: it.pictures[0].url
       }))
 
       if (isReset) setItems(mapped)
@@ -150,7 +161,7 @@ export default function UserClient() {
   return (
     <div className="min-h-screen bg-background pt-20">
       <div className="container mx-auto px-6">
-        <UserHeader />
+        <UserHeader username = {params.userId}/>
         <UserStats />
 
         <ArtGrid items={items} loading={loading} error={error} />

@@ -3,7 +3,10 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+<<<<<<< HEAD
 	"log"
+=======
+>>>>>>> a2fecb7 (Feat: implement PUT item features endpoint (#118))
 	"net/http"
 	"regexp"
 	"strconv"
@@ -314,6 +317,7 @@ func (h *ItemsHandler) PutItemFeatures(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
+<<<<<<< HEAD
 
 func (h *ItemsHandler) triggerFeatureExtraction(ctx context.Context, item database.Item, pics []database.PicturePublic) error {
 	if h.features == nil {
@@ -351,3 +355,5 @@ func (h *ItemsHandler) triggerFeatureExtraction(ctx context.Context, item databa
 		},
 	})
 }
+=======
+>>>>>>> a2fecb7 (Feat: implement PUT item features endpoint (#118))

@@ -698,6 +698,7 @@ Create a new visualization job to merge an item image with a room photo.
 ```json
 {
   "item_id": "uuid",
+  "item_image_key": "items/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
   "room_image_key": "rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
   "item_dimensions": {
     "width_cm": 60,
@@ -714,6 +715,7 @@ Create a new visualization job to merge an item image with a room photo.
     "id": "uuid",
     "user_id": "uuid",
     "item_id": "uuid",
+    "item_image_key": "items/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
     "room_image_key": "rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
     "status": "queued",
     "result_image_key": null,
@@ -993,7 +995,7 @@ Start a visualization job to merge an artwork image with a room photo.
   "room_url": "https://.../rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
   "art_url": "https://.../items/<item_id>/main.jpg",
   "upload_image_url": "https://.../visualizations/<job_id>/result.jpg",
-  "upload_image_key": "visualizations/<job_id>/result.jpg",
+  "result_image_key": "visualizations/<job_id>/result.jpg",
   "item_dimensions": {
     "width": 60,
     "height": 40

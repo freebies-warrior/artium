@@ -213,16 +213,7 @@ def _run_preview(req: VisualizerRequest) -> None:
         result = viz_service.visualize(state)
         _save_image(result["out_img"], req.upload_image_url)
 
-        # if not urlparse(str(out_path)).scheme in {"http", "https"}:
-        #     result["out_img"].save(str(out_path))
-
-
-        # if req.upload_image_url:
-        #     with open(out_path, "rb") as f:
-        #         r = requests.put(req.upload_image_url, data=f, headers={"Content-Type": "image/jpeg"})
-        #     r.raise_for_status()
-
-        result_description = result["appraisal"]
+        result_description = result["appraisal"].summary
         
         status = JobStatus.SUCCEEDED
     except Exception as exc:  # pragma: no cover - handled at runtime

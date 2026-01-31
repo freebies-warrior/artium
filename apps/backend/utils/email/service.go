@@ -18,7 +18,7 @@ type Service struct {
 	cfg Config
 }
 
-func New(cfg Config) *Service {
+func NewService(cfg Config) *Service {
 	return &Service{cfg: cfg}
 }
 

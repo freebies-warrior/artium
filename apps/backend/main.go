@@ -41,7 +41,7 @@ func main() {
 		log.Fatalf("invalid SMTP_PORT: %v", err)
 	}
 
-	emailService := email.New(email.Config{
+	emailService := email.NewService(email.Config{
 		Host:     mustEnv("SMTP_HOST"),
 		Port:     smtpPort,
 		Username: getenv("SMTP_USERNAME", ""),

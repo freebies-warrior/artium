@@ -16,12 +16,10 @@ def serpapi_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
     Minimal SerpAPI-based Google results.
     Env var: SERPAPI_API_KEY
     Returns: [{title, snippet, url}]
-    If API key missing or invalid (401/403), returns empty list gracefully.
     """
     api_key = os.getenv("SERPAPI_API_KEY")
     if not api_key:
-        logger.warning("SERPAPI_API_KEY not set. Market intelligence will be skipped.")
-        return []
+        raise RuntimeError("SERPAPI_API_KEY not set. Configure a search provider.")
 
     params = {
         "engine": "google",
@@ -30,16 +28,10 @@ def serpapi_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
         "num": max_results,
     }
 
-    try:
-        with httpx.Client(timeout=20.0) as client:
-            r = client.get("https://serpapi.com/search.json", params=params)
-            r.raise_for_status()
-            data = r.json()
-    except httpx.HTTPStatusError as e:
-        if e.response.status_code in (401, 403):
-            logger.warning("SerpAPI authentication failed (401/403). Invalid or expired API key. Market intelligence skipped.")
-            return []
-        raise
+    with httpx.Client(timeout=20.0) as client:
+        r = client.get("https://serpapi.com/search.json", params=params)
+        r.raise_for_status()
+        data = r.json()
 
     results: List[Dict[str, str]] = []
     for item in data.get("organic_results", [])[:max_results]:

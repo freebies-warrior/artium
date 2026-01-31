@@ -1,0 +1,88 @@
+# Vector DB Agent configuration
+# Switch `embedding_mode` to try different ingestion/query strategies.
+#
+# Modes:
+# - feature_text: Manus (optional) + canonical feature card -> OpenAI text embeddings
+# - numeric: numeric vector from vision_features using a stable feature map
+# - image: image embedding via local CLIP (optional heavy deps)
+#
+# IMPORTANT: Index dimension must match embedding output dimension for the chosen mode/model.
+
+embedding_mode: feature_text  # feature_text | numeric | image
+
+dataset:
+  # Path to your CSV (or a zip that contains it). The sample zip you attached is supported.
+  # Ingest script accepts --zip-path and --csv-path; config is just defaults.
+  default_zip_path: ./sample/pdf_images_dataset.zip
+  default_csv_path_in_zip: dataset/lots_with_images.csv
+
+pinecone:
+  cloud: aws
+  region: us-east-1
+  # Index name prefix; actual names become:
+  #   {prefix}-{embedding_mode}-painting
+  #   {prefix}-{embedding_mode}-sculpture
+  index_prefix: artium
+  metric: cosine
+
+# Your feature extractor is a function. The ingest/query code will import it dynamically.
+# It must accept:
+#   (image_bytes: bytes, metadata: dict) -> dict (FeatureState-like)
+#
+# For feature_text mode, the built-in graph-based feature extractor is used.
+# For numeric mode, point to your custom feature extractor:
+#   import_path: "your_package.your_module:extract_features"
+feature_extractor:
+  import_path: ""  # REQUIRED only for numeric mode
+
+feature_text:
+  # If manus.enabled is true, we will call Manus to canonicalize into JSON using a strict schema.
+  # Otherwise we do a deterministic local canonicalization (recommended for stability).
+  manus:
+    enabled: false
+    agent_profile: manus-1.6
+    task_mode: agent
+    # If enabled, requires MANUS_API_KEY in .env (and uses base_url https://api.manus.im)
+  schema_version_painting: painting_v1
+  schema_version_sculpture: sculpture_v1
+
+  openai_embeddings:
+    model: text-embedding-3-small
+    dimensions: 768   # choose 512/768/1024 etc
+    encoding_format: float
+
+  notes:
+    # Basic preprocessing for notes before embedding.
+    strip_urls: true
+    max_chars_total: 2000  # Increased from 800 for richer feature descriptions
+    max_chars_per_section: 500  # Increased from 250 for detailed notes
+
+numeric:
+  # Stable feature map (per artwork_type). Edit these to match your extractor output keys.
+  # Use dot-paths into vision_features (e.g., brushstroke.impasto).
+  # Missing keys default to 0.0.
+  feature_map:
+    painting:
+      - brushstroke.impasto
+      - brushstroke.glazing
+      - brushstroke.stippling
+      - blending.sfumato
+      - blending.hard_edge
+    sculpture:
+      - material.metal
+      - material.wood
+      - form.angularity
+      - surface.polish
+  normalization:
+    method: none  # none | minmax | zscore
+
+image:
+  # Optional: local CLIP image embeddings via sentence-transformers.
+  # This requires installing requirements-image.txt (torch + sentence-transformers).
+  clip:
+    model: clip-ViT-B-32
+    device: cpu
+
+query:
+  top_k: 3
+  include_metadata: true

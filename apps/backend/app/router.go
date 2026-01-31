@@ -37,6 +37,7 @@ func NewRouter(h *handlers.HandlerSet, jwtSecret []byte) *gin.Engine {
 
 	// Users
 	r.GET("/users", h.Users.ListUsers)
+	r.GET("/users/:user_id", h.Users.GetUserDetails)
 
 	return r
 }

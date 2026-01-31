@@ -992,8 +992,8 @@ Start a visualization job to merge an artwork image with a room photo.
 {
   "room_url": "https://.../rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
   "art_url": "https://.../items/<item_id>/main.jpg",
-  "result_image_url": "https://.../visualizations/<job_id>/result.jpg",
-  "result_image_key": "visualizations/<job_id>/result.jpg",
+  "upload_image_url": "https://.../visualizations/<job_id>/result.jpg",
+  "upload_image_key": "visualizations/<job_id>/result.jpg",
   "item_dimensions": {
     "width": 60,
     "height": 40

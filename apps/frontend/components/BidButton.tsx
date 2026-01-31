@@ -38,11 +38,11 @@ export default function BidButton({
   const currentPrice = item.base_price ?? 0
   const highestBid = item.highest_bid_amount
   const increment = item.increment ?? 0
-  console.log(highestBid);
-  console.log("HIHI: " + currentPrice);
   const minBid = highestBid
     ? highestBid + increment
-    : currentPrice
+    : currentPrice == 0
+    ? 1
+    : currentPrice;
 
   const bidInt = bid === '' ? NaN : parseInt(bid, 10)
 

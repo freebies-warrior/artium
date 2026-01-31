@@ -11,6 +11,7 @@ from this directory.
 
 from __future__ import annotations
 
+import os
 import base64
 import logging
 import sys
@@ -18,16 +19,21 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
+from dotenv import load_dotenv
 
 import requests
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel, HttpUrl
+from enum import Enum
+
+load_dotenv()
 
 # Ensure agents package is importable when running from this folder
 CURRENT_DIR = Path(__file__).resolve().parent
 AGENTS_ROOT = CURRENT_DIR.parent  # .../apps/agents
 if str(AGENTS_ROOT) not in sys.path:
     sys.path.insert(0, str(AGENTS_ROOT))
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8080").rstrip("/")
 
 from feature_extractor.tools.image_tool import fetch_and_standardize_image  # noqa: E402
 from feature_extractor.types import ArtworkMetadata, FeatureState  # noqa: E402
@@ -74,6 +80,11 @@ class AsyncPreviewResponse(BaseModel):
     ok: bool = True
     job_id: str
 
+class JobStatus(str, Enum):
+    QUEUED = "queued"
+    PROCESSING = "processing"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -97,6 +108,20 @@ def _download_to_temp(url: str, suffix: str) -> Path:
     tmp.flush()
     tmp.close()
     return Path(tmp.name)
+
+def _notify_backend(job_id: str, status: JobStatus, result_description: Optional[str], error_message: Optional[str]) -> None:
+    url = f"{BACKEND_URL}/visualizations/{job_id}"
+    payload = {
+        "status": status.value,
+        "result_description": result_description,
+        "error_message": error_message,
+    }
+    try:
+        resp = requests.put(url, json=payload, timeout=10)
+        if resp.status_code >= 400:
+            logger.warning("failed to update visualizer job", extra={"job_id": job_id, "status": resp.status_code})
+    except Exception:
+        logger.exception("failed to send visualizer job update", extra={"job_id": job_id})
 
 
 @system_router.get("/health")
@@ -144,6 +169,10 @@ def _run_preview(req: VisualizerRequest) -> None:
             base_name = stem + Path(base_name).suffix
         out_path = tmp_dir / base_name
 
+    status = JobStatus.FAILED
+    result_description = None
+    error_message = None
+
     try:
         viz_service = get_agent_service()
         state: VizState = {
@@ -158,9 +187,12 @@ def _run_preview(req: VisualizerRequest) -> None:
 
         if not urlparse(str(out_path)).scheme in {"http", "https"}:
             result["out_img"].save(str(out_path))
-    except Exception:  # pragma: no cover - handled at runtime
+        status = JobStatus.SUCCEEDED
+    except Exception as exc:  # pragma: no cover - handled at runtime
+        error_message = str(exc)
         logger.exception("visualization failed")
     finally:
+        _notify_backend(req.job_id, status=status, result_description=result_description, error_message=error_message)
         try:
             for f in tmp_dir.iterdir():
                 f.unlink()

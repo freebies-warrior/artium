@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 
 const MAX_IMAGES = 10
+const MAX_FILE_SIZE_BYTES = 1 * 1024 * 1024 // 1MB
+const MAX_FILE_SIZE_BYTES_STRING = '1MB'
 
 export default function SellPage() {
   const router = useRouter()
@@ -417,9 +419,22 @@ export default function SellPage() {
                       return
                     }
 
+                    const tooLarge = files.filter((f) => f.size > MAX_FILE_SIZE_BYTES)
+                    const okSize = files.filter((f) => f.size <= MAX_FILE_SIZE_BYTES)
+
+                    if (tooLarge.length > 0) {
+                      setError(
+                        `Some files exceed ${MAX_FILE_SIZE_BYTES_STRING} and were ignored: ${tooLarge
+                          .map((f) => f.name)
+                          .slice(0, 3)
+                          .join(', ')}${tooLarge.length > 3 ? '…' : ''}`
+                      )
+                    }
+
                     const remaining = MAX_IMAGES - imageFiles.length
-                    const toAdd = files.slice(0, remaining)
-                    addImages(toAdd)
+                    const toAdd = okSize.slice(0, remaining)
+
+                    if (toAdd.length > 0) addImages(toAdd)
 
                     // Allow selecting the same file again later
                     e.target.value = ''

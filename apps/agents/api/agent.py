@@ -34,6 +34,7 @@ AGENTS_ROOT = CURRENT_DIR.parent  # .../apps/agents
 if str(AGENTS_ROOT) not in sys.path:
     sys.path.insert(0, str(AGENTS_ROOT))
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8080").rstrip("/")
+INTERNAL_TOKEN = os.getenv("INTERNAL_TOKEN", "").strip()
 
 from feature_extractor.tools.image_tool import fetch_and_standardize_image  # noqa: E402
 from feature_extractor.types import ArtworkMetadata, FeatureState  # noqa: E402
@@ -109,17 +110,30 @@ def _download_to_temp(url: str, suffix: str) -> Path:
     tmp.close()
     return Path(tmp.name)
 
-def _notify_backend(job_id: str, status: JobStatus, result_description: Optional[str], error_message: Optional[str]) -> None:
+def _notify_backend(
+    job_id: str,
+    status: JobStatus,
+    result_description: Optional[str],
+    error_message: Optional[str],
+) -> None:
     url = f"{BACKEND_URL}/visualizations/{job_id}"
     payload = {
         "status": status.value,
         "result_description": result_description,
         "error_message": error_message,
     }
+
+    headers = {}
+    if INTERNAL_TOKEN:
+        headers["Authorization"] = f"Bearer {INTERNAL_TOKEN}"
+
     try:
-        resp = requests.put(url, json=payload, timeout=10)
+        resp = requests.put(url, json=payload, headers=headers, timeout=10)
         if resp.status_code >= 400:
-            logger.warning("failed to update visualizer job", extra={"job_id": job_id, "status": resp.status_code})
+            logger.warning(
+                "failed to update visualizer job",
+                extra={"job_id": job_id, "status": resp.status_code},
+            )
     except Exception:
         logger.exception("failed to send visualizer job update", extra={"job_id": job_id})
 
@@ -155,18 +169,17 @@ def _run_preview(req: VisualizerRequest) -> None:
         str(req.art_url), suffix=Path(req.art_url.path).suffix or ".jpeg"
     )
 
-    if req.upload_image_url and urlparse(req.upload_image_url).scheme in {
-        "http",
-        "https",
-    }:
-        out_path: str | Path = req.upload_image_url
-    else:
+    if req.upload_image_url:
         base_name = (
             Path(req.upload_image_url).name if req.upload_image_url else "preview.jpeg"
         )
         if len(base_name) > 80:
             stem = Path(base_name).stem[:60]
             base_name = stem + Path(base_name).suffix
+        # Ensure we have a file extension (default to .jpeg)
+        ext = Path(base_name).suffix
+        if not ext:
+            base_name = f"{base_name}.jpeg"
         out_path = tmp_dir / base_name
 
     status = JobStatus.FAILED
@@ -187,11 +200,21 @@ def _run_preview(req: VisualizerRequest) -> None:
 
         if not urlparse(str(out_path)).scheme in {"http", "https"}:
             result["out_img"].save(str(out_path))
+
+
+        if req.upload_image_url:
+            with open(out_path, "rb") as f:
+                r = requests.put(req.upload_image_url, data=f, headers={"Content-Type": "image/jpeg"})
+            r.raise_for_status()
+
+        result_description = result["appraisal"]
+        
         status = JobStatus.SUCCEEDED
     except Exception as exc:  # pragma: no cover - handled at runtime
         error_message = str(exc)
         logger.exception("visualization failed")
     finally:
+        logger.info("result_description: %s", result_description)
         _notify_backend(req.job_id, status=status, result_description=result_description, error_message=error_message)
         try:
             for f in tmp_dir.iterdir():

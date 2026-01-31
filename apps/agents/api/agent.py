@@ -42,6 +42,7 @@ from visualizer.config import VisualizerConfig  # noqa: E402
 from visualizer.pipeline_langgraph import VizState  # noqa: E402
 from visualizer.pipeline_sequential import _load_image  # noqa: E402
 from visualizer.classify_node import is_valid_artwork_and_room  # noqa: E402
+from visualizer.runner import _save_image # noqa: E402
 
 from .service import get_agent_service  # noqa: E402
 
@@ -210,15 +211,16 @@ def _run_preview(req: VisualizerRequest) -> None:
             "retries_used": 0,
         }
         result = viz_service.visualize(state)
+        _save_image(result["out_img"], req.upload_image_url)
 
-        if not urlparse(str(out_path)).scheme in {"http", "https"}:
-            result["out_img"].save(str(out_path))
+        # if not urlparse(str(out_path)).scheme in {"http", "https"}:
+        #     result["out_img"].save(str(out_path))
 
 
-        if req.upload_image_url:
-            with open(out_path, "rb") as f:
-                r = requests.put(req.upload_image_url, data=f, headers={"Content-Type": "image/jpeg"})
-            r.raise_for_status()
+        # if req.upload_image_url:
+        #     with open(out_path, "rb") as f:
+        #         r = requests.put(req.upload_image_url, data=f, headers={"Content-Type": "image/jpeg"})
+        #     r.raise_for_status()
 
         result_description = result["appraisal"]
         

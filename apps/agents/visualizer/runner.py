@@ -14,7 +14,7 @@ from .pipeline_sequential import run_pipeline_sequential
 from .types import CriticReport, RoomQualityReport, VisualizerResult
 
 
-def _save_image(out_img: Image.Image, out_path: str) -> str:
+def _save_image(out_img: Image.Image, out_path: str):
     """Save image to local path or upload via PUT if out_path is an HTTP(S) URL."""
     parsed = urlparse(out_path)
     if parsed.scheme in {"http", "https"}:
@@ -30,9 +30,9 @@ def _save_image(out_img: Image.Image, out_path: str) -> str:
         )
         print("Upload response:", resp.status_code, resp.text)
         resp.raise_for_status()
-        return out_path
+        # return out_path
 
-    return out_path
+    # return out_path
 
 
 def visualize_installation(

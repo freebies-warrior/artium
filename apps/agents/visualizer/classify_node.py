@@ -11,7 +11,7 @@ from .client import GeminiClient
 def classify_artwork_and_room(
     artwork_image: Image.Image,
     room_image: Image.Image,
-    model: str = "gemini-2.5-flash-image",
+    model: str = "gemini-2.5-flash",
 ) -> dict[str, Any]:
     """
     Classify whether first image is an artwork and second image is a room.
@@ -65,7 +65,7 @@ Return a JSON object with:
 def is_valid_artwork_and_room(
     artwork_image: Image.Image,
     room_image: Image.Image,
-    model: str = "gemini-2.5-flash-image",
+    model: str = "gemini-2.5-flash",
 ) -> tuple[bool, bool | None, bool | None]:
     """
     Check if first image is artwork AND second image is a room.

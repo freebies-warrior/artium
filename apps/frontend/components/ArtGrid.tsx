@@ -19,15 +19,15 @@ export type ArtUI = {
 
 const ArtCard = ({ art, index }: { art: ArtUI; index: number }) => {
   return (
-    <Link href={`/art/${art.id}`} className="block">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: index * 0.05 }}
-        whileHover={{ y: -4 }}
-        whileTap={{ scale: 0.98 }}
-        className="art-card cursor-pointer"
-      >
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: index * 0.05 }}
+      whileHover={{ y: -4 }}
+      whileTap={{ scale: 0.98 }}
+      className="art-card cursor-pointer"
+    >
+      <Link href={`/art/${art.id}`} className="block">
         <div className="relative aspect-square overflow-hidden">
           <Image
             src={artApe}
@@ -64,8 +64,8 @@ const ArtCard = ({ art, index }: { art: ArtUI; index: number }) => {
             </div>
           </div>
         </div>
-      </motion.div>
-    </Link>
+      </Link>
+    </motion.div>
   )
 }
 

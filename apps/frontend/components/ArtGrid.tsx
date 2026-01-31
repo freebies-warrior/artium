@@ -11,10 +11,12 @@ export type ArtUI = {
   id: string
   title: string
   seller_username: string
-  basePrice: string
-  highestBid: string | undefined
+  author: string
+  basePrice?: string
+  highestBid?: string
   due: string
 }
+
 
 const ArtCard = ({ art, index }: { art: ArtUI; index: number }) => {
   return (

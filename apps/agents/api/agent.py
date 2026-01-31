@@ -16,6 +16,7 @@ import base64
 import logging
 import sys
 import tempfile
+import uuid
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
@@ -23,7 +24,7 @@ from dotenv import load_dotenv
 
 import requests
 from fastapi import APIRouter, BackgroundTasks, HTTPException
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, List, Dict, Any
 from enum import Enum
 
 load_dotenv()
@@ -63,11 +64,11 @@ class VisualizerRequest(BaseModel):
 
 
 class FeatureExtractionRequest(BaseModel):
-    image_url: HttpUrl
-    title: Optional[str] = "Unknown"
-    author: Optional[str] = "Unknown"
-    year: Optional[str] = None
-    medium_hint: Optional[str] = None
+    item_id: Optional[uuid.UUID] = None
+    image_keys: List[str]
+    image_get_urls: List[HttpUrl]
+    callback_url: Optional[HttpUrl] = None
+    metadata: Dict[str, Any] = {}
 
 
 class FeatureExtractionResponse(BaseModel):
@@ -253,10 +254,11 @@ def extract_features(req: FeatureExtractionRequest) -> FeatureExtractionResponse
 
         # Prepare metadata
         md = ArtworkMetadata(
-            title=req.title or "Unknown",
-            author=req.author or "Unknown",
-            year=req.year,
-            medium_hint=req.medium_hint,
+            item_id = req.item_id,
+            title=req.metadata.get("title", "Unknown"),
+            author=req.metadata.get("author", "Unknown"),
+            year=req.metadata.get("year", "Unknown"),
+            medium_hint=req.metadata.get("medium_hint", "Unknown"),
         ).model_dump()
 
         # Fetch and standardize image

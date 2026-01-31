@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import operator
+import uuid
 from typing import Annotated, Any, Dict, List, Optional, Tuple, TypedDict
 
 from pydantic import BaseModel, Field
 
 
 class ArtworkMetadata(BaseModel):
+    item_id: uuid.UUID
     title: str = "Unknown"
     author: str = "Unknown"
     year: Optional[str] = None

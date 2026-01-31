@@ -46,8 +46,19 @@ func (r *VisualizationJobDatabase) CreateJob(ctx context.Context, a CreateVisual
 	)
 
 	err := r.db.QueryRowContext(ctx, `
-		INSERT INTO visualization_jobs (user_id, item_id, item_image_key, room_image_key, status)
-		VALUES ($1::uuid, $2::uuid, $3, $4, 'queued')
+		WITH new_job AS (
+			SELECT gen_random_uuid() AS id
+		)
+		INSERT INTO visualization_jobs (id, user_id, item_id, item_image_key, room_image_key, status, result_image_key)
+		SELECT
+			nj.id,
+			$1::uuid,
+			$2::uuid,
+			$3,
+			$4,
+			'queued',
+			'visualizations/' || nj.id::text || '/result.jpeg'
+		FROM new_job nj
 		RETURNING
 			id::text, user_id::text, item_id::text,
 			item_image_key, room_image_key, status,
@@ -120,19 +131,14 @@ func (r *VisualizationJobDatabase) GetJobByID(ctx context.Context, jobID string)
 
 type UpdateVisualizationJobArgs struct {
 	Status            string
-	ResultImageKey    *string
 	ResultDescription *string
 	ErrorMessage      *string
 }
 
 func (r *VisualizationJobDatabase) UpdateJobInternal(ctx context.Context, jobID string, a UpdateVisualizationJobArgs) error {
-	var rk sql.NullString
 	var rd sql.NullString
 	var em sql.NullString
 
-	if a.ResultImageKey != nil {
-		rk = sql.NullString{String: *a.ResultImageKey, Valid: true}
-	}
 	if a.ResultDescription != nil {
 		rd = sql.NullString{String: *a.ResultDescription, Valid: true}
 	}
@@ -144,11 +150,10 @@ func (r *VisualizationJobDatabase) UpdateJobInternal(ctx context.Context, jobID 
 		UPDATE visualization_jobs
 		SET
 			status = $2,
-			result_image_key = $3,
-			result_description = $4,
-			error_message = $5
+			result_description = $3,
+			error_message = $4
 		WHERE id = $1::uuid
-	`, jobID, a.Status, rk, rd, em)
+	`, jobID, a.Status, rd, em)
 	if err != nil {
 		return err
 	}

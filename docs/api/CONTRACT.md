@@ -1068,7 +1068,7 @@ Start feature extraction for an item using its images.
 - Path: `/agents/feature_extractor/extract_item_features`
 
 Request (example):
-
+```json
     {
       "item_id": "uuid",
       "image_keys": [
@@ -1079,8 +1079,14 @@ Request (example):
         "https://<accountid>.r2.cloudflarestorage.com/<bucket>/uploads/...?...signature...",
         "https://<accountid>.r2.cloudflarestorage.com/<bucket>/uploads/...?...signature..."
       ],
-      "callback_url": "https://<go-backend>/internal/items/<item_id>/features"
+      "callback_url": "https://<go-backend>/internal/items/<item_id>/features",
+      "metadata" : {
+        "author"  : "artwork-author", // can be [null]
+        "title"   : "artwork-title", // can be [null]
+        "year"    : "artwork-year-created" //can be [null]
+      }
     }
+```
 
 Response 200:
 

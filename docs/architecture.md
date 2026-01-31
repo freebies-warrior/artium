@@ -196,7 +196,7 @@ The Visualizer feature merges an item image with a user-provided â€œroom photoâ€
 1. Frontend requests a signed PUT URL from Backend to upload the room image.
 2. Frontend uploads the room image directly to R2 and obtains `room_image_key`.
 3. Frontend creates a visualization job via Backend (`POST /visualizations`).
-4. Backend creates a row in `visualization_jobs` with `status='queued'` and triggers the AI Backend.
+4. Backend creates a row in `visualization_jobs` with `status='queued'` and triggers the AI Backend (`/agents/visualizer/visualize_installation`).
 5. AI Backend fetches the item image + room image using backend-approved access (signed GET or internal access).
 6. AI Backend generates the merged result image and description.
 7. AI Backend uploads the result to R2 and updates the job as `succeeded` (or `failed`) with:

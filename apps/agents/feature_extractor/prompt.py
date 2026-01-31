@@ -4,13 +4,13 @@ import json
 from typing import Any, Dict
 
 from .types import (
-    BrushstrokeDynamics,
     BlendingMerging,
-    Physicality,
-    MaterialComposition,
-    Form,
-    SurfaceFinish,
+    BrushstrokeDynamics,
     Craftsmanship,
+    Form,
+    MaterialComposition,
+    Physicality,
+    SurfaceFinish,
 )
 
 

@@ -1,9 +1,11 @@
 import io
 import json
-from typing import Any, Dict, Optional, List
-from PIL import Image
+from typing import Any, Dict, List, Optional
+
 from google import genai
 from google.genai import types
+from PIL import Image
+
 
 class GeminiClient:
     def __init__(self) -> None:
@@ -54,15 +56,17 @@ class GeminiClient:
         text = (resp.text or "").strip()
         text = text.removeprefix("```json").removeprefix("```").split("```")[0].strip()
         return json.loads(text)
-    
-    def edit_image(self, model: str, prompt: str, room: Image.Image, art: Image.Image | None = None) -> Image.Image:
+
+    def edit_image(
+        self, model: str, prompt: str, room: Image.Image, art: Image.Image | None = None
+    ) -> Image.Image:
         contents = [prompt, self._img_part(room)]
         if art is not None:
             contents.append(self._img_part(art))
 
         resp = self.client.models.generate_content(model=model, contents=contents)
 
-        for part in (resp.parts or []):
+        for part in resp.parts or []:
             inline = getattr(part, "inline_data", None)
             if inline is not None and getattr(inline, "data", None) is not None:
                 data = inline.data  # bytes

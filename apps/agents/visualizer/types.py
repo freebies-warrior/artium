@@ -34,6 +34,7 @@ class VisualizerResult:
     placement: ArtworkPlacement
     appraisal: AppraisalReport
 
+
 @dataclass
 class ArtworkPlacement:
     # normalized [0,1] on final composite image
@@ -43,6 +44,7 @@ class ArtworkPlacement:
     h: float
     confidence: float
     notes: str = ""
+
 
 @dataclass
 class AppraisalReport:

@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import os
+from io import BytesIO
 from pathlib import Path
 from typing import Optional
-from io import BytesIO
 from urllib.parse import urlparse
 
 import requests
 from PIL import Image
 
 from .config import VisualizerConfig
-from .types import VisualizerResult, RoomQualityReport, CriticReport
 from .pipeline_sequential import run_pipeline_sequential
+from .types import CriticReport, RoomQualityReport, VisualizerResult
 
 
 def _save_image(out_img: Image.Image, out_path: str) -> str:
@@ -56,6 +56,7 @@ def visualize_installation(
         try:
             print("Trying langgraph pipeline")
             from .pipeline_langgraph import run_pipeline_langgraph  # noqa
+
             final = run_pipeline_langgraph(cfg, room_path, art_path)
             out_img = final["out_img"]
             used_enhancement = bool(final.get("used_enhancement", False))
@@ -67,13 +68,13 @@ def visualize_installation(
         except Exception as e:
             print(f"LangGraph pipeline failed with error: {e}")
             # fallback silently
-            out_img, used_enhancement, retries_used, room_quality, crit = run_pipeline_sequential(
-                cfg, room_path, art_path
+            out_img, used_enhancement, retries_used, room_quality, crit = (
+                run_pipeline_sequential(cfg, room_path, art_path)
             )
     else:
         print("LangGraph pipeline not used; falling back to sequential.")
-        out_img, used_enhancement, retries_used, room_quality, crit = run_pipeline_sequential(
-            cfg, room_path, art_path
+        out_img, used_enhancement, retries_used, room_quality, crit = (
+            run_pipeline_sequential(cfg, room_path, art_path)
         )
 
     saved_path = _save_image(out_img, out_path)

@@ -29,17 +29,19 @@ AGENTS_ROOT = CURRENT_DIR.parent  # .../apps/agents
 if str(AGENTS_ROOT) not in sys.path:
     sys.path.insert(0, str(AGENTS_ROOT))
 
+from feature_extractor.tools.image_tool import fetch_and_standardize_image  # noqa: E402
+from feature_extractor.types import ArtworkMetadata, FeatureState  # noqa: E402
 from visualizer.config import VisualizerConfig  # noqa: E402
 from visualizer.pipeline_langgraph import VizState  # noqa: E402
 from visualizer.pipeline_sequential import _load_image  # noqa: E402
-from feature_extractor.types import FeatureState, ArtworkMetadata  # noqa: E402
-from feature_extractor.tools.image_tool import fetch_and_standardize_image  # noqa: E402
+
 from .service import get_agent_service  # noqa: E402
 
 
 class ItemDimensions(BaseModel):
     width: int
     height: int
+
 
 class VisualizerRequest(BaseModel):
     room_url: HttpUrl
@@ -67,6 +69,7 @@ class FeatureExtractionResponse(BaseModel):
     market_features: Optional[dict] = None
     errors: list
 
+
 class AsyncPreviewResponse(BaseModel):
     ok: bool = True
     job_id: str
@@ -78,13 +81,17 @@ logging.basicConfig(level=logging.INFO)
 # Create separate routers for each domain
 system_router = APIRouter(tags=["system"])
 visualizer_router = APIRouter(prefix="/agents/visualizer", tags=["visualizer"])
-feature_extractor_router = APIRouter(prefix="/agents/feature-extractor", tags=["feature-extractor"])
+feature_extractor_router = APIRouter(
+    prefix="/agents/feature-extractor", tags=["feature-extractor"]
+)
 
 
 def _download_to_temp(url: str, suffix: str) -> Path:
     resp = requests.get(url, timeout=30)
     if resp.status_code != 200:
-        raise HTTPException(status_code=400, detail=f"Failed to download {url}: {resp.status_code}")
+        raise HTTPException(
+            status_code=400, detail=f"Failed to download {url}: {resp.status_code}"
+        )
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
     tmp.write(resp.content)
     tmp.flush()
@@ -109,17 +116,29 @@ def get_config() -> dict:
 
 
 def _run_preview(req: VisualizerRequest) -> None:
-    logger.info("preview request", extra={"room_url": str(req.room_url), "art_url": str(req.art_url)})
+    logger.info(
+        "preview request",
+        extra={"room_url": str(req.room_url), "art_url": str(req.art_url)},
+    )
 
     cfg = VisualizerConfig()
     tmp_dir = Path(tempfile.mkdtemp())
-    room_path = _download_to_temp(str(req.room_url), suffix=Path(req.room_url.path).suffix or ".jpeg")
-    art_path = _download_to_temp(str(req.art_url), suffix=Path(req.art_url.path).suffix or ".jpeg")
+    room_path = _download_to_temp(
+        str(req.room_url), suffix=Path(req.room_url.path).suffix or ".jpeg"
+    )
+    art_path = _download_to_temp(
+        str(req.art_url), suffix=Path(req.art_url.path).suffix or ".jpeg"
+    )
 
-    if req.upload_image_url and urlparse(req.upload_image_url).scheme in {"http", "https"}:
+    if req.upload_image_url and urlparse(req.upload_image_url).scheme in {
+        "http",
+        "https",
+    }:
         out_path: str | Path = req.upload_image_url
     else:
-        base_name = Path(req.upload_image_url).name if req.upload_image_url else "preview.jpeg"
+        base_name = (
+            Path(req.upload_image_url).name if req.upload_image_url else "preview.jpeg"
+        )
         if len(base_name) > 80:
             stem = Path(base_name).stem[:60]
             base_name = stem + Path(base_name).suffix
@@ -151,15 +170,18 @@ def _run_preview(req: VisualizerRequest) -> None:
 
 
 @visualizer_router.post("/visualize_installation", response_model=AsyncPreviewResponse)
-def preview(req: VisualizerRequest, background_tasks: BackgroundTasks) -> AsyncPreviewResponse:
+def preview(
+    req: VisualizerRequest, background_tasks: BackgroundTasks
+) -> AsyncPreviewResponse:
     background_tasks.add_task(_run_preview, req)
     return AsyncPreviewResponse(job_id=req.job_id)
+
 
 @feature_extractor_router.post("/extract", response_model=FeatureExtractionResponse)
 def extract_features(req: FeatureExtractionRequest) -> FeatureExtractionResponse:
     """Extract visual and market features from artwork image. Automatically determines if painting or sculpture."""
     logger.info("feature extraction request", extra={"image_url": str(req.image_url)})
-    
+
     try:
         # Prepare metadata
         md = ArtworkMetadata(
@@ -168,10 +190,12 @@ def extract_features(req: FeatureExtractionRequest) -> FeatureExtractionResponse
             year=req.year,
             medium_hint=req.medium_hint,
         ).model_dump()
-        
+
         # Fetch and standardize image
-        image_bytes, image_mode, image_size = fetch_and_standardize_image(str(req.image_url), target_size=(1024, 1024))
-        
+        image_bytes, image_mode, image_size = fetch_and_standardize_image(
+            str(req.image_url), target_size=(1024, 1024)
+        )
+
         # Build initial state (artwork_type will be determined by classifier node)
         initial_state: FeatureState = {
             "metadata": md,
@@ -180,11 +204,11 @@ def extract_features(req: FeatureExtractionRequest) -> FeatureExtractionResponse
             "image_size": image_size,
             "errors": [],
         }
-        
+
         # Use cached graph from agent service
         service = get_agent_service()
         final = service.extract_features(initial_state)
-        
+
         # Build response (exclude image_bytes)
         return FeatureExtractionResponse(
             metadata=final.get("metadata", {}),
@@ -195,7 +219,7 @@ def extract_features(req: FeatureExtractionRequest) -> FeatureExtractionResponse
             market_features=final.get("market_features"),
             errors=final.get("errors", []),
         )
-    
+
     except Exception as exc:
         logger.exception("Feature extraction failed")
         raise HTTPException(status_code=500, detail=f"Feature extraction failed: {exc}")

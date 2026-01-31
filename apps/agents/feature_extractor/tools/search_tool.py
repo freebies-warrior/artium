@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import os
 import logging
-from dotenv import load_dotenv
+import os
 from typing import Dict, List
 
 import httpx
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
 load_dotenv()
+
 
 def serpapi_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
     """
@@ -37,7 +38,9 @@ def serpapi_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
             data = r.json()
     except httpx.HTTPStatusError as e:
         if e.response.status_code in (401, 403):
-            logger.warning("SerpAPI authentication failed (401/403). Invalid or expired API key. Market intelligence skipped.")
+            logger.warning(
+                "SerpAPI authentication failed (401/403). Invalid or expired API key. Market intelligence skipped."
+            )
             return []
         raise
 

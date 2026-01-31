@@ -7,11 +7,11 @@ from this directory.
 
 import logging
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from api import agent as agent_api
 from api.service import agent_service_lifespan
-
 
 logger = logging.getLogger(__name__)
 

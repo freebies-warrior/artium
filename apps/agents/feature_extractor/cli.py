@@ -4,17 +4,19 @@ import argparse
 import json
 import logging
 
-from .types import ArtworkMetadata, FeatureState
 from .graph import build_graph
-from .tools.image_tool import fetch_and_standardize_image
 from .llm_client import GeminiVisionClient
+from .tools.image_tool import fetch_and_standardize_image
+from .types import ArtworkMetadata, FeatureState
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Unified feature extraction for paintings and sculptures (vision + market).")
+    p = argparse.ArgumentParser(
+        description="Unified feature extraction for paintings and sculptures (vision + market)."
+    )
     p.add_argument("--title", default="Unknown")
     p.add_argument("--author", default="Unknown")
     p.add_argument("--year", default=None)
@@ -34,7 +36,9 @@ def main():
         medium_hint=args.medium_hint,
     ).model_dump()
 
-    image_bytes, image_mode, image_size = fetch_and_standardize_image(args.image_url, target_size=(1024, 1024))
+    image_bytes, image_mode, image_size = fetch_and_standardize_image(
+        args.image_url, target_size=(1024, 1024)
+    )
 
     initial_state: FeatureState = {
         "metadata": md,

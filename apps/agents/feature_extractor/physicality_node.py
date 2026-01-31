@@ -5,9 +5,9 @@ from typing import Any, Dict
 
 from langgraph.types import Command
 
-from .prompt import build_physicality_prompt
-from .types import Physicality, FeatureState
 from .llm_client import VisionLLMClient
+from .prompt import build_physicality_prompt
+from .types import FeatureState, Physicality
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +16,14 @@ def physicality_node(llm: VisionLLMClient):
     def _node(state: FeatureState) -> Command:
         try:
             prompt = build_physicality_prompt(state["metadata"])
-            raw: Dict[str, Any] = llm.infer_json(prompt=prompt, image_bytes=state["image_bytes"])
+            raw: Dict[str, Any] = llm.infer_json(
+                prompt=prompt, image_bytes=state["image_bytes"]
+            )
             parsed = Physicality.model_validate(raw).model_dump()
             logger.info("Physicality features extracted.")
-            return Command(update={"vision_physicality": parsed}, goto="vision_aggregate_painting")
+            return Command(
+                update={"vision_physicality": parsed}, goto="vision_aggregate_painting"
+            )
         except Exception as e:
             logger.exception("Physicality agent failed: %s", e)
             errs = list(state.get("errors", []))

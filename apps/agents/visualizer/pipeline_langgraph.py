@@ -1,39 +1,40 @@
 from __future__ import annotations
 
-from typing import Any, Dict, TypedDict, Optional
-from langgraph.graph import StateGraph, END
+from typing import Any, Dict, Optional, TypedDict
 
+from langgraph.graph import END, StateGraph
 from PIL import Image
 
-from .config import VisualizerConfig
 from .client import GeminiClient
+from .config import VisualizerConfig
 from .pipeline_sequential import (
-    room_judge,
-    room_enhance,
+    _load_image,
+    appraise_installation,
     composite_install,
     critic,
-    _load_image,
     locate_artwork,
-    appraise_installation
+    room_enhance,
+    room_judge,
 )
+
 
 class VizState(TypedDict, total=False):
     cfg: VisualizerConfig
     client: GeminiClient
-    room_img: Image.Image # current img
+    room_img: Image.Image  # current img
     art_img: Image.Image
     used_enhancement: bool
     retries_used: int
     room_quality: Any
-    out_img: Image.Image # composite img
+    out_img: Image.Image  # composite img
     critic: Any
     placement: Any
     appraisal: Any
 
 
-
 def build_visualization_graph():
     """Build and compile the visualization graph (called once at startup)."""
+
     def node_judge(s: VizState) -> VizState:
         print("Judge")
         s["room_quality"] = room_judge(s["client"], s["cfg"], s["room_img"])
@@ -41,15 +42,22 @@ def build_visualization_graph():
 
     def node_enhance(s: VizState) -> VizState:
         print("Enhance")
-        if s["cfg"].enhance_if_low_quality and s["room_quality"].verdict == "NEEDS_ENHANCEMENT":
+        if (
+            s["cfg"].enhance_if_low_quality
+            and s["room_quality"].verdict == "NEEDS_ENHANCEMENT"
+        ):
             s["room_img"] = room_enhance(s["client"], s["cfg"], s["room_img"])
             s["used_enhancement"] = True
         return s
 
     def node_composite(s: VizState) -> VizState:
         print("Composite")
-        s["out_img"] = composite_install(s["client"], s["cfg"], s["room_img"], s["art_img"])
-        s["placement"] = locate_artwork(s["client"], s["cfg"], s["room_img"], s["out_img"])
+        s["out_img"] = composite_install(
+            s["client"], s["cfg"], s["room_img"], s["art_img"]
+        )
+        s["placement"] = locate_artwork(
+            s["client"], s["cfg"], s["room_img"], s["out_img"]
+        )
         return s
 
     def node_critic(s: VizState) -> VizState:
@@ -60,14 +68,27 @@ def build_visualization_graph():
     def node_retry(s: VizState) -> VizState:
         print("Retry")
         s["retries_used"] += 1
-        fix = s["critic"].suggested_fix or "Improve realism of scale, perspective, and shadow. Keep it photorealistic. Do not remove anything from the original room."
-        s["out_img"] = composite_install(s["client"], s["cfg"], s["room_img"], s["art_img"], extra_fix_instruction=fix)
-        s["placement"] = locate_artwork(s["client"], s["cfg"], s["room_img"], s["out_img"])
+        fix = (
+            s["critic"].suggested_fix
+            or "Improve realism of scale, perspective, and shadow. Keep it photorealistic. Do not remove anything from the original room."
+        )
+        s["out_img"] = composite_install(
+            s["client"],
+            s["cfg"],
+            s["room_img"],
+            s["art_img"],
+            extra_fix_instruction=fix,
+        )
+        s["placement"] = locate_artwork(
+            s["client"], s["cfg"], s["room_img"], s["out_img"]
+        )
         return s
-    
+
     def node_appraisal(s: VizState) -> VizState:
         print("Appraisal")
-        s["appraisal"] = appraise_installation(s["client"], s["cfg"], s["out_img"], s["placement"])
+        s["appraisal"] = appraise_installation(
+            s["client"], s["cfg"], s["out_img"], s["placement"]
+        )
         return s
 
     def route_after_critic(s: VizState) -> str:
@@ -104,17 +125,21 @@ def build_visualization_graph():
     return g.compile()
 
 
-def run_pipeline_langgraph(cfg: VisualizerConfig, room_path: str, art_path: str) -> Dict[str, Any]:
+def run_pipeline_langgraph(
+    cfg: VisualizerConfig, room_path: str, art_path: str
+) -> Dict[str, Any]:
     """
     This is deprecated; use VisualizerService instead. Only used for testing using CLI
 
     Returns a dict containing:
       out_img, used_enhancement, retries_used, room_quality, critic
-    
+
     Note: Consider using VisualizerService for production to cache the graph.
     """
     if StateGraph is None:
-        raise RuntimeError("langgraph is not installed; use sequential pipeline instead.")
+        raise RuntimeError(
+            "langgraph is not installed; use sequential pipeline instead."
+        )
 
     client = GeminiClient()
     state: VizState = {

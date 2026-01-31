@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 import logging
-from dotenv import load_dotenv
 from typing import Any, Callable, Dict, List
 
+from dotenv import load_dotenv
 from langgraph.types import Command
 
 from .types import FeatureState, MarketFeatures
@@ -12,6 +12,7 @@ from .types import FeatureState, MarketFeatures
 logger = logging.getLogger(__name__)
 
 load_dotenv()
+
 
 def _make_queries(author: str) -> List[str]:
     return [
@@ -40,17 +41,34 @@ def market_intelligence_node(
 
             # Lightweight heuristic summarization (you can replace with an LLM later)
             institutional = {
-                "signal_count": sum(1 for s in sources if "museum" in (s.get("snippet", "").lower() + s.get("title", "").lower())),
+                "signal_count": sum(
+                    1
+                    for s in sources
+                    if "museum"
+                    in (s.get("snippet", "").lower() + s.get("title", "").lower())
+                ),
                 "notes": "Counts are heuristic; replace with structured parsing for precision.",
             }
             auction_velocity = {
-                "signal_count": sum(1 for s in sources if "sotheby" in (s.get("snippet", "").lower() + s.get("title", "").lower())
-                                    or "christie" in (s.get("snippet", "").lower() + s.get("title", "").lower())),
+                "signal_count": sum(
+                    1
+                    for s in sources
+                    if "sotheby"
+                    in (s.get("snippet", "").lower() + s.get("title", "").lower())
+                    or "christie"
+                    in (s.get("snippet", "").lower() + s.get("title", "").lower())
+                ),
                 "notes": "Heuristic hit-count for major houses; add dedicated auction dataset for accuracy.",
             }
             sentiment = {
-                "signal_count": sum(1 for s in sources if "trend" in (s.get("snippet", "").lower() + s.get("title", "").lower())
-                                    or "review" in (s.get("snippet", "").lower() + s.get("title", "").lower())),
+                "signal_count": sum(
+                    1
+                    for s in sources
+                    if "trend"
+                    in (s.get("snippet", "").lower() + s.get("title", "").lower())
+                    or "review"
+                    in (s.get("snippet", "").lower() + s.get("title", "").lower())
+                ),
                 "notes": "Heuristic press/trend hit-count; add time-bounded queries for recency.",
             }
 

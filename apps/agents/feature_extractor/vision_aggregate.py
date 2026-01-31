@@ -6,11 +6,11 @@ from typing import Any, Dict, List
 from langgraph.types import Command
 
 from .types import (
-    BrushstrokeDynamics,
     BlendingMerging,
+    BrushstrokeDynamics,
+    FeatureState,
     Physicality,
     VisionFeatures,
-    FeatureState,
 )
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,9 @@ def vision_aggregate_node():
             blend = BlendingMerging.model_validate(state["vision_blending"])
             phys = Physicality.model_validate(state["vision_physicality"])
 
-            notes = " ".join([n for n in [brush.notes, blend.notes, phys.notes] if n]).strip()
+            notes = " ".join(
+                [n for n in [brush.notes, blend.notes, phys.notes] if n]
+            ).strip()
             if not notes:
                 notes = "Extracted from visible cues across brushwork, edge handling, and material support."
 

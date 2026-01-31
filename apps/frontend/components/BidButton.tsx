@@ -26,7 +26,7 @@ function fmtSGD(n: number) {
 export default function BidButton({
   item,
   triggerText = 'Place Bid',
-  setRefreshKey
+  setRefreshKey,
 }: BidButtonProps) {
   const [bid, setBid] = React.useState('')
   const [submitting, setSubmitting] = React.useState(false)
@@ -41,15 +41,12 @@ export default function BidButton({
   const minBid = highestBid
     ? highestBid + increment
     : currentPrice == 0
-    ? 1
-    : currentPrice
+      ? 1
+      : currentPrice
 
   const bidInt = bid === '' ? NaN : parseInt(bid, 10)
 
-  const canSubmit =
-    Number.isFinite(bidInt) &&
-    bidInt >= minBid &&
-    !submitting
+  const canSubmit = Number.isFinite(bidInt) && bidInt >= minBid && !submitting
 
   async function submitBid() {
     if (!canSubmit) return
@@ -90,7 +87,7 @@ export default function BidButton({
 
       // ✅ Close dialog
       setOpen(false)
-      setRefreshKey();
+      setRefreshKey()
       alert('Bid placed successfully!')
     } catch (e: any) {
       setError(e?.message ?? 'Failed to place bid')
@@ -118,9 +115,7 @@ export default function BidButton({
 
           <Dialog.Description className="mb-6 text-sm text-muted-foreground">
             You are bidding on{' '}
-            <span className="font-medium text-primary">
-              {item.title}
-            </span>
+            <span className="font-medium text-primary">{item.title}</span>
           </Dialog.Description>
 
           <div className="space-y-4">
@@ -137,9 +132,7 @@ export default function BidButton({
               </div>
 
               <div className="text-right">
-                <p className="text-xs text-muted-foreground">
-                  Minimum Bid
-                </p>
+                <p className="text-xs text-muted-foreground">Minimum Bid</p>
 
                 <p className="font-semibold text-primary">
                   SGD {fmtSGD(minBid)}
@@ -149,18 +142,14 @@ export default function BidButton({
 
             {/* Input */}
             <div>
-              <label className="mb-1 block text-sm font-medium">
-                Your Bid
-              </label>
+              <label className="mb-1 block text-sm font-medium">Your Bid</label>
 
               <div className="relative">
                 <input
                   type="text"
                   inputMode="numeric"
                   value={bid}
-                  onChange={(e) =>
-                    setBid(e.target.value.replace(/[^\d]/g, ''))
-                  }
+                  onChange={(e) => setBid(e.target.value.replace(/[^\d]/g, ''))}
                   className="w-full rounded-md border border-border bg-background px-3 py-2 pr-14"
                   placeholder="Enter amount"
                 />
@@ -172,25 +161,14 @@ export default function BidButton({
             </div>
 
             {/* Error */}
-            {error && (
-              <p className="text-sm text-red-400">
-                {error}
-              </p>
-            )}
+            {error && <p className="text-sm text-red-400">{error}</p>}
 
             {/* Buttons */}
-            <Button
-              fullWidth
-              onClick={() => setBid(String(minBid))}
-            >
+            <Button fullWidth onClick={() => setBid(String(minBid))}>
               Set Minimum Bid
             </Button>
 
-            <Button
-              fullWidth
-              disabled={!canSubmit}
-              onClick={submitBid}
-            >
+            <Button fullWidth disabled={!canSubmit} onClick={submitBid}>
               {submitting ? 'Submitting…' : 'Submit Bid'}
             </Button>
           </div>

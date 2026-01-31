@@ -27,9 +27,8 @@ type ItemDTO = {
   time_end: string
   base_price: number | string
   highest_bid_amount: number | string | undefined
-  pictures: PictureDTO[]   // ✅ ADD THIS
+  pictures: PictureDTO[] // ✅ ADD THIS
 }
-
 
 type ListItemsResponse =
   | { items: ItemDTO[]; next_cursor?: string | null }
@@ -43,8 +42,10 @@ function normalize(res: ListItemsResponse): {
   next_cursor: string | null
 } {
   if (Array.isArray(res)) return { items: res, next_cursor: null }
-  if ('items' in res) return { items: res.items, next_cursor: res.next_cursor ?? null }
-  if ('data' in res) return { items: res.data, next_cursor: res.next_cursor ?? null }
+  if ('items' in res)
+    return { items: res.items, next_cursor: res.next_cursor ?? null }
+  if ('data' in res)
+    return { items: res.data, next_cursor: res.next_cursor ?? null }
   return { items: [], next_cursor: null }
 }
 
@@ -85,9 +86,16 @@ export default function HomeClient() {
   let banner: { message: string; type: 'success' | 'error' } | null = null
   if (!dismissed) {
     if (verifyStatus === 'failed') {
-      banner = { message: 'This verification link is invalid or has expired.', type: 'error' }
+      banner = {
+        message: 'This verification link is invalid or has expired.',
+        type: 'error',
+      }
     } else if (verifyStatus === 'success') {
-      banner = { message: 'Your email has been verified successfully. You may now log in.', type: 'success' }
+      banner = {
+        message:
+          'Your email has been verified successfully. You may now log in.',
+        type: 'success',
+      }
     }
   }
 
@@ -129,13 +137,19 @@ export default function HomeClient() {
     return `/api/items?${qs.toString()}`
   }
 
-  async function fetchArtsPage(opts: { mode: 'reset' | 'append'; cursor: string | null }) {
+  async function fetchArtsPage(opts: {
+    mode: 'reset' | 'append'
+    cursor: string | null
+  }) {
     const isReset = opts.mode === 'reset'
     try {
       isReset ? setLoading(true) : setLoadingMore(true)
       setError(null)
 
-      const r = await fetch(buildUrl(opts.cursor, LIMIT), { method: 'GET', cache: 'no-store' })
+      const r = await fetch(buildUrl(opts.cursor, LIMIT), {
+        method: 'GET',
+        cache: 'no-store',
+      })
       if (!r.ok) {
         const text = await r.text()
         let msg = `Request failed (${r.status})`
@@ -160,7 +174,7 @@ export default function HomeClient() {
             ? formatMoneySGD(toNumber(it.highest_bid_amount) ?? 0)
             : undefined,
         due: formatDue(it.time_end),
-        img: it.pictures[0].url
+        img: it.pictures[0].url,
       }))
 
       if (isReset) setItems(mapped)
@@ -184,7 +198,10 @@ export default function HomeClient() {
 
       // Fetch more items to build seller leaderboard
       const SELLER_LIMIT = 200
-      const r = await fetch(buildUrl(null, SELLER_LIMIT), { method: 'GET', cache: 'no-store' })
+      const r = await fetch(buildUrl(null, SELLER_LIMIT), {
+        method: 'GET',
+        cache: 'no-store',
+      })
       if (!r.ok) {
         const text = await r.text()
         let msg = `Request failed (${r.status})`
@@ -199,7 +216,10 @@ export default function HomeClient() {
       const { items: raw } = normalize(json)
 
       // ✅ group by seller_id (REAL ID)
-      const map = new Map<string, { username: string; items: number; volume: number }>()
+      const map = new Map<
+        string,
+        { username: string; items: number; volume: number }
+      >()
       for (const it of raw) {
         const sellerId = it.seller_id
         const username = it.seller_username?.trim() || 'Unknown'
@@ -208,24 +228,29 @@ export default function HomeClient() {
         cur.items += 1
         cur.volume += pickDisplayPrice(it)
 
-        if (cur.username === 'Unknown' && username !== 'Unknown') cur.username = username
+        if (cur.username === 'Unknown' && username !== 'Unknown')
+          cur.username = username
         map.set(sellerId!, cur)
       }
 
-      const sellerList: SellerUI[] = Array.from(map.entries()).map(([sellerId, agg]) => {
-        const clean = agg.username.replace(/^@+/, '')
-        const displayName = clean.length ? clean : 'Unknown'
-        const letter = displayName.charAt(0).toUpperCase() || 'U'
+      const sellerList: SellerUI[] = Array.from(map.entries()).map(
+        ([sellerId, agg]) => {
+          const clean = agg.username.replace(/^@+/, '')
+          const displayName = clean.length ? clean : 'Unknown'
+          const letter = displayName.charAt(0).toUpperCase() || 'U'
 
-        return {
-          id: sellerId, // ✅ REAL UUID
-          name: displayName,
-          username: agg.username.startsWith('@') ? agg.username : `@${agg.username}`,
-          avatarLetter: letter,
-          items: agg.items,
-          volume: formatMoneySGD(agg.volume),
+          return {
+            id: sellerId, // ✅ REAL UUID
+            name: displayName,
+            username: agg.username.startsWith('@')
+              ? agg.username
+              : `@${agg.username}`,
+            avatarLetter: letter,
+            items: agg.items,
+            volume: formatMoneySGD(agg.volume),
+          }
         }
-      })
+      )
 
       // sort by volume desc, then items desc
       sellerList.sort((a, b) => {
@@ -298,21 +323,35 @@ export default function HomeClient() {
           </div>
         )}
 
-        <HeroSection search={search} onSearchChange={setSearch} onSearchSubmit={onSearchSubmit} />
+        <HeroSection
+          search={search}
+          onSearchChange={setSearch}
+          onSearchSubmit={onSearchSubmit}
+        />
         <Tabs activeTab={activeTab} onTabChange={handleTabChange} />
 
         {activeTab === 'arts' ? (
           <>
             <ArtGrid items={items} loading={loading} error={error} />
             <div className="container mx-auto px-4 pb-8">
-              <Pagination page={page} hasNext={hasNext} onPageChange={setPage} />
+              <Pagination
+                page={page}
+                hasNext={hasNext}
+                onPageChange={setPage}
+              />
               {loadingMore && (
-                <div className="mt-3 text-center text-sm text-muted-foreground">Loading more...</div>
+                <div className="mt-3 text-center text-sm text-muted-foreground">
+                  Loading more...
+                </div>
               )}
             </div>
           </>
         ) : (
-          <SellerGrid sellers={sellers} loading={loadingSellers} error={errorSellers} />
+          <SellerGrid
+            sellers={sellers}
+            loading={loadingSellers}
+            error={errorSellers}
+          />
         )}
       </main>
 

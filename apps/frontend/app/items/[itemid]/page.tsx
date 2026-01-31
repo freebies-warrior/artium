@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 
-
 import '../../../global.css'
 import Navbar from '@/components/NavBar'
 import CountdownTimer from '@/components/CountdownTimer'
@@ -152,7 +151,8 @@ export default function ItemPage() {
 
   // If your folder is /items/[itemid], then params.itemid exists (could be string | string[])
   const itemIdRaw = (params as any)?.itemid
-  const itemId = typeof itemIdRaw === 'string' ? itemIdRaw : itemIdRaw?.[0] ?? ''
+  const itemId =
+    typeof itemIdRaw === 'string' ? itemIdRaw : (itemIdRaw?.[0] ?? '')
 
   const [refreshKey, setRefreshKey] = useState(0)
 
@@ -355,7 +355,9 @@ export default function ItemPage() {
                 {item?.highest_bid_amount ? 'Current Bid' : 'Base Price'}
               </p>
               <p className="font-mono text-2xl font-semibold">
-                {currentPrice !== null ? `SGD ${currentPrice.toLocaleString()}` : '—'}
+                {currentPrice !== null
+                  ? `SGD ${currentPrice.toLocaleString()}`
+                  : '—'}
               </p>
             </div>
 
@@ -492,7 +494,6 @@ export default function ItemPage() {
 
         <ArtGrid items={moreItems} loading={loadingMore} error={errorMore} />
       </section>
-
 
       <Footer />
     </div>

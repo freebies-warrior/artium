@@ -33,7 +33,9 @@ function SellerCard({ seller, index }: { seller: SellerUI; index: number }) {
 
               <div>
                 <p className="font-semibold text-foreground">{seller.name}</p>
-                <p className="text-sm text-muted-foreground">{seller.username}</p>
+                <p className="text-sm text-muted-foreground">
+                  {seller.username}
+                </p>
               </div>
             </div>
 
@@ -53,7 +55,11 @@ type SellerGridProps = {
   error?: string | null
 }
 
-export default function SellerGrid({ sellers, loading, error }: SellerGridProps) {
+export default function SellerGrid({
+  sellers,
+  loading,
+  error,
+}: SellerGridProps) {
   return (
     <section className="py-8">
       <div className="container mx-auto px-4">

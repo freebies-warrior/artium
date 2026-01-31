@@ -25,9 +25,8 @@ type ItemDTO = {
   time_end: string
   base_price: number | string
   highest_bid_amount: number | string | undefined
-  pictures: PictureDTO[]   // ✅ ADD THIS
+  pictures: PictureDTO[] // ✅ ADD THIS
 }
-
 
 type ListItemsResponse =
   | { items: ItemDTO[]; next_cursor?: string | null }
@@ -89,7 +88,7 @@ export default function UserClient() {
     if (cursor) qs.set('cursor', cursor)
     return `/api/items?${qs.toString()}`
   }
-  console.log(items);
+  console.log(items)
 
   async function fetchPage(opts: {
     mode: 'reset' | 'append'
@@ -127,7 +126,7 @@ export default function UserClient() {
         basePrice: formatBid(it.base_price),
         highestBid: formatBid(it.highest_bid_amount),
         due: formatDue(it.time_end),
-        img: it.pictures[0].url
+        img: it.pictures[0].url,
       }))
 
       if (isReset) setItems(mapped)

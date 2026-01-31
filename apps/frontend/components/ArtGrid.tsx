@@ -54,7 +54,9 @@ const ArtCard = ({ item, index }: { item: ArtUI; index: number }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground">
-                {item.highestBid && item.highestBid != "SGD 0" ? 'Highest Bid' : 'Base Price'}
+                {item.highestBid && item.highestBid != 'SGD 0'
+                  ? 'Highest Bid'
+                  : 'Base Price'}
               </p>
               <p className="font-mono text-sm font-medium">
                 {item.highestBid ?? item.basePrice}

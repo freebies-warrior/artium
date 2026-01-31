@@ -43,6 +43,7 @@ func main() {
 	itemDatabase := database.NewItemDatabase(db)
 	pictureDatabase := database.NewPictureDatabase(db)
 	bidDatabase := database.NewBidDatabase(db)
+	visualizationJobs := database.NewVisualizationJobDatabase(db)
 
 	r2AccountID := mustEnv("R2_ACCOUNT_ID")
 	r2AccessKey := mustEnv("R2_ACCESS_KEY_ID")
@@ -82,6 +83,7 @@ func main() {
 		itemDatabase,
 		pictureDatabase,
 		bidDatabase,
+		visualizationJobs,
 		[]byte(secret),
 		appBaseURL,
 		r2Bucket,

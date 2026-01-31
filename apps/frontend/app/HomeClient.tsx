@@ -50,7 +50,7 @@ function formatDue(iso: string) {
 }
 
 function formatBid(n: number | string | undefined) {
-  if (n == undefined) return undefined;
+  if (n == undefined) return undefined
   const num = typeof n === 'string' ? Number(n) : n
   if (!Number.isFinite(num)) return String(n)
   return `${num.toLocaleString()} SGD`
@@ -128,7 +128,11 @@ export default function HomeClient() {
     const isReset = opts.mode === 'reset'
 
     try {
-      isReset ? setLoading(true) : setLoadingMore(true)
+      if (isReset) {
+        setLoading(true)
+      } else {
+        setLoadingMore(true)
+      }
       setError(null)
 
       const r = await fetch(buildUrl(opts.cursor), {

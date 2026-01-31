@@ -18,7 +18,7 @@ import (
 type AuthHandler struct {
 	users      *database.UserDatabase
 	tokens     *database.EmailVerificationTokenDatabase
-	email	   *email.Service 
+	email      *email.Service
 	jwtSecret  []byte
 	appBaseURL string
 }
@@ -33,7 +33,7 @@ func NewAuthHandler(
 	return &AuthHandler{
 		users:      users,
 		tokens:     tokens,
-		email: emailService,
+		email:      emailService,
 		jwtSecret:  jwtSecret,
 		appBaseURL: appBaseURL,
 	}
@@ -236,7 +236,7 @@ func (h *AuthHandler) ResendVerification(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to send verification link", nil))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, okResp{OK: true})
 }
 
@@ -272,11 +272,8 @@ func (h *AuthHandler) sendVerificationLink(ctx context.Context, userID, email st
 		return err
 	}
 
-	log.Printf("[DEV] verification link for %s: %s", email, verifyURL)
-
 	return nil
 }
-
 
 func normalizeEmail(s string) string {
 	return strings.ToLower(strings.TrimSpace(s))

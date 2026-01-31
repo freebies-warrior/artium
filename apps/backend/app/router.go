@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(h *handlers.HandlerSet, jwtSecret []byte) *gin.Engine {
+func NewRouter(h *handlers.HandlerSet, jwtSecret []byte, internalToken string) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 
@@ -30,6 +30,11 @@ func NewRouter(h *handlers.HandlerSet, jwtSecret []byte) *gin.Engine {
 
 	// Upload Image
 	r.POST("/uploads/presign", middlewares.RequireAuth(jwtSecret), h.Uploads.PresignPut)
+
+	// Visualization
+	r.POST("/visualizations", middlewares.RequireAuth(jwtSecret), h.Visualizations.Create)
+	r.GET("/visualizations/:job_id", middlewares.RequireAuth(jwtSecret), h.Visualizations.Get)
+	r.PUT("/visualizations/:job_id", middlewares.RequireInternalToken(internalToken), h.Visualizations.UpdateInternal)
 
 	// Bids
 	r.POST("/items/:item_id/bids", middlewares.RequireAuth(jwtSecret), h.Bids.PlaceBid)

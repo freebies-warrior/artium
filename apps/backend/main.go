@@ -26,6 +26,7 @@ func main() {
 
 	dsn := mustEnv("DATABASE_URL")
 	secret := mustEnv("JWT_SECRET")
+	internalToken := mustEnv("AI_SERVICE_TOKEN")
 
 	appBaseURL := getenv("APP_BASE_URL", "http://localhost:3000")
 	sweeperIntervalStr := getenv("ITEM_STATUS_SWEEPER_INTERVAL", "1m")
@@ -58,6 +59,7 @@ func main() {
 	itemDatabase := database.NewItemDatabase(db)
 	pictureDatabase := database.NewPictureDatabase(db)
 	bidDatabase := database.NewBidDatabase(db)
+	visualizationJobs := database.NewVisualizationJobDatabase(db)
 
 	r2AccountID := mustEnv("R2_ACCOUNT_ID")
 	r2AccessKey := mustEnv("R2_ACCESS_KEY_ID")
@@ -97,6 +99,7 @@ func main() {
 		itemDatabase,
 		pictureDatabase,
 		bidDatabase,
+		visualizationJobs,
 		emailService,
 		[]byte(secret),
 		appBaseURL,
@@ -104,7 +107,7 @@ func main() {
 		s3Client,
 	)
 
-	r := app.NewRouter(h, []byte(secret))
+	r := app.NewRouter(h, []byte(secret), internalToken)
 
 	sweeper.Start(ctx, db, sweeperInterval)
 

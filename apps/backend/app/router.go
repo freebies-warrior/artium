@@ -42,6 +42,7 @@ func NewRouter(h *handlers.HandlerSet, jwtSecret []byte, internalToken string) *
 
 	// Users
 	r.GET("/users", h.Users.ListUsers)
+	r.GET("/users/:user_id", h.Users.GetUserDetails)
 
 	return r
 }

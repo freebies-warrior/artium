@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"backend/database"
+	"backend/utils/email"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
@@ -22,6 +23,7 @@ func NewHandlerSet(
 	pictures *database.PictureDatabase,
 	bids *database.BidDatabase,
 	visualizationJobs *database.VisualizationJobDatabase,
+	emailService *email.Service,
 	jwtSecret []byte,
 	appBaseURL string,
 	r2Bucket string,
@@ -30,7 +32,7 @@ func NewHandlerSet(
 	uploadHandler := NewUploadHandler(r2Bucket, s3Client)
 
 	return &HandlerSet{
-		Auth:           NewAuthHandler(users, tokens, jwtSecret, appBaseURL),
+		Auth:           NewAuthHandler(users, tokens, emailService, jwtSecret, appBaseURL),
 		Items:          NewItemsHandler(items, pictures, uploadHandler),
 		Uploads:        uploadHandler,
 		Bids:           NewBidsHandler(bids, items),

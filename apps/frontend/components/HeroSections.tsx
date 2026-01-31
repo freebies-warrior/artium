@@ -4,7 +4,17 @@ import '../global.css'
 import { Search } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-export default function HeroSection() {
+type HeroSectionProps = {
+  search: string
+  onSearchChange: (value: string) => void
+  onSearchSubmit?: () => void
+}
+
+export default function HeroSection({
+  search,
+  onSearchChange,
+  onSearchSubmit,
+}: HeroSectionProps) {
   return (
     <section className="py-8 md:py-12">
       <div className="container mx-auto px-4">
@@ -22,7 +32,6 @@ export default function HeroSection() {
           </p>
         </motion.div>
 
-        {/* Search Bar */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -34,8 +43,17 @@ export default function HeroSection() {
               type="text"
               placeholder="Search your favourite Arts"
               className="search-bar"
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearchSubmit?.()
+              }}
             />
-            <button className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg bg-secondary p-2 transition-colors hover:bg-primary hover:text-primary-foreground">
+            <button
+              type="button"
+              onClick={() => onSearchSubmit?.()}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg bg-secondary p-2 transition-colors hover:bg-primary hover:text-primary-foreground"
+            >
               <Search className="h-4 w-4" />
             </button>
           </div>

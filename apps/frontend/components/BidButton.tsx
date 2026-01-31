@@ -5,130 +5,180 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { Button } from './ui/Button'
 
-type BidButtonProps = {
-  nftName?: string
-  currentPriceSGD?: number
-  minBidSGD?: number
-  triggerText?: string
+type ItemForBid = {
+  id: string | undefined
+  base_price: number | undefined
+  increment: number | undefined
+  title: string | undefined
+  highest_bid_amount: number | undefined
 }
 
-// ...keep your imports
+type BidButtonProps = {
+  item: ItemForBid
+  triggerText?: string
+  setRefreshKey: () => void
+  onSuccess?: () => void
+}
 
 function fmtSGD(n: number) {
-  return n // keep as you want
+  return n.toLocaleString()
 }
 
 export default function BidButton({
-  nftName = 'The Orbitians',
-  currentPriceSGD = 3,
-  minBidSGD = 5,
+  item,
   triggerText = 'Place Bid',
+  setRefreshKey,
+  onSuccess,
 }: BidButtonProps) {
-  const [bid, setBid] = React.useState<string>('')
+  const [bid, setBid] = React.useState('')
+  const [submitting, setSubmitting] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
 
-  const minBidStr = fmtSGD(minBidSGD)
-  const currentPriceStr = fmtSGD(currentPriceSGD)
+  // ✅ Control dialog
+  const [open, setOpen] = React.useState(false)
 
-  // digits-only -> integer
+  const currentPrice = item.base_price ?? 0
+  const highestBid = item.highest_bid_amount
+  const increment = item.increment ?? 0
+  const minBid = highestBid
+    ? highestBid + increment
+    : currentPrice == 0
+      ? 1
+      : currentPrice
+
   const bidInt = bid === '' ? NaN : parseInt(bid, 10)
-  const canSubmit = Number.isFinite(bidInt) && bidInt >= minBidSGD
+
+  const canSubmit = Number.isFinite(bidInt) && bidInt >= minBid && !submitting
+
+  async function submitBid() {
+    if (!canSubmit) return
+
+    if (!item.id) {
+      setError('Missing item id.')
+      return
+    }
+
+    setSubmitting(true)
+    setError(null)
+
+    try {
+      const res = await fetch(`/api/items/${item.id}/bids`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ price: bidInt }),
+      })
+
+      if (!res.ok) {
+        const text = await res.text()
+        const data = text ? JSON.parse(text) : {}
+
+        throw new Error(
+          data?.error?.message ??
+            data?.message ??
+            (res.status === 401
+              ? 'Please log in to place a bid.'
+              : 'Failed to place bid')
+        )
+      }
+
+      // ✅ Reset state
+      setBid('')
+      setError(null)
+
+      // ✅ Close dialog
+      setOpen(false)
+      setRefreshKey()
+      onSuccess?.()
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to place bid')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
-    <Dialog.Root>
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      {/* Trigger */}
       <Dialog.Trigger asChild>
-        <Button className="inline-flex items-center justify-center font-semibold rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:opacity-50 disabled:pointer-events-none cursor-pointer bg-purple-600 text-white hover:bg-purple-700 active:scale-[0.99] h-12 px-8 text-base w-full">
+        <Button className="h-12 w-full bg-purple-600 text-white hover:bg-purple-700">
           {triggerText}
         </Button>
       </Dialog.Trigger>
 
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" />
 
-        <Dialog.Content
-          className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 grid gap-4
-                     border border-border bg-neutral-800 p-6 shadow-lg
-                     data-[state=open]:animate-in data-[state=closed]:animate-out
-                     data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
-                     data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
-                     data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]
-                     data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]
-                     sm:rounded-lg sm:max-w-md"
-        >
-          <div className="bg-neutral-850 flex flex-col space-y-1.5 text-center sm:text-left">
-            <Dialog.Title className="tracking-tight text-xl font-bold">
-              Place a Bid
-            </Dialog.Title>
-            <Dialog.Description className="text-sm text-muted-foreground">
-              You are about to place a bid on{' '}
-              <span className="text-primary font-medium">{nftName}</span>
-            </Dialog.Description>
-          </div>
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-neutral-800 p-6 shadow-lg">
+          <Dialog.Title className="mb-2 text-xl font-bold">
+            Place a Bid
+          </Dialog.Title>
 
-          <div className="space-y-6 py-4">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
+          <Dialog.Description className="mb-6 text-sm text-muted-foreground">
+            You are bidding on{' '}
+            <span className="font-medium text-primary">{item.title}</span>
+          </Dialog.Description>
+
+          <div className="space-y-4">
+            {/* Price Info */}
+            <div className="flex justify-between rounded-lg bg-secondary/40 p-4">
               <div>
-                <p className="text-sm text-muted-foreground">Current Price</p>
-                <p className="text-lg font-semibold flex items-center gap-2">
-                  ${currentPriceStr}
+                <p className="text-xs text-muted-foreground">
+                  {highestBid ? 'Highest Bid' : 'Base Price'}
+                </p>
+
+                <p className="font-semibold">
+                  SGD {fmtSGD(highestBid ?? currentPrice)}
                 </p>
               </div>
+
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Minimum Bid</p>
-                <p className="text-lg font-semibold text-primary">
-                  ${minBidStr}
+                <p className="text-xs text-muted-foreground">Minimum Bid</p>
+
+                <p className="font-semibold text-primary">
+                  SGD {fmtSGD(minBid)}
                 </p>
               </div>
             </div>
 
-            {/* Bid input (INTEGER ONLY, DIGITS ONLY) */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium">Your Bid</label>
+            {/* Input */}
+            <div>
+              <label className="mb-1 block text-sm font-medium">Your Bid</label>
+
               <div className="relative">
                 <input
                   type="text"
                   inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder="Enter bid amount"
                   value={bid}
-                  onChange={(e) => {
-                    const digitsOnly = e.target.value.replace(/[^\d]/g, '')
-                    setBid(digitsOnly)
-                  }}
-                  onPaste={(e) => {
-                    e.preventDefault()
-                    const pasted = e.clipboardData.getData('text')
-                    const digitsOnly = pasted.replace(/[^\d]/g, '')
-                    setBid(digitsOnly)
-                  }}
-                  className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-base
-                             placeholder:text-muted-foreground ring-offset-background
-                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
-                             md:text-sm pr-16"
+                  onChange={(e) => setBid(e.target.value.replace(/[^\d]/g, ''))}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 pr-14"
+                  placeholder="Enter amount"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                   SGD
                 </span>
               </div>
             </div>
 
-            <Button fullWidth onClick={() => setBid(String(minBidSGD))}>
-              Set Minimum Bid ({minBidStr} SGD)
+            {/* Error */}
+            {error && <p className="text-sm text-red-400">{error}</p>}
+
+            {/* Buttons */}
+            <Button fullWidth onClick={() => setBid(String(minBid))}>
+              Set Minimum Bid
             </Button>
 
-            <Button fullWidth disabled={!canSubmit}>
-              Submit Bid
+            <Button fullWidth disabled={!canSubmit} onClick={submitBid}>
+              {submitting ? 'Submitting…' : 'Submit Bid'}
             </Button>
           </div>
 
+          {/* Close Button */}
           <Dialog.Close asChild>
-            <button
-              type="button"
-              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity
-                         hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2
-                         disabled:pointer-events-none"
-            >
+            <button className="absolute right-4 top-4 text-muted-foreground hover:text-foreground">
               <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
             </button>
           </Dialog.Close>
         </Dialog.Content>

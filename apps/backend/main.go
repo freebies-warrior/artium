@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"backend/app"
 	"backend/database"
 	"backend/handlers"
 	"backend/internal/sweeper"
+	"backend/utils/email"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -35,6 +37,19 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	smtpPort, err := strconv.Atoi(mustEnv("SMTP_PORT"))
+	if err != nil {
+		log.Fatalf("invalid SMTP_PORT: %v", err)
+	}
+
+	emailService := email.NewService(email.Config{
+		Host:     mustEnv("SMTP_HOST"),
+		Port:     smtpPort,
+		Username: getenv("SMTP_USERNAME", ""),
+		Password: getenv("SMTP_PASSWORD", ""),
+		FromName: mustEnv("EMAIL_FROM_NAME"),
+		FromAddr: mustEnv("EMAIL_FROM_ADDRESS"),
+	})
 
 	db := app.MustOpenDB(dsn)
 	defer db.Close()
@@ -84,6 +99,7 @@ func main() {
 		itemDatabase,
 		pictureDatabase,
 		bidDatabase,
+		emailService,
 		visualizationJobs,
 		[]byte(secret),
 		appBaseURL,

@@ -173,6 +173,14 @@ def preview(req: PreviewRequest) -> PreviewResponse:
         # AppraisalReport is a pydantic model; serialize to dict for response
         appraisal_dict = appraisal_obj.model_dump() if hasattr(appraisal_obj, "model_dump") else appraisal_obj.__dict__
 
+    # Remove tmp_dir
+    try:
+        for f in tmp_dir.iterdir():
+            f.unlink()
+        tmp_dir.rmdir()
+    except Exception:
+        pass
+
     return PreviewResponse(
         out_path=str(out_path),
         preview_base64=f"data:image/jpeg;base64,{b64}",
@@ -235,15 +243,3 @@ def extract_features(req: FeatureExtractionRequest) -> FeatureExtractionResponse
     except Exception as exc:
         logger.exception("Feature extraction failed")
         raise HTTPException(status_code=500, detail=f"Feature extraction failed: {exc}")
-
-
-# Convenience for local dev: `python agent.py`
-if __name__ == "__main__":
-    import uvicorn
-    from fastapi import FastAPI
-
-    demo_app = FastAPI(title="Agents API", version="1.0")
-    demo_app.include_router(system_router)
-    demo_app.include_router(visualizer_router)
-    demo_app.include_router(feature_extractor_router)
-    uvicorn.run(demo_app, host="0.0.0.0", port=8000, reload=True)

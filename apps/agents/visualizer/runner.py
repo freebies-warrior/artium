@@ -14,10 +14,6 @@ from .types import VisualizerResult, RoomQualityReport, CriticReport
 from .pipeline_sequential import run_pipeline_sequential
 
 
-def _ensure_parent_dir(path: str) -> None:
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-
-
 def _save_image(out_img: Image.Image, out_path: str) -> str:
     """Save image to local path or upload via PUT if out_path is an HTTP(S) URL."""
     parsed = urlparse(out_path)
@@ -36,8 +32,6 @@ def _save_image(out_img: Image.Image, out_path: str) -> str:
         resp.raise_for_status()
         return out_path
 
-    _ensure_parent_dir(out_path)
-    out_img.save(out_path, format="JPEG")
     return out_path
 
 

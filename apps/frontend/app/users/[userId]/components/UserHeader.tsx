@@ -1,9 +1,68 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+
 import AddItemButton from './AddItemButton'
-type userHeaderProps = {
+
+type UserHeaderProps = {
   userId: string
 }
 
-export default function UserHeader({ userId }: userHeaderProps) {
+// Adjust if your /api/auth/me response is different
+type MeResponse =
+  | { user: { id: string } }
+  | { id: string }
+  | { userId: string }
+  | any
+
+function extractUserId(me: MeResponse): string | null {
+  if (!me) return null
+  if (typeof me.user?.id === 'string') return me.user.id
+  if (typeof me.id === 'string') return me.id
+  if (typeof me.userId === 'string') return me.userId
+  if (typeof me.user_id === 'string') return me.user_id
+  return null
+}
+
+export default function UserHeader({ userId }: UserHeaderProps) {
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  /* ───────────── Get current user ───────────── */
+  useEffect(() => {
+    let cancelled = false
+
+    async function run() {
+      try {
+        const res = await fetch('/api/auth/me', {
+          credentials: 'include',
+          cache: 'no-store',
+        })
+
+        if (!res.ok) {
+          if (!cancelled) setCurrentUserId(null)
+          return
+        }
+
+        const data = (await res.json().catch(() => null)) as MeResponse
+        const uid = extractUserId(data)
+
+        if (!cancelled) setCurrentUserId(uid)
+      } catch {
+        if (!cancelled) setCurrentUserId(null)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const isOwner = !loading && currentUserId === userId
+
   return (
     <div className="flex items-center gap-6 mb-8">
       <div className="h-24 w-24 rounded-full bg-neutral-700" />
@@ -13,7 +72,8 @@ export default function UserHeader({ userId }: userHeaderProps) {
         <p className="text-neutral-400">Manage your listings</p>
       </div>
 
-      <AddItemButton userId={userId} />
+      {/* ✅ Only show if owner */}
+      {isOwner && <AddItemButton userId={userId} />}
     </div>
   )
 }

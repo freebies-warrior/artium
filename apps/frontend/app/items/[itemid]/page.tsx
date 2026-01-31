@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
+
 
 import '../../../global.css'
 import Navbar from '@/components/NavBar'
@@ -66,6 +68,13 @@ type ListItemsResponse = {
   next_cursor: string | null
 }
 
+// Adjust this to match your /api/auth/me response shape
+type MeResponse =
+  | { user: { id: string } }
+  | { id: string }
+  | { authenticated: true; userId: string }
+  | any
+
 type GetItemResponse = { item: Item }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -128,9 +137,23 @@ function toLightboxImages(pictures?: PictureDTO[] | null) {
   return imgs.length ? imgs : [{ src: fallbackImg.src, alt: 'Artwork image' }]
 }
 
+// Try to extract a userId from different possible /api/auth/me shapes
+function extractUserId(me: MeResponse): string | null {
+  if (!me) return null
+  if (typeof me.user?.id === 'string') return me.user.id
+  if (typeof me.id === 'string') return me.id
+  if (typeof me.userId === 'string') return me.userId
+  if (typeof me.user_id === 'string') return me.user_id
+  return null
+}
+
 export default function ItemPage() {
   const params = useParams()
-  const itemId = params.itemid;
+
+  // If your folder is /items/[itemid], then params.itemid exists (could be string | string[])
+  const itemIdRaw = (params as any)?.itemid
+  const itemId = typeof itemIdRaw === 'string' ? itemIdRaw : itemIdRaw?.[0] ?? ''
+
   const [refreshKey, setRefreshKey] = useState(0)
 
   const [isOpen, setIsOpen] = useState(false)
@@ -143,6 +166,43 @@ export default function ItemPage() {
   const [moreItems, setMoreItems] = useState<ArtUI[]>([])
   const [loadingMore, setLoadingMore] = useState(false)
   const [errorMore, setErrorMore] = useState<string | null>(null)
+
+  // ✅ Auth state
+  const [userId, setUserId] = useState<string | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  /* ───────────── Get current user ───────────── */
+  useEffect(() => {
+    let cancelled = false
+
+    async function run() {
+      try {
+        const res = await fetch('/api/auth/me', {
+          credentials: 'include',
+          cache: 'no-store',
+        })
+
+        if (!res.ok) {
+          if (!cancelled) setUserId(null)
+          return
+        }
+
+        const data = (await res.json().catch(() => null)) as MeResponse
+        const uid = extractUserId(data)
+
+        if (!cancelled) setUserId(uid)
+      } catch {
+        if (!cancelled) setUserId(null)
+      } finally {
+        if (!cancelled) setAuthLoading(false)
+      }
+    }
+
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   /* ───────────── Fetch item ───────────── */
   useEffect(() => {
@@ -184,17 +244,17 @@ export default function ItemPage() {
           setMoreItems(
             data.items
               .filter((x) => x.id !== itemId)
-              .map((x) => {
-                return {
-                  id: x.id,
-                  title: x.title,
-                  seller_username: x.seller_username,
-                  author: x.author,
-                  highestBid: formatHighestBid(x.highest_bid_amount ?? x.base_price),
-                  due: formatDue(x.time_end),
-                  img: pickFirstImageUrl(x.pictures), // ✅ IMPORTANT: image for cards
-                }
-              })
+              .map((x) => ({
+                id: x.id,
+                title: x.title,
+                seller_username: x.seller_username,
+                author: x.author,
+                highestBid: formatHighestBid(
+                  x.highest_bid_amount ?? x.base_price
+                ),
+                due: formatDue(x.time_end),
+                img: pickFirstImageUrl(x.pictures),
+              }))
           )
         }
       } catch (e: any) {
@@ -217,14 +277,32 @@ export default function ItemPage() {
     return !Number.isNaN(end.getTime()) && end.getTime() <= Date.now()
   }, [item?.time_end])
 
+  // ✅ Only allow bids if logged in, not seller, and not ended
+  const canBid = useMemo(() => {
+    if (authLoading) return false
+    if (!userId) return false
+    if (!item) return false
+    if (auctionEnded) return false
+    if (item.seller_id === userId) return false
+    return true
+  }, [authLoading, userId, item, auctionEnded])
+
   const featuresText = stringifyFeatures(item?.features)
 
   // ✅ Build images dynamically from backend pictures
-  const itemImages = useMemo(() => toLightboxImages(item?.pictures), [item?.pictures])
+  const itemImages = useMemo(
+    () => toLightboxImages(item?.pictures),
+    [item?.pictures]
+  )
 
   // ✅ Hero image uses first backend image
   const heroSrc = itemImages[0]?.src ?? fallbackImg.src
-  console.log(itemImages);
+
+  const currentPrice = useMemo(() => {
+    const n = item?.highest_bid_amount ?? item?.base_price
+    return typeof n === 'number' ? n : null
+  }, [item?.highest_bid_amount, item?.base_price])
+
   return (
     <div className="min-h-screen bg-background pt-16">
       <Navbar />
@@ -239,7 +317,11 @@ export default function ItemPage() {
               setIsOpen(true)
             }}
           >
-            <img src={heroSrc} alt={item?.title ?? 'Artwork'} className="w-full h-full object-cover" />
+            <img
+              src={heroSrc}
+              alt={item?.title ?? 'Artwork'}
+              className="w-full h-full object-cover"
+            />
           </button>
         </div>
       </section>
@@ -263,11 +345,25 @@ export default function ItemPage() {
               </div>
             )}
 
-            <h1 className="text-4xl font-bold">{item?.title ?? (loadingItem ? 'Loading...' : '—')}</h1>
+            <h1 className="text-4xl font-bold">
+              {item?.title ?? (loadingItem ? 'Loading...' : '—')}
+            </h1>
 
-            <div className="lg:hidden">
+            {/* ✅ Current/Highest bid display */}
+            <div className="rounded-xl border bg-card p-4 mt-10">
+              <p className="text-muted-foreground text-sm">
+                {item?.highest_bid_amount ? 'Current Bid' : 'Base Price'}
+              </p>
+              <p className="font-mono text-2xl font-semibold">
+                {currentPrice !== null ? `SGD ${currentPrice.toLocaleString()}` : '—'}
+              </p>
+            </div>
+
+            <div className="lg:hidden space-y-3">
               <CountdownTimer targetDate={item?.time_end} />
-              {!auctionEnded && (
+
+              {/* ✅ Bid button gating */}
+              {canBid && (
                 <BidButton
                   item={{
                     id: item?.id,
@@ -278,6 +374,23 @@ export default function ItemPage() {
                   }}
                   setRefreshKey={() => setRefreshKey((k) => k + 1)}
                 />
+              )}
+
+              {/* ✅ Helpful hints */}
+              {!authLoading && !userId && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Please login to place a bid.
+                </p>
+              )}
+              {!authLoading && userId && userId === item?.seller_id && (
+                <p className="text-sm text-muted-foreground text-center">
+                  You cannot bid on your own item.
+                </p>
+              )}
+              {!authLoading && userId && auctionEnded && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Auction ended.
+                </p>
               )}
             </div>
 
@@ -315,16 +428,20 @@ export default function ItemPage() {
             </div>
 
             {featuresText && (
-              <pre className="border rounded-lg p-3 text-xs whitespace-pre-wrap">{featuresText}</pre>
+              <pre className="border rounded-lg p-3 text-xs whitespace-pre-wrap">
+                {featuresText}
+              </pre>
             )}
 
-            <PreviewButton itemName = {item?.title}/>
+            <PreviewButton itemName={item?.title} />
           </div>
 
           {/* Right */}
           <div className="hidden lg:flex flex-col gap-4">
             <CountdownTimer targetDate={item?.time_end} />
-            {!auctionEnded && (
+
+            {/* ✅ Bid button gating */}
+            {canBid && (
               <BidButton
                 item={{
                   id: item?.id,
@@ -336,15 +453,46 @@ export default function ItemPage() {
                 setRefreshKey={() => setRefreshKey((k) => k + 1)}
               />
             )}
+
+            {/* ✅ Helpful hints */}
+            {!authLoading && !userId && (
+              <p className="text-sm text-muted-foreground text-center">
+                Please login to place a bid.
+              </p>
+            )}
+            {!authLoading && userId && userId === item?.seller_id && (
+              <p className="text-sm text-muted-foreground text-center">
+                You cannot bid on your own item.
+              </p>
+            )}
+            {!authLoading && userId && auctionEnded && (
+              <p className="text-sm text-muted-foreground text-center">
+                Auction ended.
+              </p>
+            )}
           </div>
         </div>
       </section>
 
       {/* More from user */}
       <section className="container mx-auto px-4 lg:px-6 mt-24">
-        <h2 className="text-3xl font-bold mb-8">More From This User</h2>
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <h2 className="text-3xl font-bold">More From This User</h2>
+
+          {/* ✅ Button -> user profile */}
+          {item?.seller_id && (
+            <Link
+              href={`/users/${item.seller_id}`}
+              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition"
+            >
+              View Profile
+            </Link>
+          )}
+        </div>
+
         <ArtGrid items={moreItems} loading={loadingMore} error={errorMore} />
       </section>
+
 
       <Footer />
     </div>

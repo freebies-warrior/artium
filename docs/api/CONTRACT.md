@@ -138,6 +138,23 @@ For example:
 }
 ```
 
+### Visualization Job
+
+```json
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "item_id": "uuid",
+  "room_image_key": "rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+  "status": "queued",
+  "result_image_key": null,
+  "result_description": null,
+  "error_message": null,
+  "created_at": "2026-01-31T12:00:00Z",
+  "updated_at": "2026-01-31T12:00:00Z"
+}
+```
+
 ---
 
 ## Auth Endpoints
@@ -662,9 +679,177 @@ Returns all users (public-safe fields only).
 
 ---
 
-## AI Endpoints (Buyer Support)
+## AI Endpoints (Visualizer)
 
-> Note: These are **support features** for buyer experience. They do not alter auction outcomes directly.
+> Note: Visualizer is **asynchronous**. The frontend creates a job, then polls for status/result.
+
+---
+
+## Create Visualizer Job (Preview in Room)
+
+Create a new visualization job to merge an item image with a room photo.
+
+- **Method:** `POST`
+- **Path:** `/visualizations`
+- **Auth:** required
+
+### Request
+
+```json
+{
+  "item_id": "uuid",
+  "room_image_key": "rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+  "item_dimensions": {
+    "width_cm": 60,
+    "height_cm": 40
+  }
+}
+```
+
+### Response `201`
+
+```json
+{
+  "job": {
+    "id": "uuid",
+    "user_id": "uuid",
+    "item_id": "uuid",
+    "room_image_key": "rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+    "status": "queued",
+    "result_image_key": null,
+    "result_description": null,
+    "error_message": null,
+    "created_at": "2026-01-31T12:00:00Z",
+    "updated_at": "2026-01-31T12:00:00Z"
+  }
+}
+```
+
+### Errors
+
+- `400 VALIDATION_ERROR` (missing/invalid `item_id`, missing/invalid `room_image_key`)
+- `401 UNAUTHORIZED`
+- `403 FORBIDDEN` (user not allowed to preview this item)
+- `404 NOT_FOUND` (item not found)
+- `409 CONFLICT` (item has no image / item not eligible)
+
+### Notes
+
+- `room_image_key` is obtained by uploading a room photo to R2 via `/uploads/presign`.
+- Do not send arbitrary external URLs to the AI service; pass **keys**.
+
+---
+
+## Get Visualizer Job Status
+
+Fetch job state and (if completed) the output.
+
+- **Method:** `GET`
+- **Path:** `/visualizations/{job_id}`
+- **Auth:** required
+
+### Response `200` (queued / processing)
+
+```json
+{
+  "job": {
+    "id": "uuid",
+    "user_id": "uuid",
+    "item_id": "uuid",
+    "room_image_key": "rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+    "status": "processing",
+    "result_image_key": null,
+    "result_description": null,
+    "error_message": null,
+    "created_at": "2026-01-31T12:00:00Z",
+    "updated_at": "2026-01-31T12:01:10Z"
+  }
+}
+```
+
+### Response `200` (succeeded)
+
+```json
+{
+  "job": {
+    "id": "uuid",
+    "user_id": "uuid",
+    "item_id": "uuid",
+    "room_image_key": "rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+    "status": "succeeded",
+    "result_image_key": "visualizations/<job_id>/result.jpg",
+    "result_image_url": "https://.../visualizations/<job_id>/result.jpg",
+    "result_description": "A warm-toned landscape piece displayed above a modern sofa...",
+    "error_message": null,
+    "created_at": "2026-01-31T12:00:00Z",
+    "updated_at": "2026-01-31T12:02:30Z"
+  }
+}
+```
+
+### Response `200` (failed)
+
+```json
+{
+  "job": {
+    "id": "uuid",
+    "user_id": "uuid",
+    "item_id": "uuid",
+    "room_image_key": "rooms/<uid>/20260131T120000Z-acde1234abcd5678.jpg",
+    "status": "failed",
+    "result_image_key": null,
+    "result_description": null,
+    "error_message": "Unable to process images",
+    "created_at": "2026-01-31T12:00:00Z",
+    "updated_at": "2026-01-31T12:02:30Z"
+  }
+}
+```
+
+### Errors
+
+- `401 UNAUTHORIZED`
+- `403 FORBIDDEN`
+- `404 NOT_FOUND` (job not found)
+
+---
+
+## List Visualizer Jobs (Optional)
+
+List visualizer jobs for the current user (useful for UI history).
+
+- **Method:** `GET`
+- **Path:** `/visualizations`
+- **Auth:** required
+
+### Query Params
+
+- `limit` (optional, int, default 20, max 100)
+- `cursor` (optional, string)
+- `item_id` (optional, uuid)
+
+### Response `200`
+
+```json
+{
+  "jobs": [
+    {
+      "id": "uuid",
+      "item_id": "uuid",
+      "status": "succeeded",
+      "result_image_key": "visualizations/<job_id>/result.jpg",
+      "result_description": "..."
+    }
+  ],
+  "next_cursor": "opaque-string-or-null"
+}
+```
+
+### Errors
+
+- `400 VALIDATION_ERROR`
+- `401 UNAUTHORIZED`
+
 
 ## Get Similar Items
 
@@ -786,5 +971,8 @@ Generate a preview image showing the artwork placed in the user's room.
 - `GET /items/{item_id}/bids` (bid history)
 - `POST /ai/preview-in-room` (generate combined image)
 - `GET /ai/similar?item_id=...` (similar items)
+- `POST /uploads/presign` (upload room photo to R2)
+- `POST /visualizations` (create async visualizer job)
+- `GET /visualizations/{job_id}` (poll status + fetch result)
 
 ---

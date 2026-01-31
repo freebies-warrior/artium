@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   const cursor = searchParams.get('cursor')
   const q = searchParams.get('q')
 
-  const backend = process.env.NEXT_PUBLIC_BACKEND_URL // e.g. http://localhost:8080
+  const backend = process.env.BACKEND_URL // e.g. http://localhost:8080
   if (!backend) {
     return NextResponse.json(
       { message: 'Missing NEXT_PUBLIC_BACKEND_URL' },

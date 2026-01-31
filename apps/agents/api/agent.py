@@ -24,7 +24,8 @@ from dotenv import load_dotenv
 
 import requests
 from fastapi import APIRouter, BackgroundTasks, HTTPException
-from pydantic import BaseModel, HttpUrl, List, Dict, Any
+from pydantic import BaseModel, HttpUrl
+from typing import List, Dict, Any
 from enum import Enum
 
 load_dotenv()

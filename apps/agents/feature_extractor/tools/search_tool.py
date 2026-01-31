@@ -17,12 +17,10 @@ def serpapi_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
     Minimal SerpAPI-based Google results.
     Env var: SERPAPI_API_KEY
     Returns: [{title, snippet, url}]
-    If API key missing or invalid (401/403), returns empty list gracefully.
     """
     api_key = os.getenv("SERPAPI_API_KEY")
     if not api_key:
-        logger.warning("SERPAPI_API_KEY not set. Market intelligence will be skipped.")
-        return []
+        raise RuntimeError("SERPAPI_API_KEY not set. Configure a search provider.")
 
     params = {
         "engine": "google",

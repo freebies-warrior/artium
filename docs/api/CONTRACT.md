@@ -479,7 +479,7 @@ Create a new auction item. Seller supplies basic info + image URLs (uploaded sep
 
 - **Method:** `POST`
 - **Path:** `/uploads/presign`
-- **Auth:** none
+- **Auth:** required
 
 ### Request
 

@@ -66,6 +66,9 @@ def price_calculation_node():
                     market_insights=market_insights,
                     comparable_prices=comparable_prices,
                 )
+
+                low_estimate = llm_estimate.get("price_low", mid_estimate * 0.85)
+                high_estimate = llm_estimate.get("price_high", mid_estimate * 1.15)
                 
                 price_range = {
                     "low": round(llm_estimate.get("price_low", low_estimate), 2),

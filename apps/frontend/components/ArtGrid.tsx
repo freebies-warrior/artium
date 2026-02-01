@@ -5,8 +5,6 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 
-import artApe from '../assets/nft-ape.jpg'
-
 export type ArtUI = {
   id: string
   title: string
@@ -15,6 +13,7 @@ export type ArtUI = {
   basePrice?: string
   highestBid?: string
   due: string
+  img: string
 }
 
 const ArtCard = ({ item, index }: { item: ArtUI; index: number }) => {
@@ -30,7 +29,7 @@ const ArtCard = ({ item, index }: { item: ArtUI; index: number }) => {
       <Link href={`/items/${item.id}`} className="block">
         <div className="relative aspect-square overflow-hidden">
           <Image
-            src={artApe}
+            src={item.img}
             alt={item.title}
             fill
             className="object-cover transition-transform duration-500 hover:scale-110"
@@ -52,7 +51,9 @@ const ArtCard = ({ item, index }: { item: ArtUI; index: number }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground">
-                {item.highestBid ? 'Highest Bid' : 'Base Price'}
+                {item.highestBid && item.highestBid != 'SGD 0'
+                  ? 'Highest Bid'
+                  : 'Base Price'}
               </p>
               <p className="font-mono text-sm font-medium">
                 {item.highestBid ?? item.basePrice}

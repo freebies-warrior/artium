@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
 
 import '../../../global.css'
 import CountdownTimer from '@/components/CountdownTimer'
@@ -10,14 +11,21 @@ import { Gem } from 'lucide-react'
 import Footer from '@/components/Footer'
 import ArtGrid, { type ArtUI } from '@/components/ArtGrid'
 
-import heroNft from '@/assets/nft-hero-1.jpg'
-import heroNft2 from '@/assets/nft-ape.jpg'
+import fallbackImg from '@/assets/nft-ape.jpg' // ✅ fallback if no backend images
 
 import BidButton from '@/components/BidButton'
 import Lightbox from '@/components/LightBox'
 import PreviewButton from '@/components/PreviewButton'
 
 import Image from 'next/image'
+import { extractUserId, type MeResponse } from '@/lib/auth'
+
+type PictureDTO = {
+  id: string
+  item_id: string
+  url: string
+  created_at: string
+}
 
 type Item = {
   id: string
@@ -42,8 +50,9 @@ type Item = {
   width?: number
   features?: any
 
-  // optional if your backend has it
   current_price?: number
+
+  pictures: PictureDTO[] // ✅ from backend
 }
 
 type ListItemsResponse = {
@@ -55,6 +64,7 @@ type ListItemsResponse = {
     base_price?: number
     highest_bid_amount?: number
     time_end?: string
+    pictures?: PictureDTO[] // ✅ include for "More From This User" images
   }>
   next_cursor: string | null
 }
@@ -101,37 +111,104 @@ function stringifyFeatures(features: any) {
   }
 }
 
+function pickFirstImageUrl(pictures?: PictureDTO[] | null) {
+  if (!pictures || pictures.length === 0) return fallbackImg.src
+  const url = pictures[0]?.url?.trim()
+  return url && url.length > 0 ? url : fallbackImg.src
+}
+
+function toLightboxImages(pictures?: PictureDTO[] | null) {
+  if (!pictures || pictures.length === 0) {
+    return [{ src: fallbackImg.src, alt: 'Artwork image' }]
+  }
+  const imgs = pictures
+    .map((p, i) => ({
+      src: (p.url || '').trim(),
+      alt: `Image ${i + 1}`,
+    }))
+    .filter((x) => x.src.length > 0)
+
+  return imgs.length ? imgs : [{ src: fallbackImg.src, alt: 'Artwork image' }]
+}
+
 export default function ItemPage() {
   const params = useParams()
-  const itemId = params.itemid
+
+  // If your folder is /items/[itemid], then params.itemid exists (could be string | string[])
+  const itemIdRaw = (params as any)?.itemid
+  const itemId =
+    typeof itemIdRaw === 'string' ? itemIdRaw : (itemIdRaw?.[0] ?? '')
+
   const [refreshKey, setRefreshKey] = useState(0)
 
   const [isOpen, setIsOpen] = useState(false)
   const [startIndex, setStartIndex] = useState(0)
 
-  const itemImages = [
-    { src: heroNft.src, alt: 'Image 1' },
-    { src: heroNft2.src, alt: 'Image 2' },
-  ]
-
   const [item, setItem] = useState<Item | null>(null)
+  const [loadingItem, setLoadingItem] = useState(true)
+  const [errorItem, setErrorItem] = useState<string | null>(null)
 
   const [moreItems, setMoreItems] = useState<ArtUI[]>([])
   const [loadingMore, setLoadingMore] = useState(false)
   const [errorMore, setErrorMore] = useState<string | null>(null)
+
+  // ✅ Auth state
+  const [userId, setUserId] = useState<string | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
 
   const [banner, setBanner] = useState<{
     type: 'success' | 'error'
     message: string
   } | null>(null)
 
+  /* ───────────── Get current user ───────────── */
+  useEffect(() => {
+    let cancelled = false
+
+    async function run() {
+      try {
+        const res = await fetch('/api/auth/me', {
+          credentials: 'include',
+          cache: 'no-store',
+        })
+
+        if (!res.ok) {
+          if (!cancelled) setUserId(null)
+          return
+        }
+
+        const data = (await res.json().catch(() => null)) as MeResponse
+        const uid = extractUserId(data)
+
+        if (!cancelled) setUserId(uid)
+      } catch {
+        if (!cancelled) setUserId(null)
+      } finally {
+        if (!cancelled) setAuthLoading(false)
+      }
+    }
+
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   /* ───────────── Fetch item ───────────── */
   useEffect(() => {
     let cancelled = false
 
     async function run() {
-      const data = await fetchJson<GetItemResponse>(`/api/items/${itemId}`)
-      if (!cancelled) setItem(data.item)
+      setLoadingItem(true)
+      setErrorItem(null)
+      try {
+        const data = await fetchJson<GetItemResponse>(`/api/items/${itemId}`)
+        if (!cancelled) setItem(data.item)
+      } catch (e: any) {
+        if (!cancelled) setErrorItem(e.message)
+      } finally {
+        if (!cancelled) setLoadingItem(false)
+      }
     }
 
     if (itemId) run()
@@ -140,34 +217,34 @@ export default function ItemPage() {
     }
   }, [itemId, refreshKey])
 
-  /* ───────────── Fetch more from same author ───────────── */
+  /* ───────────── Fetch more from same seller ───────────── */
   useEffect(() => {
     let cancelled = false
     const seller_id = item?.seller_id
 
     async function run() {
+      if (!seller_id) return
       setLoadingMore(true)
       setErrorMore(null)
       try {
-        const url = `/api/items?seller_id=${encodeURIComponent(seller_id ?? '')}`
+        const url = `/api/items?seller_id=${encodeURIComponent(seller_id)}`
         const data = await fetchJson<ListItemsResponse>(url)
 
         if (!cancelled) {
           setMoreItems(
             data.items
               .filter((x) => x.id !== itemId)
-              .map((x) => {
-                return {
-                  id: x.id,
-                  title: x.title,
-                  seller_username: x.seller_username,
-                  author: x.author,
-                  highestBid: formatHighestBid(
-                    x.highest_bid_amount ?? x.base_price
-                  ),
-                  due: formatDue(x.time_end),
-                }
-              })
+              .map((x) => ({
+                id: x.id,
+                title: x.title,
+                seller_username: x.seller_username,
+                author: x.author,
+                highestBid: formatHighestBid(
+                  x.highest_bid_amount ?? x.base_price
+                ),
+                due: formatDue(x.time_end),
+                img: pickFirstImageUrl(x.pictures),
+              }))
           )
         }
       } catch (e: any) {
@@ -190,7 +267,32 @@ export default function ItemPage() {
     return !Number.isNaN(end.getTime()) && end.getTime() <= Date.now()
   }, [item?.time_end])
 
+  // ✅ Only allow bids if logged in, not seller, and not ended
+  const canBid = useMemo(() => {
+    if (authLoading) return false
+    if (!userId) return false
+    if (!item) return false
+    if (auctionEnded) return false
+    if (item.seller_id === userId) return false
+    return true
+  }, [authLoading, userId, item, auctionEnded])
+
   const featuresText = stringifyFeatures(item?.features)
+
+  // ✅ Build images dynamically from backend pictures
+  const itemImages = useMemo(
+    () => toLightboxImages(item?.pictures),
+    [item?.pictures]
+  )
+
+  // ✅ Hero image uses first backend image
+  const heroSrc = itemImages[0]?.src ?? fallbackImg.src
+
+  const currentPrice = useMemo(() => {
+    const n = item?.highest_bid_amount ?? item?.base_price
+    return typeof n === 'number' ? n : null
+  }, [item?.highest_bid_amount, item?.base_price])
+
   return (
     <div className="min-h-screen bg-background pt-16">
       {banner && (
@@ -215,7 +317,6 @@ export default function ItemPage() {
           </div>
         </div>
       )}
-
       {/* Hero */}
       <section>
         <div className="relative w-full aspect-[16/10] lg:aspect-[21/9] overflow-hidden">
@@ -227,8 +328,8 @@ export default function ItemPage() {
             }}
           >
             <Image
-              src={itemImages[0].src}
-              alt={item?.title ?? 'Item image'}
+              src={heroSrc}
+              alt={item?.title ?? 'Artwork'}
               fill
               className="object-cover"
             />
@@ -248,11 +349,34 @@ export default function ItemPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left */}
           <div className="lg:col-span-2 space-y-6">
-            <h1 className="text-4xl font-bold">{item?.title}</h1>
+            {errorItem && (
+              <div className="rounded-lg border border-destructive/40 bg-card p-4 text-sm">
+                <div className="font-semibold">Failed to load item</div>
+                <div className="text-muted-foreground">{errorItem}</div>
+              </div>
+            )}
 
-            <div className="lg:hidden">
+            <h1 className="text-4xl font-bold">
+              {item?.title ?? (loadingItem ? 'Loading...' : '—')}
+            </h1>
+
+            {/* ✅ Current/Highest bid display */}
+            <div className="rounded-xl border bg-card p-4 mt-10">
+              <p className="text-muted-foreground text-sm">
+                {item?.highest_bid_amount ? 'Current Bid' : 'Base Price'}
+              </p>
+              <p className="font-mono text-2xl font-semibold">
+                {currentPrice !== null
+                  ? `SGD ${currentPrice.toLocaleString()}`
+                  : '—'}
+              </p>
+            </div>
+
+            <div className="lg:hidden space-y-3">
               <CountdownTimer targetDate={item?.time_end} />
-              {!auctionEnded && (
+
+              {/* ✅ Bid button gating */}
+              {canBid && (
                 <BidButton
                   item={{
                     id: item?.id,
@@ -261,7 +385,7 @@ export default function ItemPage() {
                     increment: item?.increment ?? 1,
                     highest_bid_amount: item?.highest_bid_amount,
                   }}
-                  setRefreshKey={() => setRefreshKey(refreshKey + 1)}
+                  setRefreshKey={() => setRefreshKey((k) => k + 1)}
                   onSuccess={() =>
                     setBanner({
                       type: 'success',
@@ -270,19 +394,36 @@ export default function ItemPage() {
                   }
                 />
               )}
+
+              {/* ✅ Helpful hints */}
+              {!authLoading && !userId && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Please login to place a bid.
+                </p>
+              )}
+              {!authLoading && userId && userId === item?.seller_id && (
+                <p className="text-sm text-muted-foreground text-center">
+                  You cannot bid on your own item.
+                </p>
+              )}
+              {!authLoading && userId && auctionEnded && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Auction ended.
+                </p>
+              )}
             </div>
 
             <div>
               <p className="text-muted-foreground text-sm">Seller</p>
               <div className="flex items-center gap-2">
                 <Gem className="w-5 h-5 text-primary" />
-                <span>{item?.seller_username}</span>
+                <span>{item?.seller_username ?? '—'}</span>
               </div>
             </div>
 
             <div>
               <p className="text-muted-foreground text-sm mb-2">Description</p>
-              <p>{item?.description}</p>
+              <p>{item?.description ?? '—'}</p>
             </div>
 
             {/* Details */}
@@ -301,7 +442,7 @@ export default function ItemPage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Status</p>
-                <p>{item?.status}</p>
+                <p>{item?.status ?? '—'}</p>
               </div>
             </div>
 
@@ -311,13 +452,15 @@ export default function ItemPage() {
               </pre>
             )}
 
-            <PreviewButton />
+            <PreviewButton itemName={item?.title} />
           </div>
 
           {/* Right */}
           <div className="hidden lg:flex flex-col gap-4">
             <CountdownTimer targetDate={item?.time_end} />
-            {!auctionEnded && (
+
+            {/* ✅ Bid button gating */}
+            {canBid && (
               <BidButton
                 item={{
                   id: item?.id,
@@ -326,14 +469,25 @@ export default function ItemPage() {
                   increment: item?.increment ?? 1,
                   highest_bid_amount: item?.highest_bid_amount,
                 }}
-                setRefreshKey={() => setRefreshKey(refreshKey + 1)}
-                onSuccess={() =>
-                  setBanner({
-                    type: 'success',
-                    message: 'Bid placed successfully',
-                  })
-                }
+                setRefreshKey={() => setRefreshKey((k) => k + 1)}
               />
+            )}
+
+            {/* ✅ Helpful hints */}
+            {!authLoading && !userId && (
+              <p className="text-sm text-muted-foreground text-center">
+                Please login to place a bid.
+              </p>
+            )}
+            {!authLoading && userId && userId === item?.seller_id && (
+              <p className="text-sm text-muted-foreground text-center">
+                You cannot bid on your own item.
+              </p>
+            )}
+            {!authLoading && userId && auctionEnded && (
+              <p className="text-sm text-muted-foreground text-center">
+                Auction ended.
+              </p>
             )}
           </div>
         </div>
@@ -341,7 +495,20 @@ export default function ItemPage() {
 
       {/* More from user */}
       <section className="container mx-auto px-4 lg:px-6 mt-24">
-        <h2 className="text-3xl font-bold mb-8">More From This User</h2>
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <h2 className="text-3xl font-bold">More From This User</h2>
+
+          {/* ✅ Button -> user profile */}
+          {item?.seller_id && (
+            <Link
+              href={`/users/${item.seller_id}`}
+              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition"
+            >
+              View Profile
+            </Link>
+          )}
+        </div>
+
         <ArtGrid items={moreItems} loading={loadingMore} error={errorMore} />
       </section>
 

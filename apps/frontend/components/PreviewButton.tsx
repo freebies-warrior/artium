@@ -6,13 +6,13 @@ import { X } from 'lucide-react'
 import { Button } from './ui/Button'
 
 type PreviewButtonProps = {
-  nftName?: string
+  itemName?: string
   triggerText?: string
   onSubmit?: (file: File) => void // optional hook for later
 }
 
 export default function PreviewButton({
-  nftName = 'The Orbitians',
+  itemName,
   triggerText = 'View in your space',
   onSubmit,
 }: PreviewButtonProps) {
@@ -46,7 +46,7 @@ export default function PreviewButton({
     if (!file) return
 
     // Placeholder logic; replace later with your upload/generation call
-    console.log('Submit room photo for:', nftName, file)
+    console.log('Submit room photo for:', itemName, file)
 
     onSubmit?.(file)
   }
@@ -96,7 +96,7 @@ export default function PreviewButton({
             </Dialog.Title>
             <Dialog.Description className="text-sm text-muted-foreground">
               Upload 1 photo of your room to preview{' '}
-              <span className="text-primary font-medium">{nftName}</span>.
+              <span className="text-primary font-medium">{itemName}</span>.
             </Dialog.Description>
           </div>
 

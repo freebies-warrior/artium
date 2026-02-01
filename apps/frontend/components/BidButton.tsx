@@ -125,7 +125,7 @@ export default function BidButton({
             <div className="flex justify-between rounded-lg bg-secondary/40 p-4">
               <div>
                 <p className="text-xs text-muted-foreground">
-                  {highestBid ? 'Highest Bid' : 'Base Price'}
+                  {highestBid && highestBid > 0 ? 'Highest Bid' : 'Base Price'}
                 </p>
 
                 <p className="font-semibold">

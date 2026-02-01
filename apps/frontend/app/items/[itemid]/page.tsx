@@ -69,6 +69,7 @@ type ListItemsResponse = {
   }>
   next_cursor: string | null
 }
+
 type GetItemResponse = { item: Item }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -136,6 +137,7 @@ function pickFirstImageKey(pictures?: PictureDTO[] | null) {
   const key = (pictures[0]?.key ?? '').trim()
   return key.length > 0 ? key : null
 }
+
 export default function ItemPage() {
   const params = useParams()
 

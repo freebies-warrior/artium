@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 
 import '../../../global.css'
-import Navbar from '@/components/NavBar'
 import CountdownTimer from '@/components/CountdownTimer'
 import { Gem } from 'lucide-react'
 

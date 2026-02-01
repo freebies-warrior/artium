@@ -81,6 +81,15 @@ export default function PreviewButton({
     })
   }
 
+  function handleSubmit() {
+    if (!file) return
+
+    // Placeholder logic; replace later with your upload/generation call
+    console.log('Submit room photo for:', itemName, file)
+
+    onSubmit?.(file)
+  }
+
   // Cleanup on unmount
   React.useEffect(() => {
     return () => {

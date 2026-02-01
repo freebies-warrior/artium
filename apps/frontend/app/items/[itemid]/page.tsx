@@ -156,6 +156,7 @@ export default function ItemPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [errorMore, setErrorMore] = useState<string | null>(null)
 
+  // ✅ Auth state
   const [userId, setUserId] = useState<string | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
 
@@ -270,6 +271,7 @@ export default function ItemPage() {
     return !Number.isNaN(end.getTime()) && end.getTime() <= Date.now()
   }, [item?.time_end])
 
+  // ✅ Only allow bids if logged in, not seller, and not ended
   const canBid = useMemo(() => {
     if (authLoading) return false
     if (!userId) return false
@@ -281,6 +283,7 @@ export default function ItemPage() {
 
   const featuresText = stringifyFeatures(item?.features)
 
+  // ✅ Build images dynamically from backend pictures
   const itemImages = useMemo(
     () => toLightboxImages(item?.pictures),
     [item?.pictures]
@@ -363,7 +366,7 @@ export default function ItemPage() {
               {item?.title ?? (loadingItem ? 'Loading...' : '—')}
             </h1>
 
-            {/* Current/Highest bid display */}
+            {/* ✅ Current/Highest bid display */}
             <div className="rounded-xl border bg-card p-4 mt-10">
               <p className="text-muted-foreground text-sm">
                 {item?.highest_bid_amount ? 'Current Bid' : 'Base Price'}
@@ -378,6 +381,7 @@ export default function ItemPage() {
             <div className="lg:hidden space-y-3">
               <CountdownTimer targetDate={item?.time_end} />
 
+              {/* ✅ Bid button gating */}
               {canBid && (
                 <BidButton
                   item={{
@@ -397,6 +401,7 @@ export default function ItemPage() {
                 />
               )}
 
+              {/* ✅ Helpful hints */}
               {!authLoading && !userId && (
                 <p className="text-sm text-muted-foreground text-center">
                   Please login to place a bid.
@@ -473,6 +478,7 @@ export default function ItemPage() {
           <div className="hidden lg:flex flex-col gap-4">
             <CountdownTimer targetDate={item?.time_end} />
 
+            {/* ✅ Bid button gating */}
             {canBid && (
               <BidButton
                 item={{
@@ -486,6 +492,7 @@ export default function ItemPage() {
               />
             )}
 
+            {/* ✅ Helpful hints */}
             {!authLoading && !userId && (
               <p className="text-sm text-muted-foreground text-center">
                 Please login to place a bid.
@@ -510,6 +517,7 @@ export default function ItemPage() {
         <div className="mb-8 flex items-center justify-between gap-4">
           <h2 className="text-3xl font-bold">More From This User</h2>
 
+          {/* ✅ Button -> user profile */}
           {item?.seller_id && (
             <Link
               href={`/users/${item.seller_id}`}

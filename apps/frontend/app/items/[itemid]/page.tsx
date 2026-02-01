@@ -156,6 +156,11 @@ export default function ItemPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
 
+  const [banner, setBanner] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
+
   /* ───────────── Get current user ───────────── */
   useEffect(() => {
     let cancelled = false
@@ -290,6 +295,28 @@ export default function ItemPage() {
 
   return (
     <div className="min-h-screen bg-background pt-16">
+      {banner && (
+        <div className="fixed top-20 left-0 right-0 z-40 flex justify-center px-4">
+          <div
+            className={`relative flex items-center gap-4 rounded-lg px-4 pr-10 py-3 text-sm shadow
+        ${
+          banner.type === 'success'
+            ? 'bg-green-100 text-green-700'
+            : 'bg-red-100 text-red-700'
+        }`}
+          >
+            <span className="whitespace-nowrap">{banner.message}</span>
+
+            <button
+              onClick={() => setBanner(null)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-1 text-lg leading-none opacity-70 hover:opacity-100"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
       {/* Hero */}
       <section>
         <div className="relative w-full aspect-[16/10] lg:aspect-[21/9] overflow-hidden">
@@ -359,6 +386,12 @@ export default function ItemPage() {
                     highest_bid_amount: item?.highest_bid_amount,
                   }}
                   setRefreshKey={() => setRefreshKey((k) => k + 1)}
+                  onSuccess={() =>
+                    setBanner({
+                      type: 'success',
+                      message: 'Bid placed successfully',
+                    })
+                  }
                 />
               )}
 

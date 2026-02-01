@@ -101,7 +101,7 @@ logging.basicConfig(level=logging.INFO)
 system_router = APIRouter(tags=["system"])
 visualizer_router = APIRouter(prefix="/agents/visualizer", tags=["visualizer"])
 feature_extractor_router = APIRouter(
-    prefix="/agents/feature-extractor", tags=["feature-extractor"]
+    prefix="/agents/feature_extractor", tags=["feature_extractor"]
 )
 
 

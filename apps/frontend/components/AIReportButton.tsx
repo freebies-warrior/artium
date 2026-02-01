@@ -38,7 +38,7 @@ function safeJsonParse(v: any): any {
 
 function fmtMoney(n?: number, currency?: string) {
   if (typeof n !== 'number') return '—'
-  const cur = currency || 'USD'
+  const cur = currency || 'SGD'
   return `${cur} ${n.toLocaleString()}`
 }
 
@@ -98,7 +98,7 @@ export default function AIReportButton({
 }: AIReportButtonProps) {
   const valuation = React.useMemo(() => getValuationObj(features), [features])
 
-  const currency: string = (valuation?.currency ?? 'USD').toString()
+  const currency: string = (valuation?.currency ?? 'SGD').toString()
   const priceRange = valuation?.price_range
   const market = valuation?.market_insights
 

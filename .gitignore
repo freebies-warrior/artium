@@ -219,5 +219,9 @@ coverage.out
 __pycache__/
 *.pyc
 
-# Output files
-*.out
+# Env
+.env
+
+# Coverage
+coverage/
+coverage.out

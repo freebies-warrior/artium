@@ -179,6 +179,72 @@ This guarantees no “double accepted” bids at the same price.
 
 ---
 
+## AI Visualizer (Async Job)
+
+The Visualizer feature merges an item image with a user-provided “room photo” to generate:
+- a merged visualization image (stored in Cloudflare R2)
+- a text description (stored in Postgres)
+
+### Components involved
+- **Frontend (Next.js)**: uploads room photo, starts job, polls for result
+- **Backend (Go API)**: issues signed URLs for uploads/downloads, owns job state, orchestrates AI calls
+- **AI Backend (FastAPI/Python)**: downloads inputs, runs visualization, uploads output
+- **Postgres**: stores job state + metadata in `visualization_jobs`
+- **Cloudflare R2**: stores room photo + result image as objects (referenced by `*_key`)
+
+### End-to-end flow
+1. Frontend requests a signed PUT URL from Backend to upload the room image.
+2. Frontend uploads the room image directly to R2 and obtains `room_image_key`.
+3. Frontend creates a visualization job via Backend (`POST /visualizations`).
+4. Backend creates a row in `visualization_jobs` with `status='queued'` and triggers the AI Backend (`/agents/visualizer/visualize_installation`).
+5. AI Backend fetches the item image + room image using backend-approved access (signed GET or internal access).
+6. AI Backend generates the merged result image and description.
+7. AI Backend uploads the result to R2 and updates the job as `succeeded` (or `failed`) with:
+   - `result_image_key`
+   - `result_description` (or `error_message`)
+8. Frontend polls `GET /visualizations/{job_id}` until completion, then renders the result.
+
+### Notes
+- Do not store signed URLs in Postgres; store only keys and derive URLs or sign GET on demand.
+
+---
+
+## AI Feature Extraction on Item Upload
+
+The Feature Extraction feature analyzes an item’s uploaded images to generate **structured metadata** (JSON) and saves it into:
+- `items.features` (JSONB in Postgres)
+
+### Components involved
+- **Frontend (Next.js)**: uploads item images, creates item listing
+- **Backend (Go API)**: stores item + picture keys, generates signed GET URLs for item images, orchestrates AI call, owns DB updates
+- **AI Backend (FastAPI/Python)**: downloads item images, extracts features, calls back backend to persist features
+- **Postgres**: stores item + features in `items.features`
+- **Cloudflare R2**: stores item images as objects (referenced by `picture_keys` / `pictures.key`)
+
+### End-to-end flow
+1. Frontend requests signed PUT URLs from Backend to upload the item images.
+2. Frontend uploads item images directly to R2 and obtains `picture_keys` (object keys).
+3. Frontend creates the item via Backend (`POST /items`) with `picture_keys`.
+4. Backend creates the item + picture rows in Postgres (storing **keys**, not URLs).
+5. Backend generates **presigned GET URLs** for all image keys belonging to the item (short-lived).
+6. Backend triggers the AI Backend (`POST /agents/feature_extractor/extract_item_features`) and sends:
+   - `item_id`
+   - `image_keys`
+   - `image_get_urls` (presigned)
+   - `callback_url` (internal endpoint to store features)
+   - `metadata` (image metadata, e.g. title, author, year)
+7. AI Backend downloads the images using the presigned GET URLs and extracts a JSON `features` payload.
+8. AI Backend calls the Backend internal endpoint to update the item:
+   - Backend writes `items.features = <features JSON>` (JSONB)
+9. Frontend fetches item info via `GET /items/{item_id}`; once features exist, it renders them (otherwise `features` may be `null` initially).
+
+### Notes
+- Do not store signed URLs in Postgres; store only object keys and derive/sign GET URLs on demand.
+- `items.features` may be `null` immediately after item creation (async processing).
+- The AI worker must not write to Postgres directly; it should call an internal backend endpoint with internal auth.
+
+---
+
 ## Optional Extensions (later)
 These are the future modules mentioned in the sketch. They will be added as separate endpoints/services, but are **not** specified here yet:
 - **Recommender**: show similar items on the item page.
@@ -188,8 +254,3 @@ These are the future modules mentioned in the sketch. They will be added as sepa
 For now, the API should be structured so these can be added without breaking core auction flows.
 
 ---
-
-## Operational Notes (MVP)
-- Local dev: `docker-compose.yml` provides Postgres and any required dependencies.
-- Logging: structured logs from Go API (request id, endpoint, status code).
-- Rate limits (optional): basic per-IP limits for uploads and bidding endpoints.

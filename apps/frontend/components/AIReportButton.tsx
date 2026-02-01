@@ -4,6 +4,7 @@ import * as React from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { Button } from './ui/Button'
+import CoordinatorReportView from './CoordinatorReport'
 
 type AIReportButtonProps = {
   triggerText?: string
@@ -38,19 +39,12 @@ function safeJsonParse(v: any): any {
 function fmtMoney(n?: number, currency?: string) {
   if (typeof n !== 'number') return '—'
   const cur = currency || 'USD'
-  // super simple formatting (no Intl currency symbol issues)
   return `${cur} ${n.toLocaleString()}`
 }
 
 function pct(sim?: number) {
   if (typeof sim !== 'number') return '—'
   return `${(sim * 100).toFixed(1)}%`
-}
-
-function getCoordinatorReport(features: any): string | null {
-  const obj = safeJsonParse(features)
-  const r = obj?.valuation?.coordinator_report
-  return typeof r === 'string' && r.trim() ? r : null
 }
 
 function getValuationObj(features: any): any {
@@ -82,30 +76,98 @@ function Section({
   )
 }
 
+function getKeySimilarities(valuation: any): string[] {
+  const raw = valuation?.comparables_analysis?.key_similarities
+  if (Array.isArray(raw)) return raw.filter((x) => typeof x === 'string')
+  return []
+}
+
+function getMetadataResearch(valuation: any): any {
+  return valuation?.metadata_research ?? null
+}
+
+function pickTopComparables(comps: Comparable[], max = 5) {
+  const arr = Array.isArray(comps) ? [...comps] : []
+  arr.sort((a, b) => (b.similarity_score ?? 0) - (a.similarity_score ?? 0))
+  return arr.slice(0, max)
+}
+
 export default function AIReportButton({
   triggerText = 'View AI Report',
   features,
 }: AIReportButtonProps) {
   const valuation = React.useMemo(() => getValuationObj(features), [features])
-  const coordinatorReport = React.useMemo(
-    () => getCoordinatorReport(features),
-    [features]
+
+  const currency: string = (valuation?.currency ?? 'USD').toString()
+  const priceRange = valuation?.price_range
+  const market = valuation?.market_insights
+
+  const comparables: Comparable[] = React.useMemo(
+    () => (Array.isArray(valuation?.comparables) ? valuation.comparables : []),
+    [valuation]
   )
+
+  const topComparables = React.useMemo(
+    () => pickTopComparables(comparables, 5),
+    [comparables]
+  )
+
+  const reasoningSteps: string[] = React.useMemo(
+    () =>
+      Array.isArray(valuation?.reasoning_steps) ? valuation.reasoning_steps : [],
+    [valuation]
+  )
+
+  const keySimilarities = React.useMemo(
+    () => getKeySimilarities(valuation),
+    [valuation]
+  )
+
+  const metadataResearch = React.useMemo(
+    () => getMetadataResearch(valuation),
+    [valuation]
+  )
+
+  const coordinatorReport = React.useMemo(() => {
+    const obj = safeJsonParse(features)
+    const r1 = obj?.valuation?.coordinator_report
+    const r2 = valuation?.coordinator_report
+    const r = typeof r1 === 'string' && r1.trim() ? r1 : r2
+    return typeof r === 'string' && r.trim() ? r : null
+  }, [features, valuation])
 
   const hasAnything =
     !!valuation ||
     (typeof coordinatorReport === 'string' && coordinatorReport.trim().length > 0)
 
-  const currency: string | undefined = valuation?.currency ?? 'USD'
+  const artworkType = valuation?.artwork_type ?? '—'
 
-  const priceRange = valuation?.price_range
-  const market = valuation?.market_insights
-  const comparables: Comparable[] = Array.isArray(valuation?.comparables)
-    ? valuation.comparables
-    : []
+  const conclusion = React.useMemo(() => {
+    if (
+      typeof priceRange?.mid !== 'number' ||
+      typeof priceRange?.low !== 'number' ||
+      typeof priceRange?.high !== 'number'
+    ) {
+      return null
+    }
+    const count = comparables.length
+    return `Based on comprehensive analysis of ${count} comparable artworks, market trends, and artist background, the estimated value of this artwork is ${fmtMoney(
+      priceRange.mid,
+      currency
+    )}, with a reasonable range between ${fmtMoney(
+      priceRange.low,
+      currency
+    )} and ${fmtMoney(priceRange.high, currency)}.`
+  }, [priceRange, comparables.length, currency])
 
-  const reasoningSteps: string[] = Array.isArray(valuation?.reasoning_steps)
-    ? valuation.reasoning_steps
+  const author = metadataResearch?.author
+  const yearCreated = metadataResearch?.year_created
+  const historicalPeriod = metadataResearch?.historical_period
+  const artistBackground = metadataResearch?.artist_background
+  const artistMarketLevel = metadataResearch?.artist_market_level
+  const priceImpact = metadataResearch?.estimated_price_impact
+  const researchNotes: string[] = Array.isArray(metadataResearch?.research_notes)
+    ? metadataResearch.research_notes.filter((x: any) => typeof x === 'string')
     : []
 
   return (
@@ -164,14 +226,23 @@ export default function AIReportButton({
                       : '—'
                   }
                 />
-                <StatCard
-                  label="Artwork Type"
-                  value={valuation?.artwork_type ?? '—'}
-                />
+                <StatCard label="Artwork Type" value={String(artworkType)} />
               </div>
 
+              {/* Conclusion under summary cards */}
+              {conclusion && (
+                <div className="rounded-xl border border-border bg-background/40 p-4">
+                  <div className="text-xs font-semibold text-muted-foreground mb-1">
+                    Conclusion
+                  </div>
+                  <p className="text-sm leading-relaxed text-foreground/90">
+                    {conclusion}
+                  </p>
+                </div>
+              )}
+
               {/* Market */}
-              <Section title="Market Insights">
+              <Section title="Market Analysis">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <StatCard
                     label="Avg Price"
@@ -186,7 +257,7 @@ export default function AIReportButton({
                     value={(market?.trend_direction ?? '—').toString()}
                   />
                   <StatCard
-                    label="Recent Sales"
+                    label="Recent Sales (12mo)"
                     value={
                       typeof market?.num_recent_sales === 'number'
                         ? `${market.num_recent_sales}`
@@ -196,15 +267,15 @@ export default function AIReportButton({
                 </div>
               </Section>
 
-              {/* Comparables */}
-              <Section title={`Comparables (${comparables.length})`}>
-                {comparables.length === 0 ? (
+              {/* Comparable Artworks */}
+              <Section title={`Comparable Artworks (Top ${topComparables.length})`}>
+                {topComparables.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No comparables.</p>
                 ) : (
                   <div className="space-y-3">
-                    {comparables.map((c, idx) => (
+                    {topComparables.map((c, idx) => (
                       <div
-                        key={c.id ?? idx}
+                        key={c.id ?? `${idx}-${c.title ?? 'comp'}`}
                         className="rounded-xl border border-border bg-card p-4"
                       >
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
@@ -213,7 +284,8 @@ export default function AIReportButton({
                               {idx + 1}. {c.title ?? 'Untitled'}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {c.author ?? 'Unknown'} • {c.location ?? '—'}
+                              {c.author ?? 'Unknown'}
+                              {c.location ? ` • ${c.location}` : ''}
                               {c.sale_date ? ` • ${c.sale_date}` : ''}
                               {typeof c.lot_number === 'number'
                                 ? ` • Lot ${c.lot_number}`
@@ -257,8 +329,84 @@ export default function AIReportButton({
                 )}
               </Section>
 
-              {/* Reasoning */}
-              <Section title="Reasoning Steps">
+              {/* Key Similarities */}
+              <Section title="Key Similarities to Comparables">
+                {keySimilarities.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No key similarities found.
+                  </p>
+                ) : (
+                  <ul className="list-disc pl-5 space-y-2 text-sm text-foreground/90">
+                    {keySimilarities.slice(0, 8).map((s, i) => (
+                      <li key={i} className="whitespace-pre-wrap">
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Section>
+
+              {/* Artist & Historical Background */}
+              <Section title="Artist & Historical Background">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <StatCard label="Artist" value={author ? String(author) : '—'} />
+                  <StatCard
+                    label="Year Created"
+                    value={
+                      typeof yearCreated === 'number' ||
+                      typeof yearCreated === 'string'
+                        ? String(yearCreated)
+                        : '—'
+                    }
+                  />
+                  <StatCard
+                    label="Historical Period"
+                    value={historicalPeriod ? String(historicalPeriod) : '—'}
+                  />
+                </div>
+
+                {(artistMarketLevel || priceImpact) && (
+                  <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <StatCard
+                      label="Market Level"
+                      value={artistMarketLevel ? String(artistMarketLevel) : '—'}
+                    />
+                    <StatCard
+                      label="Price Impact"
+                      value={priceImpact ? String(priceImpact) : '—'}
+                    />
+                  </div>
+                )}
+
+                {artistBackground && (
+                  <div className="mt-3 rounded-lg border border-border bg-background/40 p-4">
+                    <div className="text-xs font-semibold text-muted-foreground">
+                      Artist Background
+                    </div>
+                    <div className="mt-2 text-sm whitespace-pre-wrap text-foreground/90">
+                      {String(artistBackground)}
+                    </div>
+                  </div>
+                )}
+
+                {researchNotes.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-border bg-background/40 p-4">
+                    <div className="text-xs font-semibold text-muted-foreground">
+                      Research Notes
+                    </div>
+                    <ul className="mt-2 list-disc pl-5 space-y-1 text-sm text-foreground/90">
+                      {researchNotes.slice(0, 10).map((n, i) => (
+                        <li key={i} className="whitespace-pre-wrap">
+                          {n}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </Section>
+
+              {/* Methodology */}
+              <Section title="Valuation Methodology">
                 {reasoningSteps.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No steps.</p>
                 ) : (
@@ -272,37 +420,16 @@ export default function AIReportButton({
                 )}
               </Section>
 
-              {/* Coordinator Report (pretty raw, but still available) */}
+              {/* Coordinator Report */}
               <Section title="Coordinator Report">
                 {coordinatorReport ? (
-                  <div className="rounded-lg border border-border bg-background/40 p-4">
-                    <pre className="whitespace-pre-wrap text-xs leading-relaxed">
-                      {coordinatorReport}
-                    </pre>
-                  </div>
+                  <CoordinatorReportView report={coordinatorReport} />
                 ) : (
                   <p className="text-sm text-muted-foreground">
                     The Agents is in the middle of evaluating, please comeback again later
                   </p>
                 )}
               </Section>
-
-              {/* Raw JSON toggle */}
-              <details className="rounded-xl border border-border bg-card p-4">
-                <summary className="cursor-pointer text-sm font-semibold">
-                  Raw features JSON
-                </summary>
-                <pre className="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">
-                  {(() => {
-                    const obj = safeJsonParse(features)
-                    try {
-                      return JSON.stringify(obj, null, 2)
-                    } catch {
-                      return String(features ?? '')
-                    }
-                  })()}
-                </pre>
-              </details>
             </div>
           )}
 

@@ -480,12 +480,6 @@ export default function ItemPage() {
               </div>
             </div>
 
-            {featuresText && (
-              <pre className="border rounded-lg p-3 text-xs whitespace-pre-wrap">
-                {featuresText}
-              </pre>
-            )}
-
             {item?.id && itemImageKey ? (
               <PreviewButton
                 itemName={item?.title}

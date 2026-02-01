@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 
 import '../../../global.css'
-import Navbar from '@/components/NavBar'
 import CountdownTimer from '@/components/CountdownTimer'
 import { Gem } from 'lucide-react'
 
@@ -17,6 +16,8 @@ import fallbackImg from '@/assets/nft-ape.jpg' // ✅ fallback if no backend ima
 import BidButton from '@/components/BidButton'
 import Lightbox from '@/components/LightBox'
 import PreviewButton from '@/components/PreviewButton'
+
+import Image from 'next/image'
 
 type PictureDTO = {
   id: string
@@ -69,10 +70,8 @@ type ListItemsResponse = {
 
 // Adjust this to match your /api/auth/me response shape
 type MeResponse =
-  | { user: { id: string } }
-  | { id: string }
-  | { authenticated: true; userId: string }
-  | any
+  | { authenticated: false }
+  | { authenticated: true; user_id: string }
 
 type GetItemResponse = { item: Item }
 
@@ -139,11 +138,9 @@ function toLightboxImages(pictures?: PictureDTO[] | null) {
 // Try to extract a userId from different possible /api/auth/me shapes
 function extractUserId(me: MeResponse): string | null {
   if (!me) return null
-  if (typeof me.user?.id === 'string') return me.user.id
-  if (typeof me.id === 'string') return me.id
-  if (typeof me.userId === 'string') return me.userId
-  if (typeof me.user_id === 'string') return me.user_id
-  return null
+  if (!('user_id' in me)) return null
+  if (typeof me.user_id !== 'string') return null
+  return me.user_id
 }
 
 export default function ItemPage() {
@@ -305,8 +302,6 @@ export default function ItemPage() {
 
   return (
     <div className="min-h-screen bg-background pt-16">
-      <Navbar />
-
       {/* Hero */}
       <section>
         <div className="relative w-full aspect-[16/10] lg:aspect-[21/9] overflow-hidden">
@@ -317,10 +312,11 @@ export default function ItemPage() {
               setIsOpen(true)
             }}
           >
-            <img
+            <Image
               src={heroSrc}
               alt={item?.title ?? 'Artwork'}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
             />
           </button>
         </div>

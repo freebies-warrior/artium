@@ -10,7 +10,7 @@ import (
 )
 
 func TestItemsPostItemMissingUserContext(t *testing.T) {
-	h := NewItemsHandler(nil, nil)
+	h := NewItemsHandler(nil, nil, nil)
 	c, w := newJSONContext(http.MethodPost, "/items", `{"title":"Test","base_price":0,"increment":1,"time_start":"2024-01-02T15:04:05Z","time_end":"2024-01-02T16:04:05Z","picture_keys":["pic"]}`)
 
 	h.PostItem(c)
@@ -19,7 +19,7 @@ func TestItemsPostItemMissingUserContext(t *testing.T) {
 }
 
 func TestItemsPostItemInvalidTimes(t *testing.T) {
-	h := NewItemsHandler(nil, nil)
+	h := NewItemsHandler(nil, nil, nil)
 	c, w := newJSONContext(http.MethodPost, "/items", `{"title":"Test","base_price":0,"increment":1,"time_start":"2024-01-02T15:04:05Z","time_end":"2024-01-02T14:04:05Z","picture_keys":["pic"]}`)
 	c.Set(middlewares.CtxUserIDKey, "user-123")
 
@@ -29,7 +29,7 @@ func TestItemsPostItemInvalidTimes(t *testing.T) {
 }
 
 func TestItemsGetItemMissingID(t *testing.T) {
-	h := NewItemsHandler(nil, nil)
+	h := NewItemsHandler(nil, nil, nil)
 	c, w := newJSONContext(http.MethodGet, "/items/", "")
 	c.Params = gin.Params{{Key: "item_id", Value: ""}}
 
@@ -39,7 +39,7 @@ func TestItemsGetItemMissingID(t *testing.T) {
 }
 
 func TestItemsListItemsInvalidStatus(t *testing.T) {
-	h := NewItemsHandler(nil, nil)
+	h := NewItemsHandler(nil, nil, nil)
 	c, w := newJSONContext(http.MethodGet, "/items?status=bad", "")
 	c.Request.URL.RawQuery = "status=bad"
 

@@ -6,7 +6,7 @@ import (
 )
 
 func TestAuthSignupInvalidEmail(t *testing.T) {
-	h := NewAuthHandler(nil, nil, []byte("secret"), "http://example.com")
+	h := NewAuthHandler(nil, nil, nil, []byte("secret"), "http://example.com")
 	c, w := newJSONContext(http.MethodPost, "/signup", `{"email":"bad","username":"user","password":"password123"}`)
 
 	h.Signup(c)
@@ -15,7 +15,7 @@ func TestAuthSignupInvalidEmail(t *testing.T) {
 }
 
 func TestAuthLoginMissingCredentials(t *testing.T) {
-	h := NewAuthHandler(nil, nil, []byte("secret"), "http://example.com")
+	h := NewAuthHandler(nil, nil, nil, []byte("secret"), "http://example.com")
 	c, w := newJSONContext(http.MethodPost, "/login", `{"email":"","password":""}`)
 
 	h.Login(c)
@@ -24,7 +24,7 @@ func TestAuthLoginMissingCredentials(t *testing.T) {
 }
 
 func TestAuthVerifyEmailMissingToken(t *testing.T) {
-	h := NewAuthHandler(nil, nil, []byte("secret"), "http://example.com")
+	h := NewAuthHandler(nil, nil, nil, []byte("secret"), "http://example.com")
 	c, w := newJSONContext(http.MethodPost, "/verify", `{"token":""}`)
 
 	h.VerifyEmail(c)
@@ -33,7 +33,7 @@ func TestAuthVerifyEmailMissingToken(t *testing.T) {
 }
 
 func TestAuthResendInvalidEmail(t *testing.T) {
-	h := NewAuthHandler(nil, nil, []byte("secret"), "http://example.com")
+	h := NewAuthHandler(nil, nil, nil, []byte("secret"), "http://example.com")
 	c, w := newJSONContext(http.MethodPost, "/resend", `{"email":"bad"}`)
 
 	h.ResendVerification(c)

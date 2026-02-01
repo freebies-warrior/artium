@@ -214,3 +214,10 @@ __marimo__/
 # Coverage
 coverage/
 coverage.out
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# Output files
+*.out

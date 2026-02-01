@@ -27,7 +27,7 @@ type ItemDTO = {
   time_end: string
   base_price: number | string
   highest_bid_amount: number | string | undefined
-  pictures: PictureDTO[] // ✅ ADD THIS
+  pictures: PictureDTO[]
 }
 
 type ListItemsResponse =
@@ -35,18 +35,41 @@ type ListItemsResponse =
   | { data: ItemDTO[]; next_cursor?: string | null }
   | ItemDTO[]
 
-const LIMIT = 4
+// ✅ users api DTO (adjust fields to match your backend)
+type UserDTO = {
+  id: string
+  username: string | null
+  // ideally backend gives these; otherwise set to 0 and show only username
+  items_count?: number | null
+  volume?: number | string | null
+}
 
-function normalize(res: ListItemsResponse): {
+type ListUsersResponse =
+  | { users: UserDTO[]; next_cursor?: string | null }
+  | { data: UserDTO[]; next_cursor?: string | null }
+  | UserDTO[]
+
+const LIMIT = 4
+const SELLER_LIMIT = 24 // ✅ pick a reasonable number for SellerGrid
+
+function normalizeItems(res: ListItemsResponse): {
   items: ItemDTO[]
   next_cursor: string | null
 } {
   if (Array.isArray(res)) return { items: res, next_cursor: null }
-  if ('items' in res)
-    return { items: res.items, next_cursor: res.next_cursor ?? null }
-  if ('data' in res)
-    return { items: res.data, next_cursor: res.next_cursor ?? null }
+  if ('items' in res) return { items: res.items, next_cursor: res.next_cursor ?? null }
+  if ('data' in res) return { items: res.data, next_cursor: res.next_cursor ?? null }
   return { items: [], next_cursor: null }
+}
+
+function normalizeUsers(res: ListUsersResponse): {
+  users: UserDTO[]
+  next_cursor: string | null
+} {
+  if (Array.isArray(res)) return { users: res, next_cursor: null }
+  if ('users' in res) return { users: res.users, next_cursor: res.next_cursor ?? null }
+  if ('data' in res) return { users: res.data, next_cursor: res.next_cursor ?? null }
+  return { users: [], next_cursor: null }
 }
 
 function formatDue(iso: string) {
@@ -68,13 +91,6 @@ function formatMoneySGD(n: number) {
   return `${n.toLocaleString()} SGD`
 }
 
-function pickDisplayPrice(it: ItemDTO) {
-  const hb = toNumber(it.highest_bid_amount)
-  const bp = toNumber(it.base_price)
-  if (hb != null) return hb
-  return bp ?? 0
-}
-
 export default function HomeClient() {
   const [activeTab, setActiveTab] = useState<'arts' | 'sellers'>('arts')
 
@@ -92,8 +108,7 @@ export default function HomeClient() {
       }
     } else if (verifyStatus === 'success') {
       banner = {
-        message:
-          'Your email has been verified successfully. You may now log in.',
+        message: 'Your email has been verified successfully. You may now log in.',
         type: 'success',
       }
     }
@@ -103,9 +118,13 @@ export default function HomeClient() {
   const [search, setSearch] = useState('')
   const [appliedQuery, setAppliedQuery] = useState('')
 
-  // cursor pagination state (ARTS)
+  // ARTS cursor pagination state
   const [page, setPage] = useState(1)
   const [nextCursor, setNextCursor] = useState<string | null>(null)
+
+  // SELLERS cursor pagination state (optional)
+  const [sellerPage, setSellerPage] = useState(1)
+  const [nextSellerCursor, setNextSellerCursor] = useState<string | null>(null)
 
   // data (ARTS)
   const [items, setItems] = useState<ArtUI[]>([])
@@ -116,20 +135,23 @@ export default function HomeClient() {
   // data (SELLERS)
   const [sellers, setSellers] = useState<SellerUI[]>([])
   const [loadingSellers, setLoadingSellers] = useState(false)
+  const [loadingMoreSellers, setLoadingMoreSellers] = useState(false)
   const [errorSellers, setErrorSellers] = useState<string | null>(null)
 
   function handleTabChange(tab: 'arts' | 'sellers') {
     setActiveTab(tab)
     setPage(1)
+    setSellerPage(1)
   }
 
   const onSearchSubmit = () => {
     setAppliedQuery(search.trim())
     setPage(1)
+    setSellerPage(1)
   }
 
-  // ✅ use Next.js proxy route
-  const buildUrl = (cursor: string | null, limit: number) => {
+  // ✅ items endpoint
+  const buildItemsUrl = (cursor: string | null, limit: number) => {
     const qs = new URLSearchParams()
     qs.set('limit', String(limit))
     if (appliedQuery) qs.set('q', appliedQuery)
@@ -137,19 +159,26 @@ export default function HomeClient() {
     return `/api/items?${qs.toString()}`
   }
 
-  async function fetchArtsPage(opts: {
-    mode: 'reset' | 'append'
-    cursor: string | null
-  }) {
+  // ✅ users endpoint
+  const buildUsersUrl = (cursor: string | null, limit: number) => {
+    const qs = new URLSearchParams()
+    qs.set('limit', String(limit))
+    if (appliedQuery) qs.set('q', appliedQuery)
+    if (cursor) qs.set('cursor', cursor)
+    return `/api/users?${qs.toString()}`
+  }
+
+  async function fetchArtsPage(opts: { mode: 'reset' | 'append'; cursor: string | null }) {
     const isReset = opts.mode === 'reset'
     try {
       isReset ? setLoading(true) : setLoadingMore(true)
       setError(null)
 
-      const r = await fetch(buildUrl(opts.cursor, LIMIT), {
+      const r = await fetch(buildItemsUrl(opts.cursor, LIMIT), {
         method: 'GET',
         cache: 'no-store',
       })
+
       if (!r.ok) {
         const text = await r.text()
         let msg = `Request failed (${r.status})`
@@ -161,7 +190,7 @@ export default function HomeClient() {
       }
 
       const json = (await r.json()) as ListItemsResponse
-      const { items: raw, next_cursor } = normalize(json)
+      const { items: raw, next_cursor } = normalizeItems(json)
 
       const mapped: ArtUI[] = raw.map((it) => ({
         id: it.id,
@@ -174,7 +203,7 @@ export default function HomeClient() {
             ? formatMoneySGD(toNumber(it.highest_bid_amount) ?? 0)
             : undefined,
         due: formatDue(it.time_end),
-        img: it.pictures[0].url,
+        img: it.pictures?.[0]?.url ?? '',
       }))
 
       if (isReset) setItems(mapped)
@@ -191,17 +220,18 @@ export default function HomeClient() {
     }
   }
 
-  async function fetchSellers() {
+  // ✅ now sellers is same “shape” as fetchArtsPage, but hits /api/users
+  async function fetchSellersPage(opts: { mode: 'reset' | 'append'; cursor: string | null }) {
+    const isReset = opts.mode === 'reset'
     try {
-      setLoadingSellers(true)
+      isReset ? setLoadingSellers(true) : setLoadingMoreSellers(true)
       setErrorSellers(null)
 
-      // Fetch more items to build seller leaderboard
-      const SELLER_LIMIT = 200
-      const r = await fetch(buildUrl(null, SELLER_LIMIT), {
+      const r = await fetch(buildUsersUrl(opts.cursor, SELLER_LIMIT), {
         method: 'GET',
         cache: 'no-store',
       })
+
       if (!r.ok) {
         const text = await r.text()
         let msg = `Request failed (${r.status})`
@@ -212,71 +242,59 @@ export default function HomeClient() {
         throw new Error(msg)
       }
 
-      const json = (await r.json()) as ListItemsResponse
-      const { items: raw } = normalize(json)
+      const json = (await r.json()) as ListUsersResponse
+      const { users: raw, next_cursor } = normalizeUsers(json)
 
-      // ✅ group by seller_id (REAL ID)
-      const map = new Map<
-        string,
-        { username: string; items: number; volume: number }
-      >()
-      for (const it of raw) {
-        const sellerId = it.seller_id
-        const username = it.seller_username?.trim() || 'Unknown'
+      const mapped: SellerUI[] = raw.map((u) => {
+        const usernameRaw = u.username?.trim() || 'Unknown'
+        const clean = usernameRaw.replace(/^@+/, '')
+        const name = clean.length ? clean : 'Unknown'
+        const avatarLetter = name.charAt(0).toUpperCase() || 'U'
 
-        const cur = map.get(sellerId!) ?? { username, items: 0, volume: 0 }
-        cur.items += 1
-        cur.volume += pickDisplayPrice(it)
+        const itemsCount = toNumber(u.items_count) ?? 0
+        const volumeNum = toNumber(u.volume) ?? 0
 
-        if (cur.username === 'Unknown' && username !== 'Unknown')
-          cur.username = username
-        map.set(sellerId!, cur)
-      }
-
-      const sellerList: SellerUI[] = Array.from(map.entries()).map(
-        ([sellerId, agg]) => {
-          const clean = agg.username.replace(/^@+/, '')
-          const displayName = clean.length ? clean : 'Unknown'
-          const letter = displayName.charAt(0).toUpperCase() || 'U'
-
-          return {
-            id: sellerId, // ✅ REAL UUID
-            name: displayName,
-            username: agg.username.startsWith('@')
-              ? agg.username
-              : `@${agg.username}`,
-            avatarLetter: letter,
-            items: agg.items,
-            volume: formatMoneySGD(agg.volume),
-          }
+        return {
+          id: u.id,
+          name,
+          username: usernameRaw.startsWith('@') ? usernameRaw : `@${usernameRaw}`,
+          avatarLetter,
+          items: itemsCount,
+          volume: formatMoneySGD(volumeNum),
         }
-      )
-
-      // sort by volume desc, then items desc
-      sellerList.sort((a, b) => {
-        const va = toNumber(a.volume.replace(/[^0-9.]/g, '')) ?? 0
-        const vb = toNumber(b.volume.replace(/[^0-9.]/g, '')) ?? 0
-        if (vb !== va) return vb - va
-        return b.items - a.items
       })
 
-      setSellers(sellerList)
+      if (isReset) setSellers(mapped)
+      else setSellers((prev) => [...prev, ...mapped])
+
+      setNextSellerCursor(next_cursor)
     } catch (e) {
       setErrorSellers(e instanceof Error ? e.message : 'Unknown error')
-      setSellers([])
+      if (isReset) setSellers([])
+      setNextSellerCursor(null)
     } finally {
       setLoadingSellers(false)
+      setLoadingMoreSellers(false)
     }
   }
 
-  // Initial load + when user submits a new search query
+  // ARTS: initial load + when search changes
   useEffect(() => {
     if (activeTab !== 'arts') return
+    setPage(1)
     fetchArtsPage({ mode: 'reset', cursor: null })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, appliedQuery])
 
-  // When user clicks "See More" (page increments)
+  // SELLERS: initial load + when search changes
+  useEffect(() => {
+    if (activeTab !== 'sellers') return
+    setSellerPage(1)
+    fetchSellersPage({ mode: 'reset', cursor: null })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, appliedQuery])
+
+  // ARTS: see more
   useEffect(() => {
     if (activeTab !== 'arts') return
     if (page === 1) return
@@ -285,14 +303,17 @@ export default function HomeClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page])
 
-  // Fetch sellers when switching to sellers tab (and when search query changes)
+  // SELLERS: see more (only if you add seller pagination UI)
   useEffect(() => {
     if (activeTab !== 'sellers') return
-    fetchSellers()
+    if (sellerPage === 1) return
+    if (!nextSellerCursor) return
+    fetchSellersPage({ mode: 'append', cursor: nextSellerCursor })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, appliedQuery])
+  }, [sellerPage])
 
   const hasNext = !!nextCursor && !loading && !loadingMore
+  const hasNextSellers = !!nextSellerCursor && !loadingSellers && !loadingMoreSellers
 
   return (
     <div className="min-h-screen bg-background">
@@ -323,22 +344,14 @@ export default function HomeClient() {
           </div>
         )}
 
-        <HeroSection
-          search={search}
-          onSearchChange={setSearch}
-          onSearchSubmit={onSearchSubmit}
-        />
+        <HeroSection search={search} onSearchChange={setSearch} onSearchSubmit={onSearchSubmit} />
         <Tabs activeTab={activeTab} onTabChange={handleTabChange} />
 
         {activeTab === 'arts' ? (
           <>
             <ArtGrid items={items} loading={loading} error={error} />
             <div className="container mx-auto px-4 pb-8">
-              <Pagination
-                page={page}
-                hasNext={hasNext}
-                onPageChange={setPage}
-              />
+              <Pagination page={page} hasNext={hasNext} onPageChange={setPage} />
               {loadingMore && (
                 <div className="mt-3 text-center text-sm text-muted-foreground">
                   Loading more...
@@ -347,11 +360,18 @@ export default function HomeClient() {
             </div>
           </>
         ) : (
-          <SellerGrid
-            sellers={sellers}
-            loading={loadingSellers}
-            error={errorSellers}
-          />
+          <>
+            <SellerGrid sellers={sellers} loading={loadingSellers} error={errorSellers} />
+
+            <div className="container mx-auto px-4 pb-8">
+              <Pagination page={sellerPage} hasNext={hasNextSellers} onPageChange={setSellerPage} />
+              {loadingMoreSellers && (
+                <div className="mt-3 text-center text-sm text-muted-foreground">
+                  Loading more...
+                </div>
+              )}
+            </div> 
+          </>
         )}
       </main>
 

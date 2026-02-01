@@ -30,6 +30,7 @@ func main() {
 
 	aiBaseURL := getenv("AI_BASE_URL", "http://localhost:8000")
 	appBaseURL := getenv("APP_BASE_URL", "http://localhost:3000")
+	backendBaseURL := getenv("BACKEND_BASE_URL", "http://localhost:8080")
 	sweeperIntervalStr := getenv("ITEM_STATUS_SWEEPER_INTERVAL", "1m")
 	sweeperInterval, err := time.ParseDuration(sweeperIntervalStr)
 	if err != nil {
@@ -104,6 +105,7 @@ func main() {
 		emailService,
 		[]byte(secret),
 		appBaseURL,
+		backendBaseURL,
 		aiBaseURL,
 		internalToken,
 		r2Bucket,

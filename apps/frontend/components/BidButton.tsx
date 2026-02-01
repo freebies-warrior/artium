@@ -17,6 +17,7 @@ type BidButtonProps = {
   item: ItemForBid
   triggerText?: string
   setRefreshKey: () => void
+  onSuccess?: () => void
 }
 
 function fmtSGD(n: number) {
@@ -27,6 +28,7 @@ export default function BidButton({
   item,
   triggerText = 'Place Bid',
   setRefreshKey,
+  onSuccess,
 }: BidButtonProps) {
   const [bid, setBid] = React.useState('')
   const [submitting, setSubmitting] = React.useState(false)
@@ -88,7 +90,7 @@ export default function BidButton({
       // ✅ Close dialog
       setOpen(false)
       setRefreshKey()
-      alert('Bid placed successfully!')
+      onSuccess?.()
     } catch (e: any) {
       setError(e?.message ?? 'Failed to place bid')
     } finally {

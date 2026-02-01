@@ -17,12 +17,13 @@ import fallbackImg from '@/assets/nft-ape.jpg'
 import BidButton from '@/components/BidButton'
 import Lightbox from '@/components/LightBox'
 import PreviewButton from '@/components/PreviewButton'
+import Image from 'next/image'
 
 type PictureDTO = {
   id: string
   item_id: string
-  key?: string // ✅ needed for visualizer job creation
-  url?: string // ✅ used for rendering images
+  key?: string 
+  url?: string 
   created_at: string
 }
 
@@ -118,8 +119,8 @@ function stringifyFeatures(features: any) {
 
 function pickFirstImageUrl(pictures?: PictureDTO[] | null) {
   if (!pictures || pictures.length === 0) return fallbackImg.src
-  const url = (pictures[0]?.url ?? '').trim()
-  return url.length > 0 ? url : fallbackImg.src
+  const url = pictures[0]?.url?.trim()
+  return url && url.length > 0 ? url : fallbackImg.src
 }
 
 function toLightboxImages(pictures?: PictureDTO[] | null) {
@@ -128,7 +129,7 @@ function toLightboxImages(pictures?: PictureDTO[] | null) {
   }
   const imgs = pictures
     .map((p, i) => ({
-      src: (p.url ?? '').trim(),
+      src: (p.url || '').trim(),
       alt: `Image ${i + 1}`,
     }))
     .filter((x) => x.src.length > 0)
@@ -172,8 +173,14 @@ export default function ItemPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [errorMore, setErrorMore] = useState<string | null>(null)
 
+  // ✅ Auth state
   const [userId, setUserId] = useState<string | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
+
+  const [banner, setBanner] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
 
   /* ───────────── Get current user ───────────── */
   useEffect(() => {
@@ -292,6 +299,7 @@ export default function ItemPage() {
 
   const featuresText = stringifyFeatures(item?.features)
 
+  // Build images dynamically from backend pictures
   const itemImages = useMemo(
     () => toLightboxImages(item?.pictures),
     [item?.pictures]
@@ -309,8 +317,28 @@ export default function ItemPage() {
 
   return (
     <div className="min-h-screen bg-background pt-16">
-      <Navbar />
+      {banner && (
+        <div className="fixed top-20 left-0 right-0 z-40 flex justify-center px-4">
+          <div
+            className={`relative flex items-center gap-4 rounded-lg px-4 pr-10 py-3 text-sm shadow
+        ${
+          banner.type === 'success'
+            ? 'bg-green-100 text-green-700'
+            : 'bg-red-100 text-red-700'
+        }`}
+          >
+            <span className="whitespace-nowrap">{banner.message}</span>
 
+            <button
+              onClick={() => setBanner(null)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-1 text-lg leading-none opacity-70 hover:opacity-100"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
       {/* Hero */}
       <section>
         <div className="relative w-full aspect-[16/10] lg:aspect-[21/9] overflow-hidden">
@@ -321,10 +349,11 @@ export default function ItemPage() {
               setIsOpen(true)
             }}
           >
-            <img
+            <Image
               src={heroSrc}
               alt={item?.title ?? 'Artwork'}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
             />
           </button>
         </div>
@@ -368,6 +397,7 @@ export default function ItemPage() {
             <div className="lg:hidden space-y-3">
               <CountdownTimer targetDate={item?.time_end} />
 
+              {/* ✅ Bid button gating */}
               {canBid && (
                 <BidButton
                   item={{
@@ -378,9 +408,16 @@ export default function ItemPage() {
                     highest_bid_amount: item?.highest_bid_amount,
                   }}
                   setRefreshKey={() => setRefreshKey((k) => k + 1)}
+                  onSuccess={() =>
+                    setBanner({
+                      type: 'success',
+                      message: 'Bid placed successfully',
+                    })
+                  }
                 />
               )}
 
+              {/* ✅ Helpful hints */}
               {!authLoading && !userId && (
                 <p className="text-sm text-muted-foreground text-center">
                   Please login to place a bid.
@@ -457,6 +494,7 @@ export default function ItemPage() {
           <div className="hidden lg:flex flex-col gap-4">
             <CountdownTimer targetDate={item?.time_end} />
 
+            {/* ✅ Bid button gating */}
             {canBid && (
               <BidButton
                 item={{
@@ -470,6 +508,7 @@ export default function ItemPage() {
               />
             )}
 
+            {/* ✅ Helpful hints */}
             {!authLoading && !userId && (
               <p className="text-sm text-muted-foreground text-center">
                 Please login to place a bid.
@@ -494,6 +533,7 @@ export default function ItemPage() {
         <div className="mb-8 flex items-center justify-between gap-4">
           <h2 className="text-3xl font-bold">More From This User</h2>
 
+          {/* Button -> user profile */}
           {item?.seller_id && (
             <Link
               href={`/users/${item.seller_id}`}
@@ -503,10 +543,8 @@ export default function ItemPage() {
             </Link>
           )}
         </div>
-
         <ArtGrid items={moreItems} loading={loadingMore} error={errorMore} />
       </section>
-
       <Footer />
     </div>
   )

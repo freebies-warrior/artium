@@ -1,27 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-
+import { extractUserId, type MeResponse } from '@/lib/auth'
 import AddItemButton from './AddItemButton'
 
 type UserHeaderProps = {
   userId: string
-}
-
-// Adjust if your /api/auth/me response is different
-type MeResponse =
-  | { user: { id: string } }
-  | { id: string }
-  | { userId: string }
-  | any
-
-function extractUserId(me: MeResponse): string | null {
-  if (!me) return null
-  if (typeof me.user?.id === 'string') return me.user.id
-  if (typeof me.id === 'string') return me.id
-  if (typeof me.userId === 'string') return me.userId
-  if (typeof me.user_id === 'string') return me.user_id
-  return null
 }
 
 export default function UserHeader({ userId }: UserHeaderProps) {
@@ -73,7 +57,7 @@ export default function UserHeader({ userId }: UserHeaderProps) {
       </div>
 
       {/* ✅ Only show if owner */}
-      {isOwner && <AddItemButton userId={userId} />}
+      {isOwner && <AddItemButton />}
     </div>
   )
 }

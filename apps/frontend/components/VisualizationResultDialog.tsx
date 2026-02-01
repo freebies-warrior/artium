@@ -64,9 +64,7 @@ export default function VisualizationResultDialog({
             {(status === 'queued' || status === 'processing') && (
               <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <div className="text-base font-medium">
-                  Generating preview…
-                </div>
+                <div className="text-base font-medium">Generating preview…</div>
                 <p className="max-w-sm text-sm text-muted-foreground">
                   This usually takes a few seconds. Please keep this window
                   open.
@@ -115,9 +113,7 @@ export default function VisualizationResultDialog({
                   {job?.error_message ??
                     'Something went wrong while generating the preview.'}
                 </p>
-                <Button onClick={() => onOpenChange(false)}>
-                  Close
-                </Button>
+                <Button onClick={() => onOpenChange(false)}>Close</Button>
               </div>
             )}
           </div>

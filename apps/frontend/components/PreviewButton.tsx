@@ -108,9 +108,7 @@ export default function PreviewButton({
           const msg = data?.error?.message || data?.message || 'Polling failed'
           if (!stopped) {
             setJob((prev) =>
-              prev
-                ? { ...prev, status: 'failed', error_message: msg }
-                : prev
+              prev ? { ...prev, status: 'failed', error_message: msg } : prev
             )
           }
           return
@@ -302,7 +300,8 @@ export default function PreviewButton({
                       Click to upload a room photo
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      PNG / JPG • 1 photo only • Max {MAX_FILE_SIZE_BYTES_STRING}
+                      PNG / JPG • 1 photo only • Max{' '}
+                      {MAX_FILE_SIZE_BYTES_STRING}
                     </div>
                   </label>
                 ) : (

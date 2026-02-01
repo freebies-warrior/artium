@@ -4,6 +4,7 @@ import * as React from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { X, Loader2, ImageOff } from 'lucide-react'
 import { Button } from './ui/Button'
+import Image from 'next/image'
 
 type VisualizationJob = {
   id: string
@@ -77,7 +78,7 @@ export default function VisualizationResultDialog({
               <div className="space-y-6">
                 {job?.result_image_url ? (
                   <div className="overflow-hidden rounded-lg border border-border">
-                    <img
+                    <Image
                       src={job.result_image_url}
                       alt="Visualization result"
                       className="w-full object-contain"

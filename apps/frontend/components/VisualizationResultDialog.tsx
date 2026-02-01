@@ -78,11 +78,16 @@ export default function VisualizationResultDialog({
               <div className="space-y-6">
                 {job?.result_image_url ? (
                   <div className="overflow-hidden rounded-lg border border-border">
-                    <Image
-                      src={job.result_image_url}
-                      alt="Visualization result"
-                      className="w-full object-contain"
-                    />
+                    <div className="relative w-full h-[420px] bg-black/20">
+                      <Image
+                        src={job.result_image_url}
+                        alt="Visualization result"
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 768px) 100vw, 700px"
+                        priority
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-border py-12 text-muted-foreground">

@@ -28,6 +28,7 @@ func main() {
 	secret := mustEnv("JWT_SECRET")
 	internalToken := mustEnv("AI_SERVICE_TOKEN")
 
+	aiBaseURL := getenv("AI_BASE_URL", "http://localhost:8000")
 	appBaseURL := getenv("APP_BASE_URL", "http://localhost:3000")
 	sweeperIntervalStr := getenv("ITEM_STATUS_SWEEPER_INTERVAL", "1m")
 	sweeperInterval, err := time.ParseDuration(sweeperIntervalStr)
@@ -103,6 +104,8 @@ func main() {
 		emailService,
 		[]byte(secret),
 		appBaseURL,
+		aiBaseURL,
+		internalToken,
 		r2Bucket,
 		s3Client,
 	)

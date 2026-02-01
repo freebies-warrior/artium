@@ -1,15 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8080";
+const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:8080'
 
 function getTokenFromCookie(req: Request) {
-  const cookie = req.headers.get("cookie") ?? "";
+  const cookie = req.headers.get('cookie') ?? ''
   const token = cookie
-    .split("; ")
-    .find((c) => c.startsWith("token="))
-    ?.split("=")[1];
+    .split('; ')
+    .find((c) => c.startsWith('token='))
+    ?.split('=')[1]
 
-  return token ?? null;
+  return token ?? null
 }
 
 /**
@@ -17,45 +17,45 @@ function getTokenFromCookie(req: Request) {
  * Proxies to: POST {BACKEND_URL}/visualizations
  */
 export async function POST(req: Request) {
-  const token = getTokenFromCookie(req);
+  const token = getTokenFromCookie(req)
   if (!token) {
     return NextResponse.json(
-      { error: { code: "UNAUTHORIZED", message: "Not authenticated" } },
+      { error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
       { status: 401 }
-    );
+    )
   }
 
-  let body: unknown;
+  let body: unknown
   try {
-    body = await req.json();
+    body = await req.json()
   } catch {
     return NextResponse.json(
-      { error: { code: "VALIDATION_ERROR", message: "Invalid JSON body" } },
+      { error: { code: 'VALIDATION_ERROR', message: 'Invalid JSON body' } },
       { status: 400 }
-    );
+    )
   }
 
   try {
     const res = await fetch(`${BACKEND_URL}/visualizations`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(body),
-      cache: "no-store",
-    });
+      cache: 'no-store',
+    })
 
-    const text = await res.text();
+    const text = await res.text()
     // Backend should return JSON, but handle non-JSON safely:
-    const data = text ? safeJsonParse(text) : null;
+    const data = text ? safeJsonParse(text) : null
 
-    return NextResponse.json(data ?? {}, { status: res.status });
+    return NextResponse.json(data ?? {}, { status: res.status })
   } catch {
     return NextResponse.json(
-      { error: { code: "INTERNAL_ERROR", message: "Failed to reach backend" } },
+      { error: { code: 'INTERNAL_ERROR', message: 'Failed to reach backend' } },
       { status: 500 }
-    );
+    )
   }
 }
 
@@ -64,55 +64,55 @@ export async function POST(req: Request) {
  * Proxies to: GET {BACKEND_URL}/visualizations/{job_id}
  */
 export async function GET(req: Request) {
-  const token = getTokenFromCookie(req);
+  const token = getTokenFromCookie(req)
   if (!token) {
     return NextResponse.json(
-      { error: { code: "UNAUTHORIZED", message: "Not authenticated" } },
+      { error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
       { status: 401 }
-    );
+    )
   }
 
-  const { searchParams } = new URL(req.url);
-  const jobId = searchParams.get("job_id");
+  const { searchParams } = new URL(req.url)
+  const jobId = searchParams.get('job_id')
 
   if (!jobId) {
     return NextResponse.json(
       {
         error: {
-          code: "VALIDATION_ERROR",
-          message: "Missing required query param: job_id",
+          code: 'VALIDATION_ERROR',
+          message: 'Missing required query param: job_id',
         },
       },
       { status: 400 }
-    );
+    )
   }
 
   try {
     const res = await fetch(`${BACKEND_URL}/visualizations/${jobId}`, {
-      method: "GET",
+      method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      cache: "no-store",
-    });
+      cache: 'no-store',
+    })
 
-    const text = await res.text();
-    const data = text ? safeJsonParse(text) : null;
+    const text = await res.text()
+    const data = text ? safeJsonParse(text) : null
 
-    return NextResponse.json(data ?? {}, { status: res.status });
+    return NextResponse.json(data ?? {}, { status: res.status })
   } catch {
     return NextResponse.json(
-      { error: { code: "INTERNAL_ERROR", message: "Failed to reach backend" } },
+      { error: { code: 'INTERNAL_ERROR', message: 'Failed to reach backend' } },
       { status: 500 }
-    );
+    )
   }
 }
 
 function safeJsonParse(text: string) {
   try {
-    return JSON.parse(text);
+    return JSON.parse(text)
   } catch {
     // Return raw text if backend didn't return JSON
-    return { raw: text };
+    return { raw: text }
   }
 }

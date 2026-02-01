@@ -167,8 +167,10 @@ export default function UserClient() {
     <div className="min-h-screen bg-background pt-20">
       <div className="container mx-auto px-6">
         <UserHeader userId={userId} />
-        <UserStats />
-
+        {
+          // Remove The Comment After Implemented
+          // <UserStats /> 
+        }
         <ArtGrid items={items} loading={loading} error={error} />
 
         <div className="mt-8 flex justify-center">

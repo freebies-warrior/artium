@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class ArtworkMetadata(BaseModel):
-    item_id: uuid.UUID
+    item_id: str
     title: str = "Unknown"
     author: str = "Unknown"
     year: Optional[str] = None

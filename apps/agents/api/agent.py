@@ -287,7 +287,7 @@ def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionRespons
 
         # Prepare metadata
         md = ArtworkMetadata(
-            item_id = req.item_id,
+            item_id = str(req.item_id),
             title=req.metadata.get("title", "Unknown"),
             author=req.metadata.get("author", "Unknown"),
             year=req.metadata.get("year", "Unknown"),

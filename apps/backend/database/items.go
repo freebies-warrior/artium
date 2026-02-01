@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -25,7 +26,7 @@ type Item struct {
 	Title            string          `json:"title"`
 	Description      *string         `json:"description,omitempty"`
 	Author           *string         `json:"author,omitempty"`
-	Features         any             `json:"features,omitempty"`
+	Features         *map[string]any `json:"features,omitempty"`
 	YearCreated      *int            `json:"year_created,omitempty"`
 	Height           *float64        `json:"height,omitempty"`
 	Width            *float64        `json:"width,omitempty"`
@@ -174,7 +175,12 @@ func (r *ItemDatabase) CreateItem(ctx context.Context, a CreateItemArgs) (Item, 
 		it.HighestBidTime = &v
 	}
 
-	_ = featStr // features left nil for now
+	if featStr != "" {
+		var feat map[string]any
+		if err := json.Unmarshal([]byte(featStr), &feat); err == nil {
+			it.Features = &feat
+		}
+	}
 	return it, nil
 }
 
@@ -271,7 +277,12 @@ func (r *ItemDatabase) GetItemByID(ctx context.Context, itemID string) (Item, er
 		it.HighestBidTime = &v
 	}
 
-	_ = featStr
+	if featStr != "" {
+		var feat map[string]any
+		if err := json.Unmarshal([]byte(featStr), &feat); err == nil {
+			it.Features = &feat
+		}
+	}
 	return it, nil
 }
 

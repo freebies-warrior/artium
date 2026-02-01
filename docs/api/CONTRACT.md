@@ -399,6 +399,11 @@ Returns item details + pictures + current bid state (if you compute it).
     "highest_bid_amount": 10500,
     "highest_bidder_id": "uuid",
     "highest_bid_time": "2026-01-27T13:22:10Z",
+    "features": {
+      "vision_brushstroke": {},
+      "vision_blending": {},
+      "vision_physicality": {},
+    },
     "pictures": [
       {
         "id": "uuid",
@@ -466,6 +471,7 @@ Create a new auction item. Seller supplies basic info + image URLs (uploaded sep
     "highest_bid_amount": null,
     "highest_bidder_id": null,
     "highest_bid_time": null,
+    "features": {},
     "pictures": [
       {
         "id": "uuid",

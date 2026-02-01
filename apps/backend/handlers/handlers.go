@@ -26,6 +26,7 @@ func NewHandlerSet(
 	emailService *email.Service,
 	jwtSecret []byte,
 	appBaseURL string,
+	backendBaseURL string,
 	aiBaseURL string,
 	aiToken string,
 	r2Bucket string,
@@ -33,10 +34,11 @@ func NewHandlerSet(
 ) *HandlerSet {
 	uploadHandler := NewUploadHandler(r2Bucket, s3Client)
 	visualizerClient := NewVisualizerClient(aiBaseURL, aiToken)
+	featureExtractorClient := NewFeatureExtractorClient(aiBaseURL, aiToken)
 
 	return &HandlerSet{
 		Auth:           NewAuthHandler(users, tokens, emailService, jwtSecret, appBaseURL),
-		Items:          NewItemsHandler(items, pictures, uploadHandler),
+		Items:          NewItemsHandler(items, pictures, uploadHandler, featureExtractorClient, backendBaseURL),
 		Uploads:        uploadHandler,
 		Bids:           NewBidsHandler(bids, items),
 		Users:          NewUserHandler(users),

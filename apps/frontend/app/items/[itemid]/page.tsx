@@ -18,6 +18,7 @@ import Lightbox from '@/components/LightBox'
 import PreviewButton from '@/components/PreviewButton'
 
 import Image from 'next/image'
+import { extractUserId, type MeResponse } from '@/lib/auth'
 
 type PictureDTO = {
   id: string
@@ -67,11 +68,6 @@ type ListItemsResponse = {
   }>
   next_cursor: string | null
 }
-
-// Adjust this to match your /api/auth/me response shape
-type MeResponse =
-  | { authenticated: false }
-  | { authenticated: true; user_id: string }
 
 type GetItemResponse = { item: Item }
 
@@ -133,14 +129,6 @@ function toLightboxImages(pictures?: PictureDTO[] | null) {
     .filter((x) => x.src.length > 0)
 
   return imgs.length ? imgs : [{ src: fallbackImg.src, alt: 'Artwork image' }]
-}
-
-// Try to extract a userId from different possible /api/auth/me shapes
-function extractUserId(me: MeResponse): string | null {
-  if (!me) return null
-  if (!('user_id' in me)) return null
-  if (typeof me.user_id !== 'string') return null
-  return me.user_id
 }
 
 export default function ItemPage() {

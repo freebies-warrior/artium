@@ -1,23 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-
+import { extractUserId, type MeResponse } from '@/lib/auth'
 import AddItemButton from './AddItemButton'
 
 type UserHeaderProps = {
   userId: string
-}
-
-// Adjust if your /api/auth/me response is different
-type MeResponse =
-  | { authenticated: false }
-  | { authenticated: true; user_id: string }
-
-function extractUserId(me: MeResponse): string | null {
-  if (!me) return null
-  if (!('user_id' in me)) return null
-  if (typeof me.user_id !== 'string') return null
-  return me.user_id
 }
 
 export default function UserHeader({ userId }: UserHeaderProps) {

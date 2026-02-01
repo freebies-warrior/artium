@@ -26,10 +26,13 @@ func NewHandlerSet(
 	emailService *email.Service,
 	jwtSecret []byte,
 	appBaseURL string,
+	aiBaseURL string,
+	aiToken string,
 	r2Bucket string,
 	s3Client *s3.Client,
 ) *HandlerSet {
 	uploadHandler := NewUploadHandler(r2Bucket, s3Client)
+	visualizerClient := NewVisualizerClient(aiBaseURL, aiToken)
 
 	return &HandlerSet{
 		Auth:           NewAuthHandler(users, tokens, emailService, jwtSecret, appBaseURL),
@@ -37,6 +40,6 @@ func NewHandlerSet(
 		Uploads:        uploadHandler,
 		Bids:           NewBidsHandler(bids, items),
 		Users:          NewUserHandler(users),
-		Visualizations: NewVisualizationsHandler(visualizationJobs, uploadHandler),
+		Visualizations: NewVisualizationsHandler(visualizationJobs, uploadHandler, visualizerClient),
 	}
 }

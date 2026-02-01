@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"backend/app"
 	"backend/database"
 	"backend/handlers"
 	"backend/internal/sweeper"
+	"backend/utils/email"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -24,7 +26,9 @@ func main() {
 
 	dsn := mustEnv("DATABASE_URL")
 	secret := mustEnv("JWT_SECRET")
+	internalToken := mustEnv("AI_SERVICE_TOKEN")
 
+	aiBaseURL := getenv("AI_BASE_URL", "http://localhost:8000")
 	appBaseURL := getenv("APP_BASE_URL", "http://localhost:3000")
 	sweeperIntervalStr := getenv("ITEM_STATUS_SWEEPER_INTERVAL", "1m")
 	sweeperInterval, err := time.ParseDuration(sweeperIntervalStr)
@@ -34,6 +38,19 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	smtpPort, err := strconv.Atoi(mustEnv("SMTP_PORT"))
+	if err != nil {
+		log.Fatalf("invalid SMTP_PORT: %v", err)
+	}
+
+	emailService := email.NewService(email.Config{
+		Host:     mustEnv("SMTP_HOST"),
+		Port:     smtpPort,
+		Username: getenv("SMTP_USERNAME", ""),
+		Password: getenv("SMTP_PASSWORD", ""),
+		FromName: mustEnv("EMAIL_FROM_NAME"),
+		FromAddr: mustEnv("EMAIL_FROM_ADDRESS"),
+	})
 
 	db := app.MustOpenDB(dsn)
 	defer db.Close()
@@ -43,6 +60,7 @@ func main() {
 	itemDatabase := database.NewItemDatabase(db)
 	pictureDatabase := database.NewPictureDatabase(db)
 	bidDatabase := database.NewBidDatabase(db)
+	visualizationJobs := database.NewVisualizationJobDatabase(db)
 
 	r2AccountID := mustEnv("R2_ACCOUNT_ID")
 	r2AccessKey := mustEnv("R2_ACCESS_KEY_ID")
@@ -82,13 +100,17 @@ func main() {
 		itemDatabase,
 		pictureDatabase,
 		bidDatabase,
+		visualizationJobs,
+		emailService,
 		[]byte(secret),
 		appBaseURL,
+		aiBaseURL,
+		internalToken,
 		r2Bucket,
 		s3Client,
 	)
 
-	r := app.NewRouter(h, []byte(secret))
+	r := app.NewRouter(h, []byte(secret), internalToken)
 
 	sweeper.Start(ctx, db, sweeperInterval)
 

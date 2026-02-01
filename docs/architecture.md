@@ -209,6 +209,42 @@ The Visualizer feature merges an item image with a user-provided “room photo�
 
 ---
 
+## AI Feature Extraction on Item Upload
+
+The Feature Extraction feature analyzes an item’s uploaded images to generate **structured metadata** (JSON) and saves it into:
+- `items.features` (JSONB in Postgres)
+
+### Components involved
+- **Frontend (Next.js)**: uploads item images, creates item listing
+- **Backend (Go API)**: stores item + picture keys, generates signed GET URLs for item images, orchestrates AI call, owns DB updates
+- **AI Backend (FastAPI/Python)**: downloads item images, extracts features, calls back backend to persist features
+- **Postgres**: stores item + features in `items.features`
+- **Cloudflare R2**: stores item images as objects (referenced by `picture_keys` / `pictures.key`)
+
+### End-to-end flow
+1. Frontend requests signed PUT URLs from Backend to upload the item images.
+2. Frontend uploads item images directly to R2 and obtains `picture_keys` (object keys).
+3. Frontend creates the item via Backend (`POST /items`) with `picture_keys`.
+4. Backend creates the item + picture rows in Postgres (storing **keys**, not URLs).
+5. Backend generates **presigned GET URLs** for all image keys belonging to the item (short-lived).
+6. Backend triggers the AI Backend (`POST /agents/feature_extractor/extract_item_features`) and sends:
+   - `item_id`
+   - `image_keys`
+   - `image_get_urls` (presigned)
+   - `callback_url` (internal endpoint to store features)
+   - `metadata` (image metadata, e.g. title, author, year)
+7. AI Backend downloads the images using the presigned GET URLs and extracts a JSON `features` payload.
+8. AI Backend calls the Backend internal endpoint to update the item:
+   - Backend writes `items.features = <features JSON>` (JSONB)
+9. Frontend fetches item info via `GET /items/{item_id}`; once features exist, it renders them (otherwise `features` may be `null` initially).
+
+### Notes
+- Do not store signed URLs in Postgres; store only object keys and derive/sign GET URLs on demand.
+- `items.features` may be `null` immediately after item creation (async processing).
+- The AI worker must not write to Postgres directly; it should call an internal backend endpoint with internal auth.
+
+---
+
 ## Optional Extensions (later)
 These are the future modules mentioned in the sketch. They will be added as separate endpoints/services, but are **not** specified here yet:
 - **Recommender**: show similar items on the item page.

@@ -67,3 +67,26 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 		NextCursor: nextCursor,
 	})
 }
+
+func (h *UserHandler) GetUserDetails(c *gin.Context) {
+	userID := c.Param("user_id")
+	if strings.TrimSpace(userID) == "" {
+		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "user_id required", nil))
+		return
+	}
+
+	u, err := h.users.GetUserDetailsByUserID(c.Request.Context(), userID)
+	if err != nil {
+		if err == database.ErrNotFound {
+			c.JSON(http.StatusNotFound, utils.NewError("NOT_FOUND", "user not found", nil))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "database error", nil))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"email":    u.Email,
+		"username": u.Username,
+	})
+}

@@ -35,7 +35,7 @@ type ListItemsResponse =
   | { data: ItemDTO[]; next_cursor?: string | null }
   | ItemDTO[]
 
-// ✅ users api DTO (adjust fields to match your backend)
+// Users api DTO (adjust fields to match your backend)
 type UserDTO = {
   id: string
   username: string | null
@@ -49,8 +49,8 @@ type ListUsersResponse =
   | { data: UserDTO[]; next_cursor?: string | null }
   | UserDTO[]
 
-const LIMIT = 4
-const SELLER_LIMIT = 24 // ✅ pick a reasonable number for SellerGrid
+const LIMIT = 8
+const SELLER_LIMIT = 24
 
 function normalizeItems(res: ListItemsResponse): {
   items: ItemDTO[]
@@ -150,7 +150,7 @@ export default function HomeClient() {
     setSellerPage(1)
   }
 
-  // ✅ items endpoint
+  // items endpoint
   const buildItemsUrl = (cursor: string | null, limit: number) => {
     const qs = new URLSearchParams()
     qs.set('limit', String(limit))
@@ -159,7 +159,7 @@ export default function HomeClient() {
     return `/api/items?${qs.toString()}`
   }
 
-  // ✅ users endpoint
+  // users endpoint
   const buildUsersUrl = (cursor: string | null, limit: number) => {
     const qs = new URLSearchParams()
     qs.set('limit', String(limit))

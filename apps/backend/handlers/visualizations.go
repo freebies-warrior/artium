@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"context"
+	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -16,10 +19,11 @@ import (
 type VisualizationsHandler struct {
 	jobs    *database.VisualizationJobDatabase
 	uploads *UploadHandler
+	ai      *VisualizerClient
 }
 
-func NewVisualizationsHandler(jobs *database.VisualizationJobDatabase, uploads *UploadHandler) *VisualizationsHandler {
-	return &VisualizationsHandler{jobs: jobs, uploads: uploads}
+func NewVisualizationsHandler(jobs *database.VisualizationJobDatabase, uploads *UploadHandler, ai *VisualizerClient) *VisualizationsHandler {
+	return &VisualizationsHandler{jobs: jobs, uploads: uploads, ai: ai}
 }
 
 type createVisualizationReq struct {
@@ -104,6 +108,19 @@ func (h *VisualizationsHandler) Create(c *gin.Context) {
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to create visualization job", nil))
+		return
+	}
+
+	if err := h.enqueueVisualizerJob(c.Request.Context(), job, req.ItemDimensions); err != nil {
+		log.Printf("failed to enqueue visualization job %s: %v", job.ID, err)
+		errMsg := "failed to enqueue visualization job"
+		if updateErr := h.jobs.UpdateJobInternal(c.Request.Context(), job.ID, database.UpdateVisualizationJobArgs{
+			Status:       "failed",
+			ErrorMessage: &errMsg,
+		}); updateErr != nil {
+			log.Printf("failed to mark visualization job %s as failed: %v", job.ID, updateErr)
+		}
+		c.JSON(http.StatusBadGateway, utils.NewError("INTERNAL_ERROR", "failed to enqueue visualization job", nil))
 		return
 	}
 
@@ -209,4 +226,55 @@ func toJobOut(job database.VisualizationJob, signedResultURL *string) visualizat
 		CreatedAt:         job.CreatedAt,
 		UpdatedAt:         job.UpdatedAt,
 	}
+}
+
+func (h *VisualizationsHandler) enqueueVisualizerJob(ctx context.Context, job database.VisualizationJob, dims *struct {
+	WidthCM  float64 `json:"width_cm"`
+	HeightCM float64 `json:"height_cm"`
+}) error {
+	if h.ai == nil {
+		return fmt.Errorf("visualizer client not configured")
+	}
+
+	if job.ResultImageKey == nil || *job.ResultImageKey == "" {
+		return fmt.Errorf("missing result image key")
+	}
+
+	roomURL, err := h.uploads.PresignGetURL(ctx, job.RoomImageKey, 15*time.Minute)
+	if err != nil {
+		return fmt.Errorf("sign room image url: %w", err)
+	}
+
+	artURL, err := h.uploads.PresignGetURL(ctx, job.ItemImageKey, 15*time.Minute)
+	if err != nil {
+		return fmt.Errorf("sign art image url: %w", err)
+	}
+
+	uploadURL, err := h.uploads.PresignPutURL(ctx, *job.ResultImageKey, "image/jpeg", 15*time.Minute)
+	if err != nil {
+		return fmt.Errorf("sign upload image url: %w", err)
+	}
+
+	var itemDims *struct {
+		Width  float64 `json:"width"`
+		Height float64 `json:"height"`
+	}
+	if dims != nil {
+		itemDims = &struct {
+			Width  float64 `json:"width"`
+			Height float64 `json:"height"`
+		}{
+			Width:  dims.WidthCM,
+			Height: dims.HeightCM,
+		}
+	}
+
+	return h.ai.Enqueue(ctx, visualizeInstallationReq{
+		RoomURL:        roomURL,
+		ArtURL:         artURL,
+		UploadImageURL: uploadURL,
+		ResultImageKey: *job.ResultImageKey,
+		JobID:          job.ID,
+		ItemDimensions: itemDims,
+	})
 }

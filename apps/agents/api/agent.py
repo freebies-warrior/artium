@@ -148,9 +148,12 @@ def _notify_backend_feature_extraction(
     item_id: uuid.UUID,
     feature_json: dict[str, Any],
 ) -> None:
+    sanitized_features = _sanitize_for_json(feature_json)
+    if not isinstance(sanitized_features, dict):
+        sanitized_features = {}
     url = f"{BACKEND_URL}/items/{item_id}/features"
     payload = {
-        "features" : feature_json
+        "features" : sanitized_features,
     }
 
     headers = {}
@@ -167,6 +170,24 @@ def _notify_backend_feature_extraction(
     except Exception:
         logger.exception("failed to send feature extraction job update", extra={"item_id": item_id})
 
+def _sanitize_for_json(value: Any) -> Any:
+    if isinstance(value, (bytes, bytearray)):
+        return None
+    if isinstance(value, dict):
+        return {
+            key: _sanitize_for_json(val)
+            for key, val in value.items()
+            if not isinstance(val, (bytes, bytearray))
+        }
+    if isinstance(value, list):
+        return [
+            _sanitize_for_json(item)
+            for item in value
+            if not isinstance(item, (bytes, bytearray))
+        ]
+    if isinstance(value, tuple):
+        return [_sanitize_for_json(item) for item in value]
+    return value
 
 @system_router.get("/health")
 def health() -> dict:
@@ -290,7 +311,7 @@ def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionRespons
             item_id = str(req.item_id),
             title=req.metadata.get("title", "Unknown"),
             author=req.metadata.get("author", "Unknown"),
-            year=req.metadata.get("year", "Unknown"),
+            year=str(req.metadata.get("year", "Unknown")),
             medium_hint=req.metadata.get("medium_hint", "Unknown"),
         ).model_dump()
 
@@ -348,6 +369,8 @@ def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionRespons
             **feature_json,
             "valuation": valuation_result if valuation_result else None,
         }
+
+        del combined_result["image_bytes"]
 
         # # Build response (exclude image_bytes)
         # return FeatureExtractionResponse(

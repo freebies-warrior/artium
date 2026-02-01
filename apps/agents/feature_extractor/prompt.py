@@ -13,6 +13,8 @@ from .types import (
     SurfaceFinish,
 )
 
+def _format_metadata(metadata: Dict[str, Any]) -> str:
+    return json.dumps(metadata, indent=2, default=str)
 
 def build_brushstroke_prompt(metadata: Dict[str, Any]) -> str:
     return f"""
@@ -22,7 +24,7 @@ Return ONLY valid JSON that matches this schema:
 {BrushstrokeDynamics.model_json_schema()}
 
 Artwork metadata:
-{json.dumps(metadata, indent=2)}
+{_format_metadata(metadata)}
 
 Guidelines:
 - Use probabilities in [0,1] for impasto/glazing/stippling.
@@ -39,7 +41,7 @@ Return ONLY valid JSON that matches this schema:
 {BlendingMerging.model_json_schema()}
 
 Artwork metadata:
-{json.dumps(metadata, indent=2)}
+{_format_metadata(metadata)}
 
 Guidelines:
 - Use probabilities in [0,1] for sfumato/hard_edge.
@@ -56,7 +58,7 @@ Return ONLY valid JSON that matches this schema:
 {Physicality.model_json_schema()}
 
 Artwork metadata:
-{json.dumps(metadata, indent=2)}
+{_format_metadata(metadata)}
 
 Guidelines:
 - Be concise and stick to visible cues (sheen, weave, grain, translucency).
@@ -72,7 +74,7 @@ Return ONLY valid JSON that matches this schema:
 {MaterialComposition.model_json_schema()}
 
 Artwork metadata:
-{json.dumps(metadata, indent=2)}
+{_format_metadata(metadata)}
 
 Guidelines:
 - Identify primary and secondary materials from visual inspection (marble, bronze, stone, wood, etc.).
@@ -89,7 +91,7 @@ Return ONLY valid JSON that matches this schema:
 {Form.model_json_schema()}
 
 Artwork metadata:
-{json.dumps(metadata, indent=2)}
+{_format_metadata(metadata)}
 
 Guidelines:
 - Describe overall visual form, balance, symmetry, and proportions.
@@ -106,7 +108,7 @@ Return ONLY valid JSON that matches this schema:
 {SurfaceFinish.model_json_schema()}
 
 Artwork metadata:
-{json.dumps(metadata, indent=2)}
+{_format_metadata(metadata)}
 
 Guidelines:
 - Identify surface type (polished, matte, weathered, patinated, etc.).
@@ -123,7 +125,7 @@ Return ONLY valid JSON that matches this schema:
 {Craftsmanship.model_json_schema()}
 
 Artwork metadata:
-{json.dumps(metadata, indent=2)}
+{_format_metadata(metadata)}
 
 Guidelines:
 - Assess detail level, precision, carving technique, or casting quality.

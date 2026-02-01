@@ -23,6 +23,16 @@ def _avg(values: List[float]) -> float:
 def vision_aggregate_node():
     def _node(state: FeatureState) -> Command:
         try:
+            missing = [
+                key
+                for key in ("vision_brushstroke", "vision_blending", "vision_physicality")
+                if key not in state
+            ]
+            if missing:
+                raise KeyError(
+                    "Missing vision feature(s): " + ", ".join(sorted(missing))
+                )
+
             brush = BrushstrokeDynamics.model_validate(state["vision_brushstroke"])
             blend = BlendingMerging.model_validate(state["vision_blending"])
             phys = Physicality.model_validate(state["vision_physicality"])

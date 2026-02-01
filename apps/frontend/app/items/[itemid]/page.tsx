@@ -11,7 +11,7 @@ import { Gem } from 'lucide-react'
 import Footer from '@/components/Footer'
 import ArtGrid, { type ArtUI } from '@/components/ArtGrid'
 
-import fallbackImg from '@/assets/nft-ape.jpg' // ✅ fallback if no backend images
+import fallbackImg from '@/assets/nft-ape.jpg'
 
 import BidButton from '@/components/BidButton'
 import Lightbox from '@/components/LightBox'
@@ -23,7 +23,8 @@ import { extractUserId, type MeResponse } from '@/lib/auth'
 type PictureDTO = {
   id: string
   item_id: string
-  url: string
+  key?: string // ✅ needed for visualizer job creation
+  url?: string // ✅ used for rendering images
   created_at: string
 }
 
@@ -52,7 +53,7 @@ type Item = {
 
   current_price?: number
 
-  pictures: PictureDTO[] // ✅ from backend
+  pictures: PictureDTO[]
 }
 
 type ListItemsResponse = {
@@ -64,11 +65,10 @@ type ListItemsResponse = {
     base_price?: number
     highest_bid_amount?: number
     time_end?: string
-    pictures?: PictureDTO[] // ✅ include for "More From This User" images
+    pictures?: PictureDTO[]
   }>
   next_cursor: string | null
 }
-
 type GetItemResponse = { item: Item }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -113,8 +113,8 @@ function stringifyFeatures(features: any) {
 
 function pickFirstImageUrl(pictures?: PictureDTO[] | null) {
   if (!pictures || pictures.length === 0) return fallbackImg.src
-  const url = pictures[0]?.url?.trim()
-  return url && url.length > 0 ? url : fallbackImg.src
+  const url = (pictures[0]?.url ?? '').trim()
+  return url.length > 0 ? url : fallbackImg.src
 }
 
 function toLightboxImages(pictures?: PictureDTO[] | null) {
@@ -123,7 +123,7 @@ function toLightboxImages(pictures?: PictureDTO[] | null) {
   }
   const imgs = pictures
     .map((p, i) => ({
-      src: (p.url || '').trim(),
+      src: (p.url ?? '').trim(),
       alt: `Image ${i + 1}`,
     }))
     .filter((x) => x.src.length > 0)
@@ -131,10 +131,14 @@ function toLightboxImages(pictures?: PictureDTO[] | null) {
   return imgs.length ? imgs : [{ src: fallbackImg.src, alt: 'Artwork image' }]
 }
 
+function pickFirstImageKey(pictures?: PictureDTO[] | null) {
+  if (!pictures || pictures.length === 0) return null
+  const key = (pictures[0]?.key ?? '').trim()
+  return key.length > 0 ? key : null
+}
 export default function ItemPage() {
   const params = useParams()
 
-  // If your folder is /items/[itemid], then params.itemid exists (could be string | string[])
   const itemIdRaw = (params as any)?.itemid
   const itemId =
     typeof itemIdRaw === 'string' ? itemIdRaw : (itemIdRaw?.[0] ?? '')
@@ -152,7 +156,6 @@ export default function ItemPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [errorMore, setErrorMore] = useState<string | null>(null)
 
-  // ✅ Auth state
   const [userId, setUserId] = useState<string | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
 
@@ -267,7 +270,6 @@ export default function ItemPage() {
     return !Number.isNaN(end.getTime()) && end.getTime() <= Date.now()
   }, [item?.time_end])
 
-  // ✅ Only allow bids if logged in, not seller, and not ended
   const canBid = useMemo(() => {
     if (authLoading) return false
     if (!userId) return false
@@ -279,14 +281,15 @@ export default function ItemPage() {
 
   const featuresText = stringifyFeatures(item?.features)
 
-  // ✅ Build images dynamically from backend pictures
   const itemImages = useMemo(
     () => toLightboxImages(item?.pictures),
     [item?.pictures]
   )
-
-  // ✅ Hero image uses first backend image
   const heroSrc = itemImages[0]?.src ?? fallbackImg.src
+
+  const itemImageKey = useMemo(() => {
+    return pickFirstImageKey(item?.pictures)
+  }, [item?.pictures])
 
   const currentPrice = useMemo(() => {
     const n = item?.highest_bid_amount ?? item?.base_price
@@ -360,7 +363,7 @@ export default function ItemPage() {
               {item?.title ?? (loadingItem ? 'Loading...' : '—')}
             </h1>
 
-            {/* ✅ Current/Highest bid display */}
+            {/* Current/Highest bid display */}
             <div className="rounded-xl border bg-card p-4 mt-10">
               <p className="text-muted-foreground text-sm">
                 {item?.highest_bid_amount ? 'Current Bid' : 'Base Price'}
@@ -375,7 +378,6 @@ export default function ItemPage() {
             <div className="lg:hidden space-y-3">
               <CountdownTimer targetDate={item?.time_end} />
 
-              {/* ✅ Bid button gating */}
               {canBid && (
                 <BidButton
                   item={{
@@ -395,7 +397,6 @@ export default function ItemPage() {
                 />
               )}
 
-              {/* ✅ Helpful hints */}
               {!authLoading && !userId && (
                 <p className="text-sm text-muted-foreground text-center">
                   Please login to place a bid.
@@ -452,14 +453,26 @@ export default function ItemPage() {
               </pre>
             )}
 
-            <PreviewButton itemName={item?.title} />
+            {/* ✅ Preview integration (only if we have an item image key) */}
+            {item?.id && itemImageKey ? (
+              <PreviewButton
+                itemName={item?.title}
+                itemId={item.id}
+                itemImageKey={itemImageKey}
+                itemWidthCm={item?.width}
+                itemHeightCm={item?.height}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Preview is unavailable (missing item image).
+              </p>
+            )}
           </div>
 
           {/* Right */}
           <div className="hidden lg:flex flex-col gap-4">
             <CountdownTimer targetDate={item?.time_end} />
 
-            {/* ✅ Bid button gating */}
             {canBid && (
               <BidButton
                 item={{
@@ -473,7 +486,6 @@ export default function ItemPage() {
               />
             )}
 
-            {/* ✅ Helpful hints */}
             {!authLoading && !userId && (
               <p className="text-sm text-muted-foreground text-center">
                 Please login to place a bid.
@@ -498,7 +510,6 @@ export default function ItemPage() {
         <div className="mb-8 flex items-center justify-between gap-4">
           <h2 className="text-3xl font-bold">More From This User</h2>
 
-          {/* ✅ Button -> user profile */}
           {item?.seller_id && (
             <Link
               href={`/users/${item.seller_id}`}

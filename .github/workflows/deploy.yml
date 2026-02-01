@@ -24,13 +24,13 @@ jobs:
       - name: Build & push backend
         working-directory: apps/backend
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/artium-backend:latest -f apps/backend/Dockerfile .
+          docker build -t ghcr.io/${{ github.repository_owner }}/artium-backend:latest -f Dockerfile .
           docker push ghcr.io/${{ github.repository_owner }}/artium-backend:latest
-
+    
       - name: Build & push agents
         working-directory: apps/agents
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/artium-agents:latest -f apps/agents/Dockerfile .
+          docker build -t ghcr.io/${{ github.repository_owner }}/artium-agents:latest -f Dockerfile .
           docker push ghcr.io/${{ github.repository_owner }}/artium-agents:latest
 
   deploy:

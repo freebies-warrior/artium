@@ -2,10 +2,10 @@
 
 This folder contains the **AI Agents backend** for **Artium** — a small HTTP service that runs AI-powered workflows used by the main Go backend:
 - **Visualizer**: merge an artwork image with a user “room photo” to generate a preview image + caption.
-- **Feature Extractor**: analyze uploaded item images and produce structured `features` JSON for the listing.
+- **Price Valuator**: analyze uploaded item images and produce structured report for price valuation using extracted feature.
 
 > **Design principle:** the Agents service **does not write to Postgres directly**.  
-> It processes inputs and then calls back into the Go backend’s **internal endpoints** to persist results.
+> It processes inputs, returning an OK response before then doing another requests back into the Go backend’s internal endpoints to persist results.
 
 ---
 
@@ -38,7 +38,7 @@ The agent:
 4. returns **immediately** to the caller (Go backend) with `{ ok: true }`
 5. updates job status/results via the Go backend (callback or internal job update endpoint)
 
-### 2) Feature Extraction (item metadata enrichment)
+### 2) Price valuator
 Given:
 - item images (keys + signed GET URLs)
 - optional metadata (title, author, year)
@@ -47,7 +47,7 @@ Given:
 The agent:
 1. downloads images
 2. extracts a `features` JSON object (medium, style, palette, mood, etc.)
-3. calls the provided callback URL to persist the JSON into `items.features` (JSONB)
+3. Calculates an estimated price using features extracted from the image, the artwork’s socioeconomic context, and surrounding market conditions.
 
 ---
 

@@ -72,6 +72,20 @@ services:
       - ./apps/frontend:/app
       - /app/node_modules
       - /app/.next
+  
+  agents:
+    build:
+      context: ./apps/agents
+      dockerfile: Dockerfile
+    env_file:
+      - ./apps/agents/.env
+    environment:
+      BACKEND_URL: "http://backend:8080"
+    ports:
+      - "8000:8000"
+    depends_on:
+      backend:
+        condition: service_started
 
   mailpit:
     image: axllent/mailpit:latest

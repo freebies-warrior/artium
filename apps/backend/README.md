@@ -39,3 +39,10 @@ go run cmd/dbreset/main.go
 ```
 go run .
 ```
+
+### Testing
+
+To run tests, use the following command:
+```sh
+go test ./... -cover -coverprofile=coverage.out -tags=unit
+```

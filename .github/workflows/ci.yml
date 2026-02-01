@@ -43,6 +43,11 @@ jobs:
       - name: Build frontend
         working-directory: apps/frontend
         run: npm run build
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build frontend Docker image
+        working-directory: apps/frontend
+        run: docker build .
 
   backend-tests:
     runs-on: ubuntu-latest
@@ -61,3 +66,8 @@ jobs:
       - name: Run backend tests
         working-directory: apps/backend
         run: go test ./... -cover -coverprofile=coverage.out -tags=unit
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build backend Docker image
+        working-directory: apps/backend
+        run: docker build .

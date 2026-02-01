@@ -69,6 +69,21 @@ func (r *UserDatabase) GetUserByEmail(ctx context.Context, email string) (UserRo
 	return u, err
 }
 
+func (r *UserDatabase) GetUserDetailsByUserID(
+	ctx context.Context,
+	userID string,
+) (UserPublic, error) {
+	var u UserPublic
+	err := r.db.QueryRowContext(ctx,
+		`SELECT id::text, email, username, verified
+		 FROM users
+		 WHERE id = $1`,
+		userID,
+	).Scan(&u.ID, &u.Email, &u.Username, &u.Verified)
+	return u, err
+}
+
+
 func IsUniqueViolation(err error) bool {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {

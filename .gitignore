@@ -210,3 +210,7 @@ __marimo__/
 
 # MacOS
 .DS_Store
+
+# Coverage
+coverage/
+coverage.out

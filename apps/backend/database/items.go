@@ -462,6 +462,26 @@ func (r *ItemDatabase) UpdateItemStatus(ctx context.Context, itemID string) erro
 	return err
 }
 
+func (r *ItemDatabase) UpdateItemFeatures(ctx context.Context, itemID string, featuresJSON string) error {
+	res, err := r.db.ExecContext(ctx, `
+		UPDATE items
+		SET features = $2::jsonb
+		WHERE id = $1::uuid
+	`, itemID, featuresJSON)
+	if err != nil {
+		return err
+	}
+
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 func (r *ItemDatabase) Exists(ctx context.Context, itemID string) (bool, error) {
 	var exists bool
 	err := r.db.QueryRowContext(ctx,

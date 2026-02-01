@@ -31,6 +31,7 @@ func main() {
 		"apps/backend/migrations/tables/items.sql",
 		"apps/backend/migrations/tables/pictures.sql",
 		"apps/backend/migrations/tables/bids.sql",
+		"apps/backend/migrations/tables/visualization_jobs.sql",
 
 		// Functions / Procedures
 		"apps/backend/migrations/functions/items_set_status_from_time.sql",
@@ -46,6 +47,7 @@ func main() {
 		"apps/backend/migrations/triggers/trg_validate_bid_before_insert.sql",
 		"apps/backend/migrations/triggers/trg_items_set_status_from_time.sql",
 		"apps/backend/migrations/triggers/trg_update_item_highest_bid_after_insert.sql",
+		"apps/backend/migrations/triggers/visualization_jobs_set_updated_at.sql",
 	}
 
 	ctx := context.Background()

@@ -119,7 +119,7 @@ For example:
     {
       "id": "uuid",
       "item_id": "uuid",
-      "url": "https://.../image.jpg",
+      "key": "https://.../image.jpg",
       "created_at": "2026-01-27T09:00:10Z"
     }
   ]
@@ -470,12 +470,12 @@ Create a new auction item. Seller supplies basic info + image URLs (uploaded sep
       {
         "id": "uuid",
         "item_id": "uuid",
-        "url": "some-key-1",
+        "key": "some-key-1",
         "created_at": "2026-01-27T09:00:10Z"
       }, {
         "id": "uuid",
         "item_id": "uuid",
-        "url": "some-key-2",
+        "key": "some-key-2",
         "created_at": "2026-01-27T09:00:10Z"
       }
     ]
@@ -921,7 +921,7 @@ Recommend similar items based on the clicked item (ignore price range).
           {
             "id": "uuid",
             "item_id": "uuid",
-            "url": "https://.../thumb.jpg",
+            "key": "https://.../thumb.jpg",
             "created_at": "2026-01-27T09:00:10Z"
           }
         ]
@@ -1022,6 +1022,9 @@ Start a visualization job to merge an artwork image with a room photo.
 
 - **Method:** `POST`
 - **Path:** `/agents/visualizer/visualize_installation`
+- **Auth:** Internal Only
+- **Header:**
+  - `X-Internal-Token`: `<secret>`
 
 ### Request
 
@@ -1064,11 +1067,14 @@ Start a visualization job to merge an artwork image with a room photo.
 
 Start feature extraction for an item using its images.
 
-- Method: POST
-- Path: `/agents/feature_extractor/extract_item_features`
+- **Method**: POST
+- **Path**: `/agents/feature_extractor/extract_item_features`
+- **Auth**: Internal Only
+- **Header**:
+  - `X-Internal-Token`: `<secret>`
 
 Request (example):
-
+```json
     {
       "item_id": "uuid",
       "image_keys": [
@@ -1079,8 +1085,14 @@ Request (example):
         "https://<accountid>.r2.cloudflarestorage.com/<bucket>/uploads/...?...signature...",
         "https://<accountid>.r2.cloudflarestorage.com/<bucket>/uploads/...?...signature..."
       ],
-      "callback_url": "https://<go-backend>/internal/items/<item_id>/features"
+      "callback_url": "https://<go-backend>/internal/items/<item_id>/features",
+      "metadata" : {
+        "author"  : "artwork-author", // can be [null]
+        "title"   : "artwork-title", // can be [null]
+        "year"    : "artwork-year-created" //can be [null]
+      }
     }
+```
 
 Response 200:
 

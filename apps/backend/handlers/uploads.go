@@ -30,7 +30,7 @@ type presignReq struct {
 type presignPutResp struct {
 	Key       string `json:"key"`
 	UploadURL string `json:"upload_url"`
-	ViewURL	  string `json:"view_url,omitempty"`
+	ViewURL   string `json:"view_url,omitempty"`
 }
 
 func NewUploadHandler(bucket string, s3Client *s3.Client) *UploadHandler {
@@ -51,6 +51,32 @@ func (h *UploadHandler) PresignGetURL(ctx context.Context, key string, expires t
 			Bucket: aws.String(h.bucket),
 			Key:    aws.String(key),
 		},
+		func(o *s3.PresignOptions) {
+			o.Expires = expires
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+	return out.URL, nil
+}
+
+func (h *UploadHandler) PresignPutURL(ctx context.Context, key string, contentType string, expires time.Duration) (string, error) {
+	if strings.HasPrefix(key, "http://") || strings.HasPrefix(key, "https://") {
+		return key, nil
+	}
+
+	input := &s3.PutObjectInput{
+		Bucket: aws.String(h.bucket),
+		Key:    aws.String(key),
+	}
+	if contentType != "" {
+		input.ContentType = aws.String(contentType)
+	}
+
+	out, err := h.presigner.PresignPutObject(
+		ctx,
+		input,
 		func(o *s3.PresignOptions) {
 			o.Expires = expires
 		},

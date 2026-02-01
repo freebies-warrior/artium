@@ -42,7 +42,7 @@ func NewFeatureExtractorClient(baseURL string, token string) *FeatureExtractorCl
 }
 
 func (c *FeatureExtractorClient) Enqueue(ctx context.Context, payload featureExtractionRequest) error {
-	url := c.baseURL + "/agents/feature_extractor/extract_item_features"
+	url := c.baseURL + "/agents/feature_extractor/extract"
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("marshal payload: %w", err)

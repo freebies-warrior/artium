@@ -9,3 +9,10 @@ node_modules/
 
 # Env
 .env
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# Output files
+*.out

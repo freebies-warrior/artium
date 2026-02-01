@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -20,10 +21,18 @@ type ItemsHandler struct {
 	items    *database.ItemDatabase
 	pictures *database.PictureDatabase
 	uploads  *UploadHandler
+	features *FeatureExtractorClient
+	baseURL  string
 }
 
-func NewItemsHandler(items *database.ItemDatabase, pictures *database.PictureDatabase, uploads *UploadHandler) *ItemsHandler {
-	return &ItemsHandler{items: items, pictures: pictures, uploads: uploads}
+func NewItemsHandler(items *database.ItemDatabase, pictures *database.PictureDatabase, uploads *UploadHandler, features *FeatureExtractorClient, baseURL string) *ItemsHandler {
+	return &ItemsHandler{
+		items:    items,
+		pictures: pictures,
+		uploads:  uploads,
+		features: features,
+		baseURL:  strings.TrimRight(baseURL, "/"),
+	}
 }
 
 type postItemReq struct {
@@ -142,6 +151,14 @@ func (h *ItemsHandler) PostItem(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to create pictures", nil))
 		return
 	}
+
+	go func(item database.Item, pictures []database.PicturePublic) {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := h.triggerFeatureExtraction(ctx, item, pictures); err != nil {
+			log.Printf("feature extraction enqueue failed for item %s: %v", item.ID, err)
+		}
+	}(it, pics)
 
 	it.Pictures = pics
 	c.JSON(http.StatusCreated, postItemResp{Item: it})
@@ -296,4 +313,41 @@ func (h *ItemsHandler) PutItemFeatures(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+func (h *ItemsHandler) triggerFeatureExtraction(ctx context.Context, item database.Item, pics []database.PicturePublic) error {
+	if h.features == nil {
+		return nil
+	}
+
+	imageKeys := make([]string, 0, len(pics))
+	imageURLs := make([]string, 0, len(pics))
+	for i := range pics {
+		key := strings.TrimSpace(pics[i].Key)
+		if key == "" {
+			continue
+		}
+		signed, err := h.uploads.PresignGetURL(ctx, key, 72*time.Hour)
+		if err != nil {
+			return err
+		}
+		imageKeys = append(imageKeys, key)
+		imageURLs = append(imageURLs, signed)
+	}
+
+	if len(imageKeys) == 0 {
+		return nil
+	}
+
+	return h.features.Enqueue(ctx, featureExtractionRequest{
+		ItemID:       item.ID,
+		ImageKeys:    imageKeys,
+		ImageGetURLs: imageURLs,
+		CallbackURL:  h.baseURL + "/internal/items/" + item.ID + "/features",
+		Metadata: featureExtractionMetadata{
+			Author:      item.Author,
+			Title:       item.Title,
+			YearCreated: item.YearCreated,
+		},
+	})
 }

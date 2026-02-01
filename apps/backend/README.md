@@ -12,6 +12,7 @@ go mod tidy
 DATABASE_URL=postgresql://<DB_USER>:<DB_PASSWORD>@localhost:5435/<DB_NAME>
 JWT_SECRET=<JWT_SECRET>
 APP_BASE_URL=http://localhost:3000
+BACKEND_BASE_URL=http://localhost:8080
 AI_BASE_URL=http://localhost:8000
 
 ITEM_STATUS_SWEEPER_INTERVAL=1m

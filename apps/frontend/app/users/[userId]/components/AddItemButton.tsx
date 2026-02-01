@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-export default function AddItemButton({ userId }: { userId: string }) {
+export default function AddItemButton() {
   return (
     <Link
       href={`/users/sell`}

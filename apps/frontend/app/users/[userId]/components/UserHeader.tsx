@@ -73,7 +73,7 @@ export default function UserHeader({ userId }: UserHeaderProps) {
       </div>
 
       {/* ✅ Only show if owner */}
-      {isOwner && <AddItemButton userId={userId} />}
+      {isOwner && <AddItemButton />}
     </div>
   )
 }

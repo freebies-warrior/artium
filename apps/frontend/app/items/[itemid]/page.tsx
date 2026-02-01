@@ -69,10 +69,8 @@ type ListItemsResponse = {
 }
 
 type MeResponse =
-  | { user: { id: string } }
-  | { id: string }
+  | { authenticated: false }
   | { authenticated: true; userId: string }
-  | any
 
 type GetItemResponse = { item: Item }
 
@@ -145,9 +143,7 @@ function pickFirstImageKey(pictures?: PictureDTO[] | null) {
 // Try to extract a userId from different possible /api/auth/me shapes
 function extractUserId(me: MeResponse): string | null {
   if (!me) return null
-  if (typeof me.user?.id === 'string') return me.user.id
-  if (typeof me.id === 'string') return me.id
-  if (typeof me.userId === 'string') return me.userId
+  if (!("user_id" in me)) return null
   if (typeof me.user_id === 'string') return me.user_id
   return null
 }

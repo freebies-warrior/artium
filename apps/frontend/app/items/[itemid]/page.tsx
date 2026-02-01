@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import AIReportButton from '@/components/AIReportButton'
 
 import '../../../global.css'
 import CountdownTimer from '@/components/CountdownTimer'
@@ -111,6 +112,25 @@ function stringifyFeatures(features: any) {
     return null
   }
 }
+
+function getCoordinatorReport(features: any): string | null {
+  if (!features) return null
+
+  const obj =
+    typeof features === 'string'
+      ? (() => {
+          try {
+            return JSON.parse(features)
+          } catch {
+            return null
+          }
+        })()
+      : features
+  console.log(obj);
+  const report = obj?.valuation?.coordinator_report
+  return typeof report === 'string' && report.trim().length > 0 ? report : null
+}
+
 
 function pickFirstImageUrl(pictures?: PictureDTO[] | null) {
   if (!pictures || pictures.length === 0) return fallbackImg.src
@@ -301,6 +321,12 @@ export default function ItemPage() {
     return typeof n === 'number' ? n : null
   }, [item?.highest_bid_amount, item?.base_price])
 
+  const aiReportText = useMemo(
+    () => {
+      getCoordinatorReport(item?.features)
+    },
+    [item]
+  )
   return (
     <div className="min-h-screen bg-background pt-16">
       {banner && (
@@ -460,7 +486,6 @@ export default function ItemPage() {
               </pre>
             )}
 
-            {/* ✅ Preview integration (only if we have an item image key) */}
             {item?.id && itemImageKey ? (
               <PreviewButton
                 itemName={item?.title}
@@ -474,13 +499,17 @@ export default function ItemPage() {
                 Preview is unavailable (missing item image).
               </p>
             )}
+            <AIReportButton
+              triggerText={`View AI Report for ${item?.title ?? 'this item'}`}
+              features={item?.features}
+            />          
           </div>
 
           {/* Right */}
           <div className="hidden lg:flex flex-col gap-4">
             <CountdownTimer targetDate={item?.time_end} />
 
-            {/* ✅ Bid button gating */}
+            {/* Bid button gating */}
             {canBid && (
               <BidButton
                 item={{
@@ -494,7 +523,7 @@ export default function ItemPage() {
               />
             )}
 
-            {/* ✅ Helpful hints */}
+            {/* Helpful hints */}
             {!authLoading && !userId && (
               <p className="text-sm text-muted-foreground text-center">
                 Please login to place a bid.

@@ -44,8 +44,11 @@ services:
     environment:
       PORT: "8080"
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/artium?sslmode=disable"
+<<<<<<< HEAD
       BACKEND_BASE_URL: "http://backend:8080"
       APP_BASE_URL: "http://localhost:3000"
+=======
+>>>>>>> 4a08a25 (Implement Backend Call to AI On a New Visualizer Job Creation (#121))
       AI_BASE_URL: "http://agents:8000"
     ports:
       - "8080:8080"

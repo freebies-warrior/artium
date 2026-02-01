@@ -256,7 +256,7 @@ sequenceDiagram
   AI->>R2: PUT result image
   AI->>BE: Callback update job status/result key/description
   BE->>DB: Update visualization_jobs(status=succeeded)
-  FE->>BE: Poll GET /visualizations/{job_id}
+  FE->>BE: Poll GET /visualizations/:job_id
   BE-->>FE: status + result_image_key + description
   FE-->>U: Render merged preview
 ```
@@ -347,9 +347,9 @@ sequenceDiagram
   BE->>AI: POST /agents/feature_extractor/extract_item_features
   AI->>R2: GET item images via presigned URLs
   AI->>AI: Extract features JSON
-  AI->>BE: Callback /items/{item_id}/features
+  AI->>BE: Callback /items/:item_id/features
   BE->>DB: Update items.features
-  FE->>BE: GET /items/{item_id}
+  FE->>BE: GET /items/:item_id
   BE-->>FE: item + features (may be null initially)
 ```
 
@@ -364,10 +364,10 @@ flowchart LR
   BE -->|Trigger extraction| AI1[AI Feature Extractor]
   AI1 -->|Features JSON| BE
   BE -->|Store items.features| DB
-  BE -->|Trigger valuation (optional)| AI2[AI Valuation Service]
+  BE -->|"Trigger valuation (optional)"| AI2[AI Valuation Service]
   AI2 -->|Estimated value + rationale| BE
   BE -->|Store valuation in items.valuation| DB
-  FE -->|GET /items/{id}| BE
+  FE -->|GET /items/:id| BE
   BE -->|Return item + features + valuation| FE
 ```
 
@@ -379,11 +379,11 @@ flowchart TD
   Start([Item created]) --> Presign[Backend presigns GET URLs]
   Presign --> Trigger[Trigger feature extraction job]
   Trigger --> Extract[AI extracts features JSON]
-  Extract --> CallbackF[Callback /items/{id}/features]
+  Extract --> CallbackF[Callback /items/:id/features]
   CallbackF --> StoreF[Backend stores items.features]
-  StoreF --> TriggerV[Trigger valuation job (optional)]
+  StoreF --> TriggerV["Trigger valuation job (optional)"]
   TriggerV --> Valuate[AI computes valuation]
-  Valuate --> CallbackV[Callback /items/{id}/valuation]
+  Valuate --> CallbackV[Callback /items/:id/valuation]
   CallbackV --> StoreV[Backend stores items.valuation]
   StoreV --> Done([Async metadata ready])
 

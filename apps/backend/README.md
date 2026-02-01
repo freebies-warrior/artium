@@ -69,13 +69,6 @@ cd apps/backend
 go run .
 ```
 
-If your entrypoint is not `go run .`, common alternatives are:
-```bash
-go run ./cmd/server
-# or
-go run ./main.go
-```
-
 Backend default base URL (local): `http://localhost:8080`
 
 ---

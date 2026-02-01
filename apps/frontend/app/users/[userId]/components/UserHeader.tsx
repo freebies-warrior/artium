@@ -10,18 +10,14 @@ type UserHeaderProps = {
 
 // Adjust if your /api/auth/me response is different
 type MeResponse =
-  | { user: { id: string } }
-  | { id: string }
-  | { userId: string }
-  | any
+  | { authenticated: false }
+  | { authenticated: true; user_id: string }
 
 function extractUserId(me: MeResponse): string | null {
   if (!me) return null
-  if (typeof me.user?.id === 'string') return me.user.id
-  if (typeof me.id === 'string') return me.id
-  if (typeof me.userId === 'string') return me.userId
-  if (typeof me.user_id === 'string') return me.user_id
-  return null
+  if (!('user_id' in me)) return null
+  if (typeof me.user_id !== 'string') return null
+  return me.user_id
 }
 
 export default function UserHeader({ userId }: UserHeaderProps) {

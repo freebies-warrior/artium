@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"backend/app"
@@ -31,6 +32,7 @@ func main() {
 	aiBaseURL := getenv("AI_BASE_URL", "http://localhost:8000")
 	appBaseURL := getenv("APP_BASE_URL", "http://localhost:3000")
 	backendBaseURL := getenv("BACKEND_BASE_URL", "http://localhost:8080")
+	corsAllowedOrigins := parseAllowedOrigins(getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000"))
 	sweeperIntervalStr := getenv("ITEM_STATUS_SWEEPER_INTERVAL", "1m")
 	sweeperInterval, err := time.ParseDuration(sweeperIntervalStr)
 	if err != nil {
@@ -112,7 +114,7 @@ func main() {
 		s3Client,
 	)
 
-	r := app.NewRouter(h, []byte(secret), internalToken)
+	r := app.NewRouter(h, []byte(secret), internalToken, corsAllowedOrigins)
 
 	sweeper.Start(ctx, db, sweeperInterval)
 
@@ -136,4 +138,17 @@ func getenv(k, def string) string {
 		return def
 	}
 	return v
+}
+
+func parseAllowedOrigins(raw string) []string {
+	parts := strings.Split(raw, ",")
+	origins := make([]string, 0, len(parts))
+	for _, part := range parts {
+		origin := strings.TrimSpace(part)
+		if origin == "" {
+			continue
+		}
+		origins = append(origins, origin)
+	}
+	return origins
 }

@@ -1,23 +1,32 @@
-FROM node:20-alpine
+FROM node:20-alpine AS deps
 
 WORKDIR /app
 
-# Install deps first (cached)
 COPY package.json ./
-# Copy lockfile
 COPY package-lock.json* ./
 
-# Install deps using the lockfile you actually have
-RUN corepack enable && \
-    if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; \
-    elif [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
-    elif [ -f package-lock.json ]; then npm ci; \
-    else npm install; fi
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-# Copy the rest of the app
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+RUN npm run build
+
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
 EXPOSE 3000
 
-# Next dev must listen on 0.0.0.0 in containers
-CMD ["sh", "-lc", "npm run dev -- -H 0.0.0.0 -p 3000"]
+CMD ["npm", "start"]

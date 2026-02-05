@@ -12,7 +12,7 @@ import { Gem } from 'lucide-react'
 import Footer from '@/components/Footer'
 import ArtGrid, { type ArtUI } from '@/components/ArtGrid'
 
-import fallbackImg from '@/assets/nft-ape.jpg'
+import fallbackImg from '@/public/brand/Logo.png'
 
 import BidButton from '@/components/BidButton'
 import Lightbox from '@/components/LightBox'

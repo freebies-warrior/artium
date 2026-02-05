@@ -7,13 +7,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(h *handlers.HandlerSet, jwtSecret []byte, internalToken string) *gin.Engine {
+func NewRouter(h *handlers.HandlerSet, jwtSecret []byte, internalToken string, allowedOrigins []string) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 
-	r.Use(middlewares.CORS([]string{
-		"http://localhost:3000",
-	}))
+	r.Use(middlewares.CORS(allowedOrigins))
 
 	// Auth
 	r.POST("/auth/signup", h.Auth.Signup)

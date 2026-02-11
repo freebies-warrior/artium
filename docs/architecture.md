@@ -258,40 +258,6 @@ sequenceDiagram
 
 **Diagram caption:** User-driven visualization flow from upload to polling result, including AI processing and backend job tracking.
 
-### Diagram: Visualizer service workflow
-```mermaid
-flowchart TD
-  Start([Visualizer job received]) --> Fetch[Fetch item + room images]
-  Fetch --> Validate[Validate image formats/size]
-  Validate --> Preprocess[Preprocess/resize/normalize]
-  Preprocess --> Merge[Run visualizer model: merge art into room]
-  Merge --> Describe[Generate text description]
-  Describe --> Upload[Upload merged image to R2]
-  Upload --> Callback[Callback backend with result]
-  Callback --> Done([Job complete])
-
-  Validate -.->|Invalid image| Fail[Mark job failed]
-  Merge -.->|Model error| Fail
-  Upload -.->|Storage error| Fail
-```
-
-**Diagram caption:** Internal AI visualizer processing steps with failure branches.
-
-### Diagram: Visualizer job state transitions
-```mermaid
-stateDiagram-v2
-  [*] --> queued
-  queued --> processing: worker picks job
-  processing --> succeeded: result_image_key + description saved
-  processing --> failed: error_message saved
-  failed --> queued: retry (optional)
-```
-
-**Diagram caption:** Job lifecycle for `visualization_jobs`, including optional retry on failure.
-
-### Notes
-- Do not store signed URLs in Postgres; store only keys and derive URLs or sign GET on demand.
-
 ---
 
 ## AI Feature Extraction on Item Upload
@@ -402,12 +368,84 @@ erDiagram
 
 ---
 
-## Optional Extensions (later)
-These are the future modules mentioned in the sketch. They will be added as separate endpoints/services, but are **not** specified here yet:
-- **Recommender**: show similar items on the item page.
-- **Visualizer**: allow buyers to preview an artwork in a room context.
-- **Art Valuation**: provide additional pricing/insight widgets.
+## Deployment & Release Workflow (GitHub Actions)
 
-For now, the API should be structured so these can be added without breaking core auction flows.
+Production deployments are gated by release tags and branch ancestry checks.
+
+### Release policy
+- Only tags matching `v<major>.<minor>.<patch>` (example: `v1.2.3`) trigger production deploy workflows.
+- The tag commit must be reachable from `main`.
+- Frontend preview deployments for pull requests remain enabled and are not part of the release-tag path.
+
+### Backend/Agents release behavior (GHCR + VM)
+- The deploy workflow builds and pushes two image tags per service:
+  - `latest`
+  - the git tag itself (for example, `v1.2.3`)
+- After image push, the VM deployment job pulls and restarts services via Compose.
+
+### Diagram: GitHub Actions release flow
+```mermaid
+flowchart TD
+  DEV[Developer] --> TAG[Push git tag vX.Y.Z]
+
+  TAG --> GH1[GitHub Actions: deploy.yml]
+  TAG --> GH2[GitHub Actions: deploy-frontend.yml]
+
+  GH1 --> C1{Tag matches vX.Y.Z?}
+  GH2 --> C2{Tag matches vX.Y.Z?}
+
+  C1 -->|No| STOP1[Stop workflow]
+  C2 -->|No| STOP2[Stop workflow]
+
+  C1 -->|Yes| M1{Tag commit on main?}
+  C2 -->|Yes| M2{Tag commit on main?}
+
+  M1 -->|No| STOP3[Stop workflow]
+  M2 -->|No| STOP4[Stop workflow]
+
+  M1 -->|Yes| B1[Build backend + agents images]
+  B1 --> P1[Push GHCR tags: latest + vX.Y.Z]
+  P1 --> VM[SSH deploy on VM\ndocker compose pull/up]
+
+  M2 -->|Yes| FE[Build + deploy frontend production on Vercel]
+
+  PR[Pull Request] --> PREVIEW[Frontend preview deploy path]
+```
+
+**Diagram caption:** Release deployments only run for semver tags on commits contained in `main`; backend images are versioned in GHCR and deployed to VM, while frontend keeps an independent PR preview path.
+
+### Diagram: Visualizer service workflow
+```mermaid
+flowchart TD
+  Start([Visualizer job received]) --> Fetch[Fetch item + room images]
+  Fetch --> Validate[Validate image formats/size]
+  Validate --> Preprocess[Preprocess/resize/normalize]
+  Preprocess --> Merge[Run visualizer model: merge art into room]
+  Merge --> Describe[Generate text description]
+  Describe --> Upload[Upload merged image to R2]
+  Upload --> Callback[Callback backend with result]
+  Callback --> Done([Job complete])
+
+  Validate -.->|Invalid image| Fail[Mark job failed]
+  Merge -.->|Model error| Fail
+  Upload -.->|Storage error| Fail
+```
+
+**Diagram caption:** Internal AI visualizer processing steps with failure branches.
+
+### Diagram: Visualizer job state transitions
+```mermaid
+stateDiagram-v2
+  [*] --> queued
+  queued --> processing: worker picks job
+  processing --> succeeded: result_image_key + description saved
+  processing --> failed: error_message saved
+  failed --> queued: retry (optional)
+```
+
+**Diagram caption:** Job lifecycle for `visualization_jobs`, including optional retry on failure.
+
+### Notes
+- Do not store signed URLs in Postgres; store only keys and derive URLs or sign GET on demand.
 
 ---

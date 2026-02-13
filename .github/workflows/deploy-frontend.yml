@@ -57,12 +57,6 @@ jobs:
       - name: Install Vercel CLI
         run: npm i -g vercel@${{ env.VERCEL_CLI_VERSION }}
 
-      - name: Show versions
-        run: |
-          node -v
-          npm -v
-          vercel --version
-
       - name: Pull Vercel Environment (Preview)
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
@@ -91,12 +85,6 @@ jobs:
 
       - name: Install Vercel CLI
         run: npm i -g vercel@${{ env.VERCEL_CLI_VERSION }}
-
-      - name: Show versions
-        run: |
-          node -v
-          npm -v
-          vercel --version
 
       - name: Pull Vercel Environment (Production)
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}

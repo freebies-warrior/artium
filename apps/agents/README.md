@@ -170,14 +170,14 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # Run dev server (adjust module path if your app entrypoint differs)
-uvicorn app:app --reload --host 0.0.0.0 --port 8001
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### Option B: Docker (recommended for parity)
 If your repo provides a Dockerfile for agents:
 ```bash
 docker build -t artium-agents .
-docker run --rm -p 8001:8001 --env-file .env artium-agents
+docker run --rm -p 8000:8000 --env-file .env artium-agents
 ```
 
 ### Environment variables (typical)

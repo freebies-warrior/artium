@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import Dict, List
 
 import httpx
-from dotenv import load_dotenv
+
+from core.settings import get_settings
 
 logger = logging.getLogger(__name__)
-
-load_dotenv()
 
 
 def serpapi_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
@@ -18,7 +16,7 @@ def serpapi_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
     Env var: SERPAPI_API_KEY
     Returns: [{title, snippet, url}]
     """
-    api_key = os.getenv("SERPAPI_API_KEY")
+    api_key = get_settings().SERPAPI_API_KEY
     if not api_key:
         raise RuntimeError("SERPAPI_API_KEY not set. Configure a search provider.")
 

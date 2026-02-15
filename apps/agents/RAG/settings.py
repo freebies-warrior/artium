@@ -1,33 +1,18 @@
 from __future__ import annotations
 
 import os
-from dotenv import load_dotenv
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 import yaml
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
-load_dotenv()
+from core.settings import Settings, get_settings
 
 
-class EnvSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
-
-    # Pinecone
-    PINECONE_API_KEY: str
-
-    # OpenAI
-    OPENAI_API_KEY: str
-    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
-
-    # Manus (optional)
-    MANUS_API_KEY: Optional[str] = None
-
-    # Service
-    APP_ENV: str = "dev"
-    LOG_LEVEL: str = "INFO"
+def EnvSettings() -> Settings:
+    """Backward-compatible constructor used by existing RAG modules."""
+    return get_settings()
 
 
 @dataclass(frozen=True)
@@ -50,8 +35,7 @@ class AppConfig:
 
 def load_config(config_path: str | os.PathLike = None) -> AppConfig:
     if config_path is None:
-        # config_path = os.getenv("VECTORDB_CONFIG", "apps/agents/RAG/config.yaml")
-        config_path = os.getenv("VECTORDB_CONFIG", "RAG/config.yaml")
+        config_path = get_settings().VECTORDB_CONFIG
     p = Path(config_path)
     data = yaml.safe_load(p.read_text(encoding="utf-8"))
     if not isinstance(data, dict):

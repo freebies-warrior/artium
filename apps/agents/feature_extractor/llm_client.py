@@ -4,17 +4,19 @@ import io
 import json
 from typing import Any, Dict, List, Optional
 
-from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from PIL import Image
 
-load_dotenv()
+from core.settings import get_settings
 
 
 class VisionLLMClient:
     def __init__(self, model: str = "gemini-2.5-flash-image") -> None:
-        self.client = genai.Client()
+        api_key = get_settings().GOOGLE_API_KEY
+        if not api_key:
+            raise ValueError("GOOGLE_API_KEY is not configured")
+        self.client = genai.Client(api_key=api_key)
         self.model = model
 
     def _img_part(self, img, mime_type: str = "image/jpeg") -> types.Part:

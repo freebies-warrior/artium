@@ -6,12 +6,12 @@ from this directory.
 """
 
 import logging
-import os
 from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, Header, HTTPException, status
 
 from api import agent as agent_api
 from api.service import agent_service_lifespan
+from core.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,8 @@ logger = logging.getLogger(__name__)
 def require_internal_token(
     internal_token: str = Header(..., alias="X-Internal-Token"),
 ) -> None:
-    expected = os.getenv("INTERNAL_TOKEN")
+    settings = get_settings()
+    expected = settings.INTERNAL_TOKEN
     if not expected:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

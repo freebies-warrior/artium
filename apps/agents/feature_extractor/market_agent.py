@@ -4,14 +4,11 @@ import json
 import logging
 from typing import Any, Callable, Dict, List
 
-from dotenv import load_dotenv
 from langgraph.types import Command
 
 from .types import FeatureState, MarketFeatures
 
 logger = logging.getLogger(__name__)
-
-load_dotenv()
 
 
 def _make_queries(author: str) -> List[str]:

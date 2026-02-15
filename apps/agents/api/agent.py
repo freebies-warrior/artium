@@ -11,31 +11,20 @@ from this directory.
 
 from __future__ import annotations
 
-import os
 import base64
 import logging
-import sys
 import tempfile
 import uuid
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from urllib.parse import urlparse
-from dotenv import load_dotenv
 
 import requests
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel, HttpUrl
 from enum import Enum
 
-load_dotenv()
-
-# Ensure agents package is importable when running from this folder
-CURRENT_DIR = Path(__file__).resolve().parent
-AGENTS_ROOT = CURRENT_DIR.parent  # .../apps/agents
-if str(AGENTS_ROOT) not in sys.path:
-    sys.path.insert(0, str(AGENTS_ROOT))
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8080").rstrip("/")
-INTERNAL_TOKEN = os.getenv("INTERNAL_TOKEN", "").strip()
+from core.settings import get_settings
 
 from feature_extractor.tools.image_tool import fetch_and_standardize_image  # noqa: E402
 from feature_extractor.types import ArtworkMetadata, FeatureState  # noqa: E402
@@ -123,16 +112,18 @@ def _notify_backend_preview(
     result_description: Optional[str],
     error_message: Optional[str],
 ) -> None:
-    url = f"{BACKEND_URL}/visualizations/{job_id}"
+    settings = get_settings()
+    url = f"{settings.backend_url}/visualizations/{job_id}"
     payload = {
         "status": status.value,
         "result_description": result_description,
         "error_message": error_message,
     }
 
+    internal_token = settings.INTERNAL_TOKEN.strip()
     headers = {}
-    if INTERNAL_TOKEN:
-        headers["Authorization"] = f"Bearer {INTERNAL_TOKEN}"
+    if internal_token:
+        headers["Authorization"] = f"Bearer {internal_token}"
 
     try:
         resp = requests.put(url, json=payload, headers=headers, timeout=10)
@@ -149,17 +140,19 @@ def _notify_backend_feature_extraction(
     item_id: uuid.UUID,
     feature_json: dict[str, Any],
 ) -> None:
+    settings = get_settings()
     sanitized_features = _sanitize_for_json(feature_json)
     if not isinstance(sanitized_features, dict):
         sanitized_features = {}
-    url = f"{BACKEND_URL}/items/{item_id}/features"
+    url = f"{settings.backend_url}/items/{item_id}/features"
     payload = {
         "features": sanitized_features,
     }
 
+    internal_token = settings.INTERNAL_TOKEN.strip()
     headers = {}
-    if INTERNAL_TOKEN:
-        headers["Authorization"] = f"Bearer {INTERNAL_TOKEN}"
+    if internal_token:
+        headers["Authorization"] = f"Bearer {internal_token}"
 
     try:
         resp = requests.put(url, json=payload, headers=headers, timeout=10)

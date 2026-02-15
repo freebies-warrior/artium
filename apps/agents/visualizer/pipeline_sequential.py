@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import os
 from dataclasses import asdict
 from typing import Tuple
 
-from dotenv import load_dotenv
 from PIL import Image
 
 from .client import GeminiClient
@@ -18,9 +16,6 @@ from .prompts import (
     ROOM_JUDGE_PROMPT,
 )
 from .types import AppraisalReport, ArtworkPlacement, CriticReport, RoomQualityReport
-
-load_dotenv()
-# print(os.getenv("GOOGLE_API_KEY"))
 
 
 def _load_image(path: str) -> Image.Image:

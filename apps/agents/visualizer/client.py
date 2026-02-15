@@ -6,10 +6,15 @@ from google import genai
 from google.genai import types
 from PIL import Image
 
+from core.settings import get_settings
+
 
 class GeminiClient:
     def __init__(self) -> None:
-        self.client = genai.Client()
+        api_key = get_settings().GOOGLE_API_KEY
+        if not api_key:
+            raise ValueError("GOOGLE_API_KEY is not configured")
+        self.client = genai.Client(api_key=api_key)
 
     def _img_part(self, img, mime_type: str = "image/png") -> types.Part:
         # If it's already a PIL image

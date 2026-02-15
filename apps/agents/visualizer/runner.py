@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from io import BytesIO
 from pathlib import Path
 from typing import Optional
@@ -8,6 +7,8 @@ from urllib.parse import urlparse
 
 import requests
 from PIL import Image
+
+from core.settings import get_settings
 
 from .config import VisualizerConfig
 from .pipeline_sequential import run_pipeline_sequential
@@ -46,9 +47,10 @@ def visualize_installation(
     Will use LangGraph if installed, else sequential fallback.
     """
     cfg = cfg or VisualizerConfig()
+    settings = get_settings()
 
     # Prefer langgraph if available
-    use_langgraph = os.getenv("VISUALIZER_USE_LANGGRAPH", "1") == "1"
+    use_langgraph = settings.VISUALIZER_USE_LANGGRAPH
     placement = None
     appraisal = None
 

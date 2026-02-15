@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-import sys
 import json
 import logging
 from typing import Any, Dict, Optional
@@ -9,12 +7,6 @@ from typing import Any, Dict, Optional
 import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-
-# Ensure RAG package is importable
-CURRENT_DIR = Path(__file__).resolve().parent
-RAG_ROOT = CURRENT_DIR.parent.parent  # .../apps/agents
-if str(RAG_ROOT) not in sys.path:
-    sys.path.insert(0, str(RAG_ROOT))
 
 from RAG.settings import EnvSettings, load_config  # noqa: E402
 from RAG.utils.logging import setup_logging  # noqa: E402
@@ -27,12 +19,6 @@ from RAG.context.manus import ManusCanonicalizer  # noqa: E402
 from RAG.embedder.openai_embed import OpenAITextEmbedder  # noqa: E402
 from RAG.embedder.numeric import NumericFeatureEmbedder  # noqa: E402
 from RAG.embedder.clip_image import ClipImageEmbedder  # noqa: E402
-
-
-CURRENT_DIR = Path(__file__).resolve().parent
-RAG_ROOT = CURRENT_DIR.parent  # .../apps/agents
-if str(RAG_ROOT) not in sys.path:
-    sys.path.insert(0, str(RAG_ROOT))
 
 logger = logging.getLogger(__name__)
 

@@ -100,7 +100,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: 'apps/agents/uv.lock'
       - name: Install agents dependencies
-        run: uv sync --dev
+        run: uv sync --locked --dev
       - name: Ruff format check
         run: uv run ruff format --check .
       - name: Ruff lint

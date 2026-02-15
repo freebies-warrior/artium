@@ -44,7 +44,7 @@ def get_index(pc: Pinecone, name: str):
     """Return an Index client targeted at the given index name.
 
     Pinecone SDKs may require the index host, so we derive it from describe_index.
-    """ 
+    """
     desc = pc.describe_index(name)
     host = getattr(desc, "host", None) or (desc.get("host") if isinstance(desc, dict) else None)
     if not host:

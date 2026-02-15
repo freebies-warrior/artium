@@ -27,7 +27,7 @@ def main() -> None:
 
     print("#" * 50)
     print(env.PINECONE_API_KEY)
-    print("#" * 50) 
+    print("#" * 50)
 
     pc = build_pinecone_client(env.PINECONE_API_KEY)
 

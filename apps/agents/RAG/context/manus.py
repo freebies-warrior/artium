@@ -54,8 +54,7 @@ class ManusCanonicalizer:
             "Do not include market_features. Do not include any URLs.\n\n"
             f"schema_version: {schema_version}\n"
             f"{type_specific_instructions}\n\n"
-            "feature_state JSON:\n"
-            + json.dumps(feature_state, ensure_ascii=False)
+            "feature_state JSON:\n" + json.dumps(feature_state, ensure_ascii=False)
         )
 
         resp = self.client.responses.create(
@@ -70,7 +69,9 @@ class ManusCanonicalizer:
             if cur.status != "running":
                 break
             if time.time() - start > self.timeout_s:
-                raise TimeoutError(f"Manus canonicalization timed out after {self.timeout_s}s (task={task_id})")
+                raise TimeoutError(
+                    f"Manus canonicalization timed out after {self.timeout_s}s (task={task_id})"
+                )
             time.sleep(self.poll_interval_s)
 
         # Extract the last assistant text and parse JSON

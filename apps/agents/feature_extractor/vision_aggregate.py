@@ -29,17 +29,13 @@ def vision_aggregate_node():
                 if key not in state
             ]
             if missing:
-                raise KeyError(
-                    "Missing vision feature(s): " + ", ".join(sorted(missing))
-                )
+                raise KeyError("Missing vision feature(s): " + ", ".join(sorted(missing)))
 
             brush = BrushstrokeDynamics.model_validate(state["vision_brushstroke"])
             blend = BlendingMerging.model_validate(state["vision_blending"])
             phys = Physicality.model_validate(state["vision_physicality"])
 
-            notes = " ".join(
-                [n for n in [brush.notes, blend.notes, phys.notes] if n]
-            ).strip()
+            notes = " ".join([n for n in [brush.notes, blend.notes, phys.notes] if n]).strip()
             if not notes:
                 notes = "Extracted from visible cues across brushwork, edge handling, and material support."
 

@@ -30,9 +30,7 @@ Respond with ONLY ONE of these exact values:
 
 Return only the classification, nothing else."""
 
-            classification = (
-                llm.infer_text(prompt=prompt, image_bytes=image_bytes).strip().lower()
-            )
+            classification = llm.infer_text(prompt=prompt, image_bytes=image_bytes).strip().lower()
 
             logger.info(f"Artwork classification: {classification}")
 
@@ -55,9 +53,7 @@ Return only the classification, nothing else."""
                 return Command(update={"artwork_type": artwork_type}, goto=END)
 
             # Otherwise, route to state coordinator
-            return Command(
-                update={"artwork_type": artwork_type}, goto="state_coordinator"
-            )
+            return Command(update={"artwork_type": artwork_type}, goto="state_coordinator")
 
         except Exception as e:
             error_msg = f"Artwork classification failed: {str(e)}"

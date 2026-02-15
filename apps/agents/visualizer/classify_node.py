@@ -15,12 +15,12 @@ def classify_artwork_and_room(
 ) -> dict[str, Any]:
     """
     Classify whether first image is an artwork and second image is a room.
-    
+
     Args:
         artwork_image: PIL Image of potential artwork
         room_image: PIL Image of potential room
         model: Gemini model to use
-        
+
     Returns:
         Classification result dict with:
         - is_artwork: bool - whether first image is artwork
@@ -30,9 +30,9 @@ def classify_artwork_and_room(
         - confidence: float - overall confidence (0-1)
         - reasoning: str - explanation of classification
     """
-    
+
     client = GeminiClient()
-    
+
     prompt = """Analyze these two images and classify them:
 
 1. FIRST IMAGE: Check if it's an artwork
@@ -52,13 +52,13 @@ Return a JSON object with:
     "confidence": float (0.0-1.0),
     "reasoning": string (brief explanation)
 }"""
-    
+
     result = client.generate_json(
         model=model,
         prompt=prompt,
         images=[artwork_image, room_image],
     )
-    
+
     return result
 
 
@@ -69,21 +69,18 @@ def is_valid_artwork_and_room(
 ) -> tuple[bool, bool | None, bool | None]:
     """
     Check if first image is artwork AND second image is a room.
-    
+
     Args:
         artwork_image: PIL Image of potential artwork
         room_image: PIL Image of potential room
         model: Gemini model to use
-        
+
     Returns:
         True if both conditions are met, False otherwise
     """
     result = classify_artwork_and_room(artwork_image, room_image, model)
-    
-    is_valid = (
-        (result.get("is_artwork") is True) and
-        (result.get("is_room")) is True
-    )
+
+    is_valid = (result.get("is_artwork") is True) and (result.get("is_room")) is True
 
     is_artwork = None
     is_room = None
@@ -92,5 +89,4 @@ def is_valid_artwork_and_room(
         is_artwork = result.get("artwork_type") != "not_artwork"
         is_room = result.get("room_type") != "not_room"
 
-    
     return is_valid, is_artwork, is_room

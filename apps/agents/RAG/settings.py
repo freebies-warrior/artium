@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
 
+
 class EnvSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -53,6 +54,6 @@ def load_config(config_path: str | os.PathLike = None) -> AppConfig:
         config_path = os.getenv("VECTORDB_CONFIG", "RAG/config.yaml")
     p = Path(config_path)
     data = yaml.safe_load(p.read_text(encoding="utf-8"))
-    if not isinstance(data, dict): 
+    if not isinstance(data, dict):
         raise ValueError(f"Config at {p} must be a YAML dict")
     return AppConfig(raw=data, path=p)

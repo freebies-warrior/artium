@@ -44,8 +44,7 @@ def market_intelligence_node(
                 "signal_count": sum(
                     1
                     for s in sources
-                    if "museum"
-                    in (s.get("snippet", "").lower() + s.get("title", "").lower())
+                    if "museum" in (s.get("snippet", "").lower() + s.get("title", "").lower())
                 ),
                 "notes": "Counts are heuristic; replace with structured parsing for precision.",
             }
@@ -53,10 +52,8 @@ def market_intelligence_node(
                 "signal_count": sum(
                     1
                     for s in sources
-                    if "sotheby"
-                    in (s.get("snippet", "").lower() + s.get("title", "").lower())
-                    or "christie"
-                    in (s.get("snippet", "").lower() + s.get("title", "").lower())
+                    if "sotheby" in (s.get("snippet", "").lower() + s.get("title", "").lower())
+                    or "christie" in (s.get("snippet", "").lower() + s.get("title", "").lower())
                 ),
                 "notes": "Heuristic hit-count for major houses; add dedicated auction dataset for accuracy.",
             }
@@ -64,10 +61,8 @@ def market_intelligence_node(
                 "signal_count": sum(
                     1
                     for s in sources
-                    if "trend"
-                    in (s.get("snippet", "").lower() + s.get("title", "").lower())
-                    or "review"
-                    in (s.get("snippet", "").lower() + s.get("title", "").lower())
+                    if "trend" in (s.get("snippet", "").lower() + s.get("title", "").lower())
+                    or "review" in (s.get("snippet", "").lower() + s.get("title", "").lower())
                 ),
                 "notes": "Heuristic press/trend hit-count; add time-bounded queries for recency.",
             }

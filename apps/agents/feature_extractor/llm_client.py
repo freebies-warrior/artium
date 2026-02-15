@@ -21,9 +21,7 @@ class VisionLLMClient:
         # If it's already a PIL image
         if isinstance(img, Image.Image):
             buf = io.BytesIO()
-            img.save(
-                buf, "JPEG"
-            )  # use positional format (works across pillow variants)
+            img.save(buf, "JPEG")  # use positional format (works across pillow variants)
             return types.Part.from_bytes(data=buf.getvalue(), mime_type=mime_type)
 
         # If it's some object with a .save(fp) method (google image types, etc.)
@@ -41,9 +39,7 @@ class VisionLLMClient:
 
         return types.Part.from_bytes(data=data, mime_type=mt)
 
-    def _img_part_from_bytes(
-        self, data: bytes, mime_type: str = "image/jpeg"
-    ) -> types.Part:
+    def _img_part_from_bytes(self, data: bytes, mime_type: str = "image/jpeg") -> types.Part:
         if data.startswith(b"\x89PNG"):
             mime_type = "image/png"
         elif data.startswith(b"\xff\xd8"):

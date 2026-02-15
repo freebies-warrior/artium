@@ -23,7 +23,9 @@ class OpenAITextEmbedder:
     def dimension(self) -> int:
         # Cannot know without calling; caller should read from config.
         if self.dimensions is None:
-            raise ValueError("dimension unknown: set dimensions in config for deterministic index creation")
+            raise ValueError(
+                "dimension unknown: set dimensions in config for deterministic index creation"
+            )
         return int(self.dimensions)
 
     def embed_texts(self, texts: Sequence[str]) -> List[List[float]]:

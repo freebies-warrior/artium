@@ -25,7 +25,9 @@ from RAG.embedder.clip_image import ClipImageEmbedder
 logger = logging.getLogger(__name__)
 
 
-def test_text_query(query: str, artwork_type: str, top_k: int = 5, config: Optional[str] = None) -> None:
+def test_text_query(
+    query: str, artwork_type: str, top_k: int = 5, config: Optional[str] = None
+) -> None:
     """Test text-based RAG query."""
     cfg = load_config(config)
     env = EnvSettings()
@@ -62,11 +64,11 @@ def test_text_query(query: str, artwork_type: str, top_k: int = 5, config: Optio
     )
 
     # Display results
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * 80}")
     print(f"Query: '{query}'")
     print(f"Artwork Type: {artwork_type}")
     print(f"Results: {len(results.matches)} matches found")
-    print(f"{'='*80}\n")
+    print(f"{'=' * 80}\n")
 
     for i, match in enumerate(results.matches, 1):
         print(f"Result {i}: Score={match.score:.4f}")
@@ -83,7 +85,9 @@ def test_text_query(query: str, artwork_type: str, top_k: int = 5, config: Optio
         print()
 
 
-def test_image_query(image_path: str, artwork_type: str, top_k: int = 5, config: Optional[str] = None) -> None:
+def test_image_query(
+    image_path: str, artwork_type: str, top_k: int = 5, config: Optional[str] = None
+) -> None:
     """Test image-based RAG query."""
     cfg = load_config(config)
     env = EnvSettings()
@@ -118,11 +122,11 @@ def test_image_query(image_path: str, artwork_type: str, top_k: int = 5, config:
     )
 
     # Display results
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * 80}")
     print(f"Query Image: {image_path}")
     print(f"Artwork Type: {artwork_type}")
     print(f"Results: {len(results.matches)} matches found")
-    print(f"{'='*80}\n")
+    print(f"{'=' * 80}\n")
 
     for i, match in enumerate(results.matches, 1):
         print(f"Result {i}: Score={match.score:.4f}")
@@ -135,9 +139,7 @@ def test_image_query(image_path: str, artwork_type: str, top_k: int = 5, config:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Test RAG retrieval capability"
-    )
+    parser = argparse.ArgumentParser(description="Test RAG retrieval capability")
     parser.add_argument("--config", default=None, help="Path to config.yaml")
     parser.add_argument("--top-k", type=int, default=5, help="Number of results to retrieve")
 

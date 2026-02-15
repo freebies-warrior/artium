@@ -44,7 +44,7 @@ from visualizer.config import VisualizerConfig  # noqa: E402
 from visualizer.pipeline_langgraph import VizState  # noqa: E402
 from visualizer.pipeline_sequential import _load_image  # noqa: E402
 from visualizer.classify_node import is_valid_artwork_and_room  # noqa: E402
-from visualizer.runner import _save_image # noqa: E402
+from visualizer.runner import _save_image  # noqa: E402
 
 from .service import get_agent_service  # noqa: E402
 
@@ -85,8 +85,10 @@ class AsyncPreviewResponse(BaseModel):
     ok: bool = True
     job_id: str
 
+
 class AsyncFeatureExtractionResponse(BaseModel):
     ok: bool = True
+
 
 class JobStatus(str, Enum):
     QUEUED = "queued"
@@ -94,28 +96,26 @@ class JobStatus(str, Enum):
     SUCCEEDED = "succeeded"
     FAILED = "failed"
 
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 # Create separate routers for each domain
 system_router = APIRouter(tags=["system"])
 visualizer_router = APIRouter(prefix="/agents/visualizer", tags=["visualizer"])
-feature_extractor_router = APIRouter(
-    prefix="/agents/feature_extractor", tags=["feature_extractor"]
-)
+feature_extractor_router = APIRouter(prefix="/agents/feature_extractor", tags=["feature_extractor"])
 
 
 def _download_to_temp(url: str, suffix: str) -> Path:
     resp = requests.get(url, timeout=30)
     if resp.status_code != 200:
-        raise HTTPException(
-            status_code=400, detail=f"Failed to download {url}: {resp.status_code}"
-        )
+        raise HTTPException(status_code=400, detail=f"Failed to download {url}: {resp.status_code}")
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
     tmp.write(resp.content)
     tmp.flush()
     tmp.close()
     return Path(tmp.name)
+
 
 def _notify_backend_preview(
     job_id: str,
@@ -144,6 +144,7 @@ def _notify_backend_preview(
     except Exception:
         logger.exception("failed to send visualizer job update", extra={"job_id": job_id})
 
+
 def _notify_backend_feature_extraction(
     item_id: uuid.UUID,
     feature_json: dict[str, Any],
@@ -153,7 +154,7 @@ def _notify_backend_feature_extraction(
         sanitized_features = {}
     url = f"{BACKEND_URL}/items/{item_id}/features"
     payload = {
-        "features" : sanitized_features,
+        "features": sanitized_features,
     }
 
     headers = {}
@@ -170,6 +171,7 @@ def _notify_backend_feature_extraction(
     except Exception:
         logger.exception("failed to send feature extraction job update", extra={"item_id": item_id})
 
+
 def _sanitize_for_json(value: Any) -> Any:
     if isinstance(value, (bytes, bytearray)):
         return None
@@ -181,13 +183,12 @@ def _sanitize_for_json(value: Any) -> Any:
         }
     if isinstance(value, list):
         return [
-            _sanitize_for_json(item)
-            for item in value
-            if not isinstance(item, (bytes, bytearray))
+            _sanitize_for_json(item) for item in value if not isinstance(item, (bytes, bytearray))
         ]
     if isinstance(value, tuple):
         return [_sanitize_for_json(item) for item in value]
     return value
+
 
 @system_router.get("/health")
 def health() -> dict:
@@ -216,14 +217,10 @@ def _run_preview(req: VisualizerRequest) -> None:
     room_path = _download_to_temp(
         str(req.room_url), suffix=Path(req.room_url.path).suffix or ".jpeg"
     )
-    art_path = _download_to_temp(
-        str(req.art_url), suffix=Path(req.art_url.path).suffix or ".jpeg"
-    )
+    art_path = _download_to_temp(str(req.art_url), suffix=Path(req.art_url.path).suffix or ".jpeg")
 
     if req.upload_image_url:
-        base_name = (
-            Path(req.upload_image_url).name if req.upload_image_url else "preview.jpeg"
-        )
+        base_name = Path(req.upload_image_url).name if req.upload_image_url else "preview.jpeg"
         if len(base_name) > 80:
             stem = Path(base_name).stem[:60]
             base_name = stem + Path(base_name).suffix
@@ -244,7 +241,9 @@ def _run_preview(req: VisualizerRequest) -> None:
         valid, is_artwork, is_room = is_valid_artwork_and_room(art_img, room_img)
         if not valid:
             if not is_artwork and not is_room:
-                raise ValueError("First image is not recognized as an artwork and second image is not recognized as a room.")
+                raise ValueError(
+                    "First image is not recognized as an artwork and second image is not recognized as a room."
+                )
             if not is_artwork:
                 raise ValueError("First image is not recognized as an artwork.")
             if not is_room:
@@ -263,14 +262,19 @@ def _run_preview(req: VisualizerRequest) -> None:
         _save_image(result["out_img"], req.upload_image_url)
 
         result_description = result["appraisal"].summary
-        
+
         status = JobStatus.SUCCEEDED
     except Exception as exc:  # pragma: no cover - handled at runtime
         error_message = str(exc)
         logger.exception("visualization failed")
     finally:
         logger.info("result_description: %s", result_description)
-        _notify_backend_preview(req.job_id, status=status, result_description=result_description, error_message=error_message)
+        _notify_backend_preview(
+            req.job_id,
+            status=status,
+            result_description=result_description,
+            error_message=error_message,
+        )
         try:
             for f in tmp_dir.iterdir():
                 f.unlink()
@@ -280,16 +284,14 @@ def _run_preview(req: VisualizerRequest) -> None:
 
 
 @visualizer_router.post("/visualize_installation", response_model=AsyncPreviewResponse)
-def preview(
-    req: VisualizerRequest, background_tasks: BackgroundTasks
-) -> AsyncPreviewResponse:
+def preview(req: VisualizerRequest, background_tasks: BackgroundTasks) -> AsyncPreviewResponse:
     background_tasks.add_task(_run_preview, req)
     return AsyncPreviewResponse(job_id=req.job_id)
 
 
 @feature_extractor_router.post("/extract", response_model=AsyncFeatureExtractionResponse)
 def extract_features(
-    req: FeatureExtractionRequest, background_tasks : BackgroundTasks
+    req: FeatureExtractionRequest, background_tasks: BackgroundTasks
 ) -> AsyncFeatureExtractionResponse:
     background_tasks.add_task(_extract_features, req)
     return AsyncFeatureExtractionResponse()
@@ -301,14 +303,17 @@ def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionRespons
 
     try:
         selected_index = get_primary_image_index(
-            images = [fetch_and_standardize_image(str(image_url), target_size = (512, 512))[0] for image_url in req.image_get_urls]
+            images=[
+                fetch_and_standardize_image(str(image_url), target_size=(512, 512))[0]
+                for image_url in req.image_get_urls
+            ]
         )
 
         image_url = req.image_get_urls[selected_index]
 
         # Prepare metadata
         md = ArtworkMetadata(
-            item_id = str(req.item_id),
+            item_id=str(req.item_id),
             title=req.metadata.get("title", "Unknown"),
             author=req.metadata.get("author", "Unknown"),
             year=str(req.metadata.get("year", "Unknown")),
@@ -334,14 +339,14 @@ def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionRespons
         final = service.extract_features(initial_state)
 
         feature_json = final
-        
+
         # Run price valuation pipeline
         valuation_result = None
         try:
             artwork_type = final.get("artwork_type", "").lower()
             if artwork_type in ("painting", "sculpture"):
                 logger.info(f"Running price valuation for {artwork_type}")
-                
+
                 # Build valuation state
                 valuation_state = {
                     "artwork_features": final,
@@ -350,20 +355,24 @@ def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionRespons
                     "image_bytes": image_bytes,
                     "errors": [],
                 }
-                
+
                 # Run valuation through service (graph is cached)
                 valuation_result = service.valuate_artwork(valuation_state)
-                
-                logger.info(f"Price valuation complete: ${valuation_result.get('price_range', {}).get('mid', 0):,.2f}")
+
+                logger.info(
+                    f"Price valuation complete: ${valuation_result.get('price_range', {}).get('mid', 0):,.2f}"
+                )
             else:
                 if artwork_type == "NOT_AN_ARTWORK":
                     logger.info("Skipping price valuation - input image not recognized as artwork")
                 else:
-                    logger.info(f"Skipping price valuation - artwork_type '{artwork_type}' not supported")
+                    logger.info(
+                        f"Skipping price valuation - artwork_type '{artwork_type}' not supported"
+                    )
         except Exception as valuation_exc:
             logger.exception(f"Price valuation failed: {valuation_exc}")
             # Continue even if valuation fails
-        
+
         # Combine results
         combined_result = {
             **feature_json,
@@ -391,4 +400,4 @@ def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionRespons
         logger.info("feature extraction complete")
         if not combined_result:
             combined_result = {}
-        _notify_backend_feature_extraction(req.item_id, feature_json = combined_result)
+        _notify_backend_feature_extraction(req.item_id, feature_json=combined_result)

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 def init_index(config: Optional[str] = None) -> None:
     """Initialize Pinecone indexes."""
     logger.info("Initializing Pinecone indexes...")
-    
+
     # Save original sys.argv and replace with args for build_index
     orig_argv = sys.argv
     try:
@@ -37,7 +37,7 @@ def init_index(config: Optional[str] = None) -> None:
         build_index_main()
     finally:
         sys.argv = orig_argv
-    
+
     logger.info("Index initialization complete!")
 
 
@@ -50,7 +50,7 @@ def ingest_data(
 ) -> None:
     """Ingest data into Pinecone indexes."""
     logger.info("Ingesting data into Pinecone indexes...")
-    
+
     # Save original sys.argv and replace with args for ingest_csv
     orig_argv = sys.argv
     try:
@@ -67,7 +67,7 @@ def ingest_data(
         ingest_csv_main()
     finally:
         sys.argv = orig_argv
-    
+
     logger.info("Data ingestion complete!")
 
 
@@ -94,11 +94,11 @@ def main() -> None:
         description="Unified CLI for Pinecone index initialization and data ingestion"
     )
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
-    
+
     # Init subcommand
     init_parser = subparsers.add_parser("init", help="Initialize Pinecone indexes")
     init_parser.add_argument("--config", default=None, help="Path to config.yaml")
-    
+
     # Ingest subcommand
     ingest_parser = subparsers.add_parser("ingest", help="Ingest data into Pinecone indexes")
     ingest_parser.add_argument("--config", default=None, help="Path to config.yaml")
@@ -123,7 +123,7 @@ def main() -> None:
         default="__default__",
         help="Pinecone namespace to use",
     )
-    
+
     # Full setup subcommand
     full_parser = subparsers.add_parser(
         "full",
@@ -151,13 +151,13 @@ def main() -> None:
         default="__default__",
         help="Pinecone namespace to use",
     )
-    
+
     args = parser.parse_args()
-    
+
     if not args.command:
         parser.print_help()
         sys.exit(1)
-    
+
     if args.command == "init":
         init_index(config=args.config)
     elif args.command == "ingest":

@@ -17,34 +17,22 @@ class ArtworkMetadata(BaseModel):
 
 
 class BrushstrokeDynamics(BaseModel):
-    impasto: float = Field(
-        ge=0, le=1, description="Likelihood of thick paint / raised texture"
-    )
-    glazing: float = Field(
-        ge=0, le=1, description="Likelihood of thin layered translucency"
-    )
-    stippling: float = Field(
-        ge=0, le=1, description="Likelihood of dot-like application"
-    )
+    impasto: float = Field(ge=0, le=1, description="Likelihood of thick paint / raised texture")
+    glazing: float = Field(ge=0, le=1, description="Likelihood of thin layered translucency")
+    stippling: float = Field(ge=0, le=1, description="Likelihood of dot-like application")
     notes: str = ""
 
 
 class BlendingMerging(BaseModel):
     sfumato: float = Field(ge=0, le=1, description="Soft transitions / smokiness")
-    hard_edge: float = Field(
-        ge=0, le=1, description="Crisp boundaries / hard-edge abstraction"
-    )
+    hard_edge: float = Field(ge=0, le=1, description="Crisp boundaries / hard-edge abstraction")
     notes: str = ""
 
 
 class Physicality(BaseModel):
-    medium_detected: str = Field(
-        description="e.g., Oil, Acrylic, Watercolor, Mixed media"
-    )
+    medium_detected: str = Field(description="e.g., Oil, Acrylic, Watercolor, Mixed media")
     support_detected: str = Field(description="e.g., Canvas, Wood panel, Paper")
-    surface_texture: str = Field(
-        description="e.g., canvas weave visible, smooth gesso, wood grain"
-    )
+    surface_texture: str = Field(description="e.g., canvas weave visible, smooth gesso, wood grain")
     notes: str = ""
 
 
@@ -52,16 +40,12 @@ class VisionFeatures(BaseModel):
     brushstroke: BrushstrokeDynamics
     blending: BlendingMerging
     physicality: Physicality
-    justification: str = Field(
-        description="Short, expert justification grounded in visible cues"
-    )
+    justification: str = Field(description="Short, expert justification grounded in visible cues")
 
 
 # Sculpture-specific models
 class MaterialComposition(BaseModel):
-    primary_material: str = Field(
-        description="e.g., Marble, Bronze, Stone, Wood, Resin"
-    )
+    primary_material: str = Field(description="e.g., Marble, Bronze, Stone, Wood, Resin")
     secondary_materials: Optional[str] = Field(
         default=None, description="e.g., Granite, Patina, Gold leaf, Paint"
     )
@@ -72,9 +56,7 @@ class MaterialComposition(BaseModel):
 
 
 class Form(BaseModel):
-    shape_description: str = Field(
-        description="Visual description of overall form and composition"
-    )
+    shape_description: str = Field(description="Visual description of overall form and composition")
     composition_balance: float = Field(
         ge=0, le=1, description="Assessment of visual balance and proportions"
     )
@@ -83,25 +65,17 @@ class Form(BaseModel):
 
 class SurfaceFinish(BaseModel):
     finish_type: str = Field(description="e.g., Polished, Matte, Weathered, Patinated")
-    surface_quality: float = Field(
-        ge=0, le=1, description="Quality and condition of surface"
-    )
-    visible_damage: str = Field(
-        default="", description="e.g., Cracks, weathering, repairs"
-    )
+    surface_quality: float = Field(ge=0, le=1, description="Quality and condition of surface")
+    visible_damage: str = Field(default="", description="e.g., Cracks, weathering, repairs")
     notes: str = ""
 
 
 class Craftsmanship(BaseModel):
-    detail_level: str = Field(
-        description="Assessment of detail and precision in carving/casting"
-    )
+    detail_level: str = Field(description="Assessment of detail and precision in carving/casting")
     technique_visible: str = Field(
         description="e.g., Chisel marks, casting seams, finishing methods"
     )
-    quality_assessment: float = Field(
-        ge=0, le=1, description="Overall execution quality"
-    )
+    quality_assessment: float = Field(ge=0, le=1, description="Overall execution quality")
     notes: str = ""
 
 
@@ -110,9 +84,7 @@ class SculptureVisionFeatures(BaseModel):
     form: Form
     surface: SurfaceFinish
     craftsmanship: Craftsmanship
-    justification: str = Field(
-        description="Short, expert justification grounded in visible cues"
-    )
+    justification: str = Field(description="Short, expert justification grounded in visible cues")
 
 
 class MarketFeatures(BaseModel):

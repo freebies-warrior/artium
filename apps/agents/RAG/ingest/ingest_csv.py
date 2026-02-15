@@ -36,7 +36,9 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default=None, help="Path to config.yaml")
-    parser.add_argument("--zip-path", default=None, help="Path to a zip that contains the CSV + images")
+    parser.add_argument(
+        "--zip-path", default=None, help="Path to a zip that contains the CSV + images"
+    )
     parser.add_argument("--csv-path", default=None, help="CSV path (within zip or filesystem)")
     parser.add_argument("--limit", type=int, default=None, help="Limit number of rows ingested")
     parser.add_argument("--namespace", default="__default__", help="Pinecone namespace")
@@ -165,12 +167,14 @@ def main() -> None:
             "image_ref",
             "image_width_px",
         }
-        metadata: Dict[str, Any] = {k: _safe_meta(v) for k, v in row.items() if k not in exclude_fields}
+        metadata: Dict[str, Any] = {
+            k: _safe_meta(v) for k, v in row.items() if k not in exclude_fields
+        }
 
         # === FEATURE EXTRACTION ===
         artwork_type = None
         vec = None
-        
+
         if mode == "feature_text":
             # Feature extraction graph determines artwork_type
             metadata_obj = ArtworkMetadata(
@@ -189,16 +193,18 @@ def main() -> None:
             logger.info(f"Running feature extraction graph for row {i}...")
             feature_state = feature_graph.invoke(initial_state)
             artwork_type = feature_state.get("artwork_type", "").lower().strip()
-            
+
             # === CHECK ARTWORK TYPE ===
             if artwork_type not in ("painting", "sculpture"):
-                logger.warning("Skipping row %s: unknown artwork_type=%r from classifier", i, artwork_type)
+                logger.warning(
+                    "Skipping row %s: unknown artwork_type=%r from classifier", i, artwork_type
+                )
                 continue
-            
+
             # === BUILD VECTOR ===
             vision_features = feature_state.get("vision_features") or {}
             feature_state.pop("market_features", None)
-            
+
             schema_version = (
                 cfg.get("feature_text", "schema_version_painting")
                 if artwork_type == "painting"
@@ -219,33 +225,41 @@ def main() -> None:
                     else "For sculptures: include material/form/surface/craftsmanship signals if present."
                 )
                 canon_json = manus.canonicalize(
-                    feature_state, schema_version=schema_version, type_specific_instructions=type_instr
+                    feature_state,
+                    schema_version=schema_version,
+                    type_specific_instructions=type_instr,
                 )
                 canon_text = _json_to_text(canon_json, max_chars=max_total)
 
             vec = text_embedder.embed_texts([canon_text])[0]
-            metadata["canonical"] = json.dumps(canon_json)  # Convert dict to JSON string for Pinecone
+            metadata["canonical"] = json.dumps(
+                canon_json
+            )  # Convert dict to JSON string for Pinecone
             metadata["vector_mode"] = "feature_text"
             metadata["canonical_text_preview"] = canon_text[:200]
-            
+
         elif mode == "numeric":
             # Feature function determines artwork_type
             feature_state = feature_fn(image_bytes=image_bytes, metadata=metadata)
             artwork_type = feature_state.get("artwork_type", "").lower().strip()
-            
+
             # === CHECK ARTWORK TYPE ===
             if artwork_type not in ("painting", "sculpture"):
-                logger.warning("Skipping row %s: unknown artwork_type=%r from feature function", i, artwork_type)
+                logger.warning(
+                    "Skipping row %s: unknown artwork_type=%r from feature function",
+                    i,
+                    artwork_type,
+                )
                 continue
-            
+
             # === BUILD VECTOR ===
             vision_features = feature_state.get("vision_features") or {}
             feature_state.pop("market_features", None)
-            
+
             vec = numeric_embedder.build_vector(artwork_type, vision_features)
             metadata["vision_features"] = vision_features
             metadata["vector_mode"] = "numeric"
-            
+
         elif mode == "image":
             # For image mode, we need to classify the image first to determine artwork_type
             logger.info(f"Classifying image for row {i} using feature graph...")
@@ -264,18 +278,24 @@ def main() -> None:
             }
             # Build a minimal graph just to get classification
             from feature_extractor.classifier_node import artwork_classifier_node
+
             classifier = artwork_classifier_node(GeminiVisionClient())
             from langgraph.types import Command
+
             result = classifier(initial_state)
             if isinstance(result, Command):
                 initial_state.update(result.update or {})
             artwork_type = initial_state.get("artwork_type", "").lower().strip()
-            
+
             # === CHECK ARTWORK TYPE ===
             if artwork_type not in ("painting", "sculpture"):
-                logger.warning("Skipping row %s: unknown artwork_type=%r from image classifier", i, artwork_type)
+                logger.warning(
+                    "Skipping row %s: unknown artwork_type=%r from image classifier",
+                    i,
+                    artwork_type,
+                )
                 continue
-            
+
             # === BUILD VECTOR ===
             vec = image_embedder.embed_image(image_bytes)
             metadata["vector_mode"] = "image"
@@ -292,7 +312,10 @@ def main() -> None:
 
     if batch:
         # Mixed types possible; flush per type
-        by_type: Dict[str, List[Tuple[str, List[float], Dict[str, Any]]]] = {"painting": [], "sculpture": []}
+        by_type: Dict[str, List[Tuple[str, List[float], Dict[str, Any]]]] = {
+            "painting": [],
+            "sculpture": [],
+        }
         for vid, v, m in batch:
             t = vid.split(":", 1)[0]
             by_type[t].append((vid, v, m))
@@ -323,8 +346,8 @@ def _safe_meta(v: Any) -> Any:
 def _json_to_text(obj: Dict[str, Any], max_chars: int = 800) -> str:
     # Stable order; avoid overly long string fields.
     lines: List[str] = []
-    lines.append(f"type: {obj.get('type','')}")
-    lines.append(f"schema_version: {obj.get('schema_version','')}")
+    lines.append(f"type: {obj.get('type', '')}")
+    lines.append(f"schema_version: {obj.get('schema_version', '')}")
     signals = obj.get("signals", {}) or {}
     for k in sorted(signals.keys()):
         lines.append(f"{k}: {signals.get(k)}")
@@ -340,13 +363,17 @@ def _json_to_text(obj: Dict[str, Any], max_chars: int = 800) -> str:
     return text if len(text) <= max_chars else text[: max_chars - 1].rstrip() + "…"
 
 
-def flush_batch(index, batch: List[Tuple[str, List[float], Dict[str, Any]]], namespace: str) -> None:
+def flush_batch(
+    index, batch: List[Tuple[str, List[float], Dict[str, Any]]], namespace: str
+) -> None:
     vectors = [(vid, vec, meta) for (vid, vec, meta) in batch]
     index.upsert(vectors=vectors, namespace=namespace)
     logger.info("Upserted %d vectors into %s", len(vectors), namespace)
 
 
-def load_rows(zip_path: str, csv_path: str, limit: Optional[int]) -> Tuple[List[Dict[str, Any]], Optional[zipfile.ZipFile]]:
+def load_rows(
+    zip_path: str, csv_path: str, limit: Optional[int]
+) -> Tuple[List[Dict[str, Any]], Optional[zipfile.ZipFile]]:
     zp = Path(zip_path)
     if zp.exists() and zp.suffix.lower() == ".zip":
         z = zipfile.ZipFile(zp)
@@ -374,17 +401,21 @@ def load_image_from_zip(z: Optional[zipfile.ZipFile], image_ref: str, zip_path: 
         candidates = [
             zip_dir / ref,  # as-is
             zip_dir / "pdf_extracted" / ref,  # under pdf_extracted/
-            zip_dir / "pdf_extracted" / "images" / ref.split("/")[-1],  # just filename under pdf_extracted/images/
+            zip_dir
+            / "pdf_extracted"
+            / "images"
+            / ref.split("/")[-1],  # just filename under pdf_extracted/images/
             zip_dir / "dataset" / ref,  # under dataset/
             zip_dir / "images" / ref.split("/")[-1],  # just filename under images/
         ]
-        
+
         for c in candidates:
             if c.exists():
                 return c.read_bytes()
-        
+
         # If nothing found, list available images for debugging
         import glob
+
         available = list(glob.glob(str(zip_dir) + "/**/*.png", recursive=True))
         available += list(glob.glob(str(zip_dir) + "/**/*.jpg", recursive=True))
         logger.error(
@@ -392,7 +423,7 @@ def load_image_from_zip(z: Optional[zipfile.ZipFile], image_ref: str, zip_path: 
             f"Available images: {available[:10]}"
         )
         raise FileNotFoundError(f"Could not find image '{image_ref}' in directory '{zip_path}'")
-    
+
     # Zip mode: try multiple candidates within the zip
     ref = str(image_ref).lstrip("./")
     candidates = [
@@ -403,16 +434,16 @@ def load_image_from_zip(z: Optional[zipfile.ZipFile], image_ref: str, zip_path: 
         f"images/{ref.split('/')[-1]}",  # just filename under images/
         ref.split("/")[-1],  # just filename
     ]
-    
+
     for c in candidates:
         try:
             return z.read(c)
         except KeyError:
             continue
-    
+
     # If nothing found, list available paths for debugging
     available = z.namelist()
-    image_files = [f for f in available if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+    image_files = [f for f in available if f.lower().endswith((".png", ".jpg", ".jpeg"))]
     logger.error(
         f"Could not find image '{image_ref}' in zip '{zip_path}'. Tried: {candidates}. "
         f"Available images in zip: {image_files[:10]}"

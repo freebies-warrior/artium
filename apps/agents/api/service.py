@@ -57,9 +57,7 @@ class AgentService:
 
         logger.info("Extracting features...")
         result = self.feature_graph.invoke(initial_state)
-        logger.info(
-            f"Feature extraction complete. Artwork type: {result.get('artwork_type')}"
-        )
+        logger.info(f"Feature extraction complete. Artwork type: {result.get('artwork_type')}")
         return result
 
     def visualize(self, state: VizState) -> VizState:

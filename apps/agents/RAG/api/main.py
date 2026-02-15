@@ -89,6 +89,7 @@ index_clients = {
     "sculpture": get_index(pc, index_name(prefix, mode, "sculpture")),
 }
 
+
 class QueryRequest(BaseModel):
     artwork_type: str = Field(..., description="painting or sculpture")
     top_k: int = Field(10, ge=1, le=50)
@@ -128,7 +129,6 @@ class UpsertResponse(BaseModel):
     upserted: bool
 
 
-
 app = FastAPI(title="Arium VectorDB Agent", version="0.1.0")
 
 
@@ -136,11 +136,14 @@ app = FastAPI(title="Arium VectorDB Agent", version="0.1.0")
 def health() -> Dict[str, Any]:
     return {"ok": True, "embedding_mode": mode}
 
+
 @app.post("/upsert", response_model=UpsertResponse)
 def upsert(req: UpsertRequest) -> UpsertResponse:
     artwork_type = req.artwork_type.lower().strip()
     if artwork_type not in ("painting", "sculpture"):
-        raise HTTPException(status_code=400, detail="artwork_type must be 'painting' or 'sculpture'")
+        raise HTTPException(
+            status_code=400, detail="artwork_type must be 'painting' or 'sculpture'"
+        )
 
     if mode == "image":
         raise HTTPException(
@@ -230,11 +233,14 @@ def upsert(req: UpsertRequest) -> UpsertResponse:
         upserted=True,
     )
 
+
 @app.post("/query", response_model=QueryResponse)
 def query(req: QueryRequest) -> QueryResponse:
     artwork_type = req.artwork_type.lower().strip()
     if artwork_type not in ("painting", "sculpture"):
-        raise HTTPException(status_code=400, detail="artwork_type must be 'painting' or 'sculpture'")
+        raise HTTPException(
+            status_code=400, detail="artwork_type must be 'painting' or 'sculpture'"
+        )
 
     # Production path: caller may provide extracted feature_state directly (no image bytes).
     if req.feature_state is not None:
@@ -287,11 +293,12 @@ def query(req: QueryRequest) -> QueryResponse:
                     else "For sculptures: include material/form/surface/craftsmanship signals if present."
                 )
                 canon_json = manus.canonicalize(
-                    feature_state, schema_version=schema_version, type_specific_instructions=type_instr
+                    feature_state,
+                    schema_version=schema_version,
+                    type_specific_instructions=type_instr,
                 )
                 canon_text = _json_to_text(canon_json, max_chars=max_total)
             vec = text_embedder.embed_texts([canon_text])[0]
-
 
     index = index_clients[artwork_type]
     res = index.query(
@@ -326,8 +333,8 @@ def _stable_dumps(obj: Dict[str, Any]) -> str:
 
 def _json_to_text(obj: Dict[str, Any], max_chars: int = 800) -> str:
     lines = []
-    lines.append(f"type: {obj.get('type','')}")
-    lines.append(f"schema_version: {obj.get('schema_version','')}")
+    lines.append(f"type: {obj.get('type', '')}")
+    lines.append(f"schema_version: {obj.get('schema_version', '')}")
     signals = obj.get("signals", {}) or {}
     for k in sorted(signals.keys()):
         lines.append(f"{k}: {signals.get(k)}")

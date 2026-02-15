@@ -35,9 +35,7 @@ def room_judge(
     client: GeminiClient, cfg: VisualizerConfig, room_img: Image.Image
 ) -> RoomQualityReport:
     print("Asking room judge: waiting")
-    data = client.generate_json(
-        cfg.gemini_text_model, ROOM_JUDGE_PROMPT, image=room_img
-    )
+    data = client.generate_json(cfg.gemini_text_model, ROOM_JUDGE_PROMPT, image=room_img)
     print("Room judge responded")
     verdict = data.get("verdict", "OK")
     reasons = data.get("reasons", "")
@@ -46,9 +44,7 @@ def room_judge(
     return RoomQualityReport(verdict=verdict, reasons=reasons)
 
 
-def room_enhance(
-    client: GeminiClient, cfg: VisualizerConfig, room_img: Image.Image
-) -> Image.Image:
+def room_enhance(client: GeminiClient, cfg: VisualizerConfig, room_img: Image.Image) -> Image.Image:
     return client.edit_image(cfg.gemini_image_model, ROOM_ENHANCE_PROMPT, room=room_img)
 
 
@@ -95,12 +91,8 @@ def locate_artwork(
     )
 
 
-def critic(
-    client: GeminiClient, cfg: VisualizerConfig, composite_img: Image.Image
-) -> CriticReport:
-    data = client.generate_json(
-        cfg.gemini_text_model, CRITIC_PROMPT, image=composite_img
-    )
+def critic(client: GeminiClient, cfg: VisualizerConfig, composite_img: Image.Image) -> CriticReport:
+    data = client.generate_json(cfg.gemini_text_model, CRITIC_PROMPT, image=composite_img)
     verdict = data.get("verdict", "PASS")
     issues = data.get("issues", "")
     suggested_fix = data.get("suggested_fix", None)
@@ -162,9 +154,7 @@ def run_pipeline_sequential(
             crit.suggested_fix
             or "Improve realism of scale, perspective, and shadow. Keep it photorealistic."
         )
-        out_img = composite_install(
-            client, cfg, room_img, art_img, extra_fix_instruction=fix
-        )
+        out_img = composite_install(client, cfg, room_img, art_img, extra_fix_instruction=fix)
         crit = critic(client, cfg, out_img)
 
     return out_img, used_enhancement, retries_used, room_quality, crit

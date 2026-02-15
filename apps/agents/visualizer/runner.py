@@ -68,13 +68,13 @@ def visualize_installation(
         except Exception as e:
             print(f"LangGraph pipeline failed with error: {e}")
             # fallback silently
-            out_img, used_enhancement, retries_used, room_quality, crit = (
-                run_pipeline_sequential(cfg, room_path, art_path)
+            out_img, used_enhancement, retries_used, room_quality, crit = run_pipeline_sequential(
+                cfg, room_path, art_path
             )
     else:
         print("LangGraph pipeline not used; falling back to sequential.")
-        out_img, used_enhancement, retries_used, room_quality, crit = (
-            run_pipeline_sequential(cfg, room_path, art_path)
+        out_img, used_enhancement, retries_used, room_quality, crit = run_pipeline_sequential(
+            cfg, room_path, art_path
         )
 
     saved_path = _save_image(out_img, out_path)

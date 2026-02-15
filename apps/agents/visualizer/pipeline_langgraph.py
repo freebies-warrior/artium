@@ -42,22 +42,15 @@ def build_visualization_graph():
 
     def node_enhance(s: VizState) -> VizState:
         print("Enhance")
-        if (
-            s["cfg"].enhance_if_low_quality
-            and s["room_quality"].verdict == "NEEDS_ENHANCEMENT"
-        ):
+        if s["cfg"].enhance_if_low_quality and s["room_quality"].verdict == "NEEDS_ENHANCEMENT":
             s["room_img"] = room_enhance(s["client"], s["cfg"], s["room_img"])
             s["used_enhancement"] = True
         return s
 
     def node_composite(s: VizState) -> VizState:
         print("Composite")
-        s["out_img"] = composite_install(
-            s["client"], s["cfg"], s["room_img"], s["art_img"]
-        )
-        s["placement"] = locate_artwork(
-            s["client"], s["cfg"], s["room_img"], s["out_img"]
-        )
+        s["out_img"] = composite_install(s["client"], s["cfg"], s["room_img"], s["art_img"])
+        s["placement"] = locate_artwork(s["client"], s["cfg"], s["room_img"], s["out_img"])
         return s
 
     def node_critic(s: VizState) -> VizState:
@@ -79,16 +72,12 @@ def build_visualization_graph():
             s["art_img"],
             extra_fix_instruction=fix,
         )
-        s["placement"] = locate_artwork(
-            s["client"], s["cfg"], s["room_img"], s["out_img"]
-        )
+        s["placement"] = locate_artwork(s["client"], s["cfg"], s["room_img"], s["out_img"])
         return s
 
     def node_appraisal(s: VizState) -> VizState:
         print("Appraisal")
-        s["appraisal"] = appraise_installation(
-            s["client"], s["cfg"], s["out_img"], s["placement"]
-        )
+        s["appraisal"] = appraise_installation(s["client"], s["cfg"], s["out_img"], s["placement"])
         return s
 
     def route_after_critic(s: VizState) -> str:
@@ -125,9 +114,7 @@ def build_visualization_graph():
     return g.compile()
 
 
-def run_pipeline_langgraph(
-    cfg: VisualizerConfig, room_path: str, art_path: str
-) -> Dict[str, Any]:
+def run_pipeline_langgraph(cfg: VisualizerConfig, room_path: str, art_path: str) -> Dict[str, Any]:
     """
     This is deprecated; use VisualizerService instead. Only used for testing using CLI
 
@@ -137,9 +124,7 @@ def run_pipeline_langgraph(
     Note: Consider using VisualizerService for production to cache the graph.
     """
     if StateGraph is None:
-        raise RuntimeError(
-            "langgraph is not installed; use sequential pipeline instead."
-        )
+        raise RuntimeError("langgraph is not installed; use sequential pipeline instead.")
 
     client = GeminiClient()
     state: VizState = {

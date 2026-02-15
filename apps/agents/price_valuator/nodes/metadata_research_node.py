@@ -13,18 +13,18 @@ logger = logging.getLogger(__name__)
 
 def metadata_research_node():
     """Create metadata research node that analyzes artist/year background."""
-    
+
     def _node(state: ValuationState) -> Command:
         try:
             artwork_features = state.get("artwork_features", {})
             artwork_type = state.get("artwork_type", "artwork")
             market_insights = state.get("market_insights", {})
-            
+
             # Extract available metadata
             author = artwork_features.get("author", "")
             year_created = artwork_features.get("year_created", "")
             title = artwork_features.get("title", "")
-            
+
             metadata_research = {
                 "author": author,
                 "year_created": year_created,
@@ -34,7 +34,7 @@ def metadata_research_node():
                 "estimated_price_impact": "",
                 "research_notes": [],
             }
-            
+
             # If we have author info, research the artist
             if author and author.strip() and author.lower() != "unknown":
                 llm_client = ValuationLLMClient()
@@ -45,16 +45,16 @@ def metadata_research_node():
                     title=title,
                     market_insights=market_insights,
                 )
-                
+
                 metadata_research.update(artist_research)
                 logger.info(f"Artist research completed for {author}")
-                
+
             else:
                 metadata_research["research_notes"].append(
                     "No author information available for historical research"
                 )
                 logger.info("No author metadata available for research")
-            
+
             # Analyze historical period if year available
             if year_created:
                 try:
@@ -64,16 +64,18 @@ def metadata_research_node():
                     metadata_research["research_notes"].append(
                         f"Unable to parse year_created: {year_created}"
                     )
-            
-            logger.info(f"Metadata research complete: {metadata_research.get('artist_market_level', 'N/A')}")
-            
+
+            logger.info(
+                f"Metadata research complete: {metadata_research.get('artist_market_level', 'N/A')}"
+            )
+
             return Command(
                 update={
                     "metadata_research": metadata_research,
                 },
                 goto="price_calculation",
             )
-            
+
         except Exception as e:
             logger.exception(f"Metadata research failed: {e}")
             return Command(
@@ -88,13 +90,13 @@ def metadata_research_node():
                 },
                 goto="price_calculation",
             )
-    
+
     return _node
 
 
 def _determine_historical_period(year: int) -> str:
     """Determine historical period from year created."""
-    
+
     if year < 1400:
         return "Medieval"
     elif year < 1600:

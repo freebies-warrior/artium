@@ -143,10 +143,10 @@ def canonicalize_feature_state(
 
     # Deterministic text serialization (stable order)
     lines = []
-    lines.append(f"type: {canon.get('type','')}")
+    lines.append(f"type: {canon.get('type', '')}")
     if canon.get("type") == "painting":
-        lines.append(f"medium: {canon.get('medium_detected','')}")
-        lines.append(f"support: {canon.get('support_detected','')}")
+        lines.append(f"medium: {canon.get('medium_detected', '')}")
+        lines.append(f"support: {canon.get('support_detected', '')}")
     signals = canon.get("signals", {}) or {}
     for k in sorted(signals.keys()):
         lines.append(f"{k}: {signals.get(k, 0.0)}")

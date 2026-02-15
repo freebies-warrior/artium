@@ -28,9 +28,7 @@ def vision_aggregate_sculpture_node():
             material = MaterialComposition(**material_data) if material_data else None
             form = Form(**form_data) if form_data else None
             surface = SurfaceFinish(**surface_data) if surface_data else None
-            craftsmanship = (
-                Craftsmanship(**craftsmanship_data) if craftsmanship_data else None
-            )
+            craftsmanship = Craftsmanship(**craftsmanship_data) if craftsmanship_data else None
 
             if not all([material, form, surface, craftsmanship]):
                 raise ValueError("Missing one or more sub-features for aggregation")

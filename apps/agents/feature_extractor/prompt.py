@@ -13,8 +13,10 @@ from .types import (
     SurfaceFinish,
 )
 
+
 def _format_metadata(metadata: Dict[str, Any]) -> str:
     return json.dumps(metadata, indent=2, default=str)
+
 
 def build_brushstroke_prompt(metadata: Dict[str, Any]) -> str:
     return f"""

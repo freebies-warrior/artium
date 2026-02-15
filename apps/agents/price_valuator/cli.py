@@ -32,17 +32,22 @@ def main():
     parser.add_argument("--author", default="Unknown", help="Artist name")
     parser.add_argument("--year", default=None, help="Year created")
     parser.add_argument("--medium-hint", default=None, help="Medium hint")
-    parser.add_argument("--artwork-type", choices=["painting", "sculpture"], default=None, help="Artwork type (if known)")
+    parser.add_argument(
+        "--artwork-type",
+        choices=["painting", "sculpture"],
+        default=None,
+        help="Artwork type (if known)",
+    )
     parser.add_argument("--config", default=None, help="Path to RAG config.yaml")
     parser.add_argument("--out", default=None, help="Output file for full results (JSON)")
     args = parser.parse_args()
-    
+
     # Step 1: Fetch and prepare image
     logger.info("Fetching image...")
     image_bytes, image_mode, image_size = fetch_and_standardize_image(
         args.image_url, target_size=(1024, 1024)
     )
-    
+
     # Step 2: Extract features (if artwork_type not provided, classifier will determine it)
     logger.info("Extracting features...")
     metadata = ArtworkMetadata(
@@ -51,7 +56,7 @@ def main():
         year=args.year,
         medium_hint=args.medium_hint,
     ).model_dump()
-    
+
     initial_state: FeatureState = {
         "metadata": metadata,
         "image_bytes": image_bytes,
@@ -59,17 +64,17 @@ def main():
         "image_size": image_size,
         "errors": [],
     }
-    
+
     feature_graph = build_graph(vision_llm=GeminiVisionClient())
     feature_result = feature_graph.invoke(initial_state)
-    
+
     artwork_type = feature_result.get("artwork_type", "").lower()
     if artwork_type not in ("painting", "sculpture"):
         logger.error(f"Invalid artwork type determined: {artwork_type}")
         sys.exit(1)
-    
+
     logger.info(f"Artwork classified as: {artwork_type}")
-    
+
     # Step 3: Run valuation
     logger.info("Running price valuation...")
     valuation_state: ValuationState = {
@@ -79,17 +84,19 @@ def main():
         "image_bytes": image_bytes,
         "errors": [],
     }
-    
+
     valuation_graph = build_valuation_graph(config_path=args.config)
     valuation_result = valuation_graph.invoke(valuation_state)
-    
+
     # Step 4: Display results
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     # Display coordinator report if available, otherwise use justification
-    report = valuation_result.get("coordinator_report") or valuation_result.get("justification", "No report available")
+    report = valuation_result.get("coordinator_report") or valuation_result.get(
+        "justification", "No report available"
+    )
     print(report)
-    print("="*80 + "\n")
-    
+    print("=" * 80 + "\n")
+
     # Optional: Save full results to file
     if args.out:
         output = {
@@ -110,7 +117,7 @@ def main():
             "market_insights": valuation_result.get("market_insights", {}),
             "confidence_factors": valuation_result.get("confidence_factors", {}),
         }
-        
+
         with open(args.out, "w") as f:
             json.dump(output, f, indent=2)
         logger.info(f"Full results saved to {args.out}")

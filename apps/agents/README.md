@@ -159,18 +159,22 @@ Recommended:
 
 ## Local development
 
-> This repo can be set up with either `pip` or a tool like `poetry/uv`.  
-> Use whichever matches the files present in this folder (`requirements.txt` / `pyproject.toml`).
-
-### Option A: `pip` + venv
+### Option A: `uv` (recommended)
 ```bash
 cd apps/agents
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+uv sync --dev
 
 # Run dev server (adjust module path if your app entrypoint differs)
-uvicorn app:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn app:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Quality checks (CI parity)
+```bash
+cd apps/agents
+uv sync --dev
+uv run ruff format --check .
+uv run ruff check .
+uv run pytest -q
 ```
 
 ### Option B: Docker (recommended for parity)

@@ -3,9 +3,9 @@
 Simple CLI to test RAG retrieval capability.
 
 Usage:
-    python -m apps.agents.RAG.ingest.test_rag --query "oil painting landscape" --artwork-type painting
-    python -m apps.agents.RAG.ingest.test_rag --query "bronze sculpture abstract" --artwork-type sculpture
-    python -m apps.agents.RAG.ingest.test_rag --query-image /path/to/image.jpg --artwork-type painting
+    python -m RAG.ingest.test_rag --query "oil painting landscape" --artwork-type painting
+    python -m RAG.ingest.test_rag --query "bronze sculpture abstract" --artwork-type sculpture
+    python -m RAG.ingest.test_rag --query-image /path/to/image.jpg --artwork-type painting
 """
 
 from __future__ import annotations
@@ -16,11 +16,11 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from apps.agents.RAG.settings import EnvSettings, load_config
-from apps.agents.RAG.utils.logging import setup_logging
-from apps.agents.RAG.pinecone_store import build_pinecone_client, get_index, index_name
-from apps.agents.RAG.embedder.openai_embed import OpenAITextEmbedder
-from apps.agents.RAG.embedder.clip_image import ClipImageEmbedder
+from RAG.settings import EnvSettings, load_config
+from RAG.utils.logging import setup_logging
+from RAG.pinecone_store import build_pinecone_client, get_index, index_name
+from RAG.embedder.openai_embed import OpenAITextEmbedder
+from RAG.embedder.clip_image import ClipImageEmbedder
 
 logger = logging.getLogger(__name__)
 

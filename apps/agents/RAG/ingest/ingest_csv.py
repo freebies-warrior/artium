@@ -11,24 +11,24 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import pandas as pd
 
-from apps.agents.RAG.settings import EnvSettings, load_config
-from apps.agents.RAG.utils.dynamic_import import import_from_path
-from apps.agents.RAG.utils.hashing import sha256_hex
-from apps.agents.RAG.pinecone_store import (
+from RAG.settings import EnvSettings, load_config
+from RAG.utils.dynamic_import import import_from_path
+from RAG.utils.hashing import sha256_hex
+from RAG.pinecone_store import (
     build_pinecone_client,
     ensure_index,
     get_index,
     index_name,
 )
-from apps.agents.RAG.context.canonicalize import canonicalize_feature_state
-from apps.agents.RAG.context.manus import ManusCanonicalizer
-from apps.agents.RAG.embedder.openai_embed import OpenAITextEmbedder
-from apps.agents.RAG.embedder.numeric import NumericFeatureEmbedder
-from apps.agents.RAG.embedder.clip_image import ClipImageEmbedder
-from apps.agents.RAG.utils.logging import setup_logging
-from apps.agents.feature_extractor.graph import build_graph
-from apps.agents.feature_extractor.llm_client import GeminiVisionClient
-from apps.agents.feature_extractor.types import ArtworkMetadata, FeatureState
+from RAG.context.canonicalize import canonicalize_feature_state
+from RAG.context.manus import ManusCanonicalizer
+from RAG.embedder.openai_embed import OpenAITextEmbedder
+from RAG.embedder.numeric import NumericFeatureEmbedder
+from RAG.embedder.clip_image import ClipImageEmbedder
+from RAG.utils.logging import setup_logging
+from feature_extractor.graph import build_graph
+from feature_extractor.llm_client import GeminiVisionClient
+from feature_extractor.types import ArtworkMetadata, FeatureState
 
 logger = logging.getLogger(__name__)
 
@@ -263,7 +263,7 @@ def main() -> None:
                 "errors": [],
             }
             # Build a minimal graph just to get classification
-            from apps.agents.feature_extractor.classifier_node import artwork_classifier_node
+            from feature_extractor.classifier_node import artwork_classifier_node
             classifier = artwork_classifier_node(GeminiVisionClient())
             from langgraph.types import Command
             result = classifier(initial_state)

@@ -3,15 +3,15 @@ from __future__ import annotations
 import argparse
 import logging
 
-from apps.agents.RAG.settings import EnvSettings, load_config
-from apps.agents.RAG.pinecone_store import (
+from RAG.settings import EnvSettings, load_config
+from RAG.pinecone_store import (
     build_pinecone_client,
     ensure_index,
     index_name,
 )
-from apps.agents.RAG.embedder.numeric import NumericFeatureEmbedder
-from apps.agents.RAG.embedder.clip_image import ClipImageEmbedder
-from apps.agents.RAG.utils.logging import setup_logging
+from RAG.embedder.numeric import NumericFeatureEmbedder
+from RAG.embedder.clip_image import ClipImageEmbedder
+from RAG.utils.logging import setup_logging
 
 
 logger = logging.getLogger(__name__)

@@ -3,8 +3,8 @@
 CLI to test price valuation for artworks.
 
 Usage:
-    python -m apps.agents.price_valuator.cli --image-url https://example.com/artwork.jpg --artwork-type painting
-    python -m apps.agents.price_valuator.cli --image-url https://example.com/sculpture.jpg --artwork-type sculpture
+    python -m price_valuator.cli --image-url https://example.com/artwork.jpg --artwork-type painting
+    python -m price_valuator.cli --image-url https://example.com/sculpture.jpg --artwork-type sculpture
 """
 
 from __future__ import annotations
@@ -14,12 +14,12 @@ import json
 import logging
 import sys
 
-from apps.agents.feature_extractor.tools.image_tool import fetch_and_standardize_image
-from apps.agents.feature_extractor.types import ArtworkMetadata, FeatureState
-from apps.agents.feature_extractor.graph import build_graph
-from apps.agents.feature_extractor.llm_client import GeminiVisionClient
-from apps.agents.price_valuator.graph import build_valuation_graph
-from apps.agents.price_valuator.types import ValuationState
+from feature_extractor.tools.image_tool import fetch_and_standardize_image
+from feature_extractor.types import ArtworkMetadata, FeatureState
+from feature_extractor.graph import build_graph
+from feature_extractor.llm_client import GeminiVisionClient
+from price_valuator.graph import build_valuation_graph
+from price_valuator.types import ValuationState
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

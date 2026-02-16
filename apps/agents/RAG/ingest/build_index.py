@@ -25,10 +25,6 @@ def main() -> None:
     cfg = load_config(args.config)
     env = EnvSettings()
 
-    print("#" * 50)
-    print(env.PINECONE_API_KEY)
-    print("#" * 50)
-
     pc = build_pinecone_client(env.PINECONE_API_KEY)
 
     prefix = cfg.get("pinecone", "index_prefix", default="artium")

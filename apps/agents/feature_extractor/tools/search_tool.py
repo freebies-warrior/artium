@@ -2,18 +2,13 @@ from __future__ import annotations
 
 import logging
 from typing import Dict, List
-from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 
 from core.settings import get_settings
+from core.utils.http import loggable_url
 
 logger = logging.getLogger(__name__)
-
-
-def _loggable_url(url: str) -> str:
-    parsed = urlsplit(url)
-    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "", ""))
 
 
 def serpapi_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
@@ -48,7 +43,7 @@ def serpapi_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
             "SerpAPI request failed",
             extra={
                 "status_code": e.response.status_code,
-                "url": _loggable_url(str(e.request.url)),
+                "url": loggable_url(str(e.request.url)),
                 "error_type": type(e).__name__,
             },
         )
@@ -57,7 +52,7 @@ def serpapi_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
         logger.error(
             "SerpAPI request failed",
             extra={
-                "url": _loggable_url("https://serpapi.com/search.json"),
+                "url": loggable_url("https://serpapi.com/search.json"),
                 "error_type": type(e).__name__,
             },
         )

@@ -138,7 +138,7 @@ def _notify_backend_feature_extraction(
     feature_json: dict[str, Any],
 ) -> None:
     settings = get_settings()
-    sanitized_features = _sanitize_for_json(feature_json)
+    sanitized_features = sanitize_for_json(feature_json)
     if not isinstance(sanitized_features, dict):
         sanitized_features = {}
     url = f"{settings.backend_url}/items/{item_id}/features"
@@ -164,11 +164,6 @@ def _notify_backend_feature_extraction(
                 "error_type": type(exc).__name__,
             },
         )
-
-
-def _sanitize_for_json(value: Any) -> Any:
-    # Backward-compatible wrapper used by existing tests/imports.
-    return sanitize_for_json(value)
 
 
 @system_router.get("/health")

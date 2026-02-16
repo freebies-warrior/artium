@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, Header, HTTPException, status
 
 from api import agent as agent_api
+from core.logging import configure_logging
 from api.service import agent_service_lifespan
 from core.settings import get_settings
 
@@ -41,6 +42,9 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
+    settings = get_settings()
+    configure_logging(settings.LOG_LEVEL)
+
     app = FastAPI(
         title="Agents API",
         version="1.0.0",

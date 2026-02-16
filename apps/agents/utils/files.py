@@ -1,15 +1,36 @@
 from __future__ import annotations
 
+import logging
 import tempfile
 from pathlib import Path
 
 import requests
 from fastapi import HTTPException
 
+from utils.http import loggable_url
+
+logger = logging.getLogger(__name__)
+
 
 def download_to_temp_file(url: str, *, suffix: str, timeout: float = 30.0) -> Path:
-    response = requests.get(url, timeout=timeout)
+    try:
+        response = requests.get(url, timeout=timeout)
+    except requests.RequestException:
+        logger.exception(
+            "http request failed",
+            extra={
+                "method": "GET",
+                "url": loggable_url(url),
+                "timeout": timeout,
+            },
+        )
+        raise
+
     if response.status_code != 200:
+        logger.warning(
+            "download request returned non-200 status",
+            extra={"method": "GET", "url": loggable_url(url), "status": response.status_code},
+        )
         raise HTTPException(
             status_code=400, detail=f"Failed to download {url}: {response.status_code}"
         )

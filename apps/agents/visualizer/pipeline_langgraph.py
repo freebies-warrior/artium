@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, Optional, TypedDict
 
 from langgraph.graph import END, StateGraph
@@ -16,6 +17,8 @@ from .pipeline_sequential import (
     room_enhance,
     room_judge,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class VizState(TypedDict, total=False):
@@ -36,30 +39,30 @@ def build_visualization_graph():
     """Build and compile the visualization graph (called once at startup)."""
 
     def node_judge(s: VizState) -> VizState:
-        print("Judge")
+        logger.debug("visualizer step", extra={"step": "judge"})
         s["room_quality"] = room_judge(s["client"], s["cfg"], s["room_img"])
         return s
 
     def node_enhance(s: VizState) -> VizState:
-        print("Enhance")
+        logger.debug("visualizer step", extra={"step": "enhance"})
         if s["cfg"].enhance_if_low_quality and s["room_quality"].verdict == "NEEDS_ENHANCEMENT":
             s["room_img"] = room_enhance(s["client"], s["cfg"], s["room_img"])
             s["used_enhancement"] = True
         return s
 
     def node_composite(s: VizState) -> VizState:
-        print("Composite")
+        logger.debug("visualizer step", extra={"step": "composite"})
         s["out_img"] = composite_install(s["client"], s["cfg"], s["room_img"], s["art_img"])
         s["placement"] = locate_artwork(s["client"], s["cfg"], s["room_img"], s["out_img"])
         return s
 
     def node_critic(s: VizState) -> VizState:
-        print("Critic")
+        logger.debug("visualizer step", extra={"step": "critic"})
         s["critic"] = critic(s["client"], s["cfg"], s["out_img"])
         return s
 
     def node_retry(s: VizState) -> VizState:
-        print("Retry")
+        logger.debug("visualizer step", extra={"step": "retry"})
         s["retries_used"] += 1
         fix = (
             s["critic"].suggested_fix
@@ -76,7 +79,7 @@ def build_visualization_graph():
         return s
 
     def node_appraisal(s: VizState) -> VizState:
-        print("Appraisal")
+        logger.debug("visualizer step", extra={"step": "appraisal"})
         s["appraisal"] = appraise_installation(s["client"], s["cfg"], s["out_img"], s["placement"])
         return s
 

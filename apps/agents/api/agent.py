@@ -24,7 +24,7 @@ from enum import Enum
 
 from core.settings import get_settings
 from utils.files import cleanup_directory, download_to_temp_file
-from utils.http import internal_auth_headers, put_json
+from utils.http import internal_auth_headers, loggable_url, put_json
 from utils.json import sanitize_for_json
 
 from feature_extractor.tools.image_tool import fetch_and_standardize_image  # noqa: E402
@@ -88,7 +88,6 @@ class JobStatus(str, Enum):
 
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 # Create separate routers for each domain
 system_router = APIRouter(tags=["system"])
@@ -121,10 +120,13 @@ def _notify_backend_preview(
         if resp.status_code >= 400:
             logger.warning(
                 "failed to update visualizer job",
-                extra={"job_id": job_id, "status": resp.status_code},
+                extra={"job_id": job_id, "status": resp.status_code, "url": loggable_url(url)},
             )
     except Exception:
-        logger.exception("failed to send visualizer job update", extra={"job_id": job_id})
+        logger.exception(
+            "failed to send visualizer job update",
+            extra={"job_id": job_id, "url": loggable_url(url)},
+        )
 
 
 def _notify_backend_feature_extraction(
@@ -147,10 +149,13 @@ def _notify_backend_feature_extraction(
         if resp.status_code >= 400:
             logger.warning(
                 "failed to update feature extraction job",
-                extra={"item_id": item_id, "status": resp.status_code},
+                extra={"item_id": item_id, "status": resp.status_code, "url": loggable_url(url)},
             )
     except Exception:
-        logger.exception("failed to send feature extraction job update", extra={"item_id": item_id})
+        logger.exception(
+            "failed to send feature extraction job update",
+            extra={"item_id": item_id, "url": loggable_url(url)},
+        )
 
 
 def _sanitize_for_json(value: Any) -> Any:

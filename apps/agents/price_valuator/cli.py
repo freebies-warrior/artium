@@ -14,6 +14,9 @@ import json
 import logging
 import sys
 
+from core.logging import configure_logging
+from core.settings import get_settings
+
 from feature_extractor.tools.image_tool import fetch_and_standardize_image
 from feature_extractor.types import ArtworkMetadata, FeatureState
 from feature_extractor.graph import build_graph
@@ -21,11 +24,12 @@ from feature_extractor.llm_client import GeminiVisionClient
 from price_valuator.graph import build_valuation_graph
 from price_valuator.types import ValuationState
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 def main():
+    configure_logging(get_settings().LOG_LEVEL)
+
     parser = argparse.ArgumentParser(description="Test price valuation for artwork")
     parser.add_argument("--image-url", required=True, help="URL of artwork image")
     parser.add_argument("--title", default="Unknown", help="Artwork title")
@@ -89,13 +93,12 @@ def main():
     valuation_result = valuation_graph.invoke(valuation_state)
 
     # Step 4: Display results
-    print("\n" + "=" * 80)
-    # Display coordinator report if available, otherwise use justification
     report = valuation_result.get("coordinator_report") or valuation_result.get(
         "justification", "No report available"
     )
-    print(report)
-    print("=" * 80 + "\n")
+    logger.info("valuation report\n%s", "=" * 80)
+    logger.info("%s", report)
+    logger.info("%s", "=" * 80)
 
     # Optional: Save full results to file
     if args.out:

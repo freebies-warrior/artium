@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import asdict
 from typing import Tuple
 
@@ -17,6 +18,8 @@ from .prompts import (
 )
 from .types import AppraisalReport, ArtworkPlacement, CriticReport, RoomQualityReport
 
+logger = logging.getLogger(__name__)
+
 
 def _load_image(path: str) -> Image.Image:
     img = Image.open(path)
@@ -29,9 +32,8 @@ def _load_image(path: str) -> Image.Image:
 def room_judge(
     client: GeminiClient, cfg: VisualizerConfig, room_img: Image.Image
 ) -> RoomQualityReport:
-    print("Asking room judge: waiting")
+    logger.debug("visualizer step", extra={"step": "room_judge"})
     data = client.generate_json(cfg.gemini_text_model, ROOM_JUDGE_PROMPT, image=room_img)
-    print("Room judge responded")
     verdict = data.get("verdict", "OK")
     reasons = data.get("reasons", "")
     if verdict not in ("OK", "NEEDS_ENHANCEMENT"):
@@ -107,7 +109,7 @@ def appraise_installation(
         + f"\n\nBounding box: x={placement.x:.4f}, y={placement.y:.4f}, w={placement.w:.4f}, h={placement.h:.4f}\n"
     )
     data = client.generate_json(cfg.gemini_text_model, prompt, image=composite_img)
-    print("Run appraisal: waiting")
+    logger.debug("visualizer step", extra={"step": "appraise"})
 
     return AppraisalReport(
         suitable=bool(data.get("suitable", True)),

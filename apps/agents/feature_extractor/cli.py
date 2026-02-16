@@ -4,12 +4,14 @@ import argparse
 import json
 import logging
 
+from core.logging import configure_logging
+from core.settings import get_settings
+
 from .graph import build_graph
 from .llm_client import GeminiVisionClient
 from .tools.image_tool import fetch_and_standardize_image
 from .types import ArtworkMetadata, FeatureState
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -27,6 +29,7 @@ def parse_args():
 
 
 def main():
+    configure_logging(get_settings().LOG_LEVEL)
     args = parse_args()
 
     md = ArtworkMetadata(

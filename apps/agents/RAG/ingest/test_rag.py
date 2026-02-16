@@ -63,26 +63,24 @@ def test_text_query(
         include_metadata=True,
     )
 
-    # Display results
-    print(f"\n{'=' * 80}")
-    print(f"Query: '{query}'")
-    print(f"Artwork Type: {artwork_type}")
-    print(f"Results: {len(results.matches)} matches found")
-    print(f"{'=' * 80}\n")
+    logger.info("%s", "=" * 80)
+    logger.info("Query: %r", query)
+    logger.info("Artwork Type: %s", artwork_type)
+    logger.info("Results: %d matches found", len(results.matches))
+    logger.info("%s", "=" * 80)
 
     for i, match in enumerate(results.matches, 1):
-        print(f"Result {i}: Score={match.score:.4f}")
-        print(f"  ID: {match.id}")
+        logger.info("Result %d: Score=%.4f", i, match.score)
+        logger.info("  ID: %s", match.id)
         if match.metadata:
             # Print relevant metadata
             for key in ["title", "author", "sale_date", "sale_title", "location", "lot_number"]:
                 if key in match.metadata:
-                    print(f"  {key}: {match.metadata[key]}")
+                    logger.info("  %s: %s", key, match.metadata[key])
             # Show canonical preview if available
             if "canonical_text_preview" in match.metadata:
                 preview = match.metadata["canonical_text_preview"]
-                print(f"  features: {preview}")
-        print()
+                logger.info("  features: %s", preview)
 
 
 def test_image_query(
@@ -121,21 +119,19 @@ def test_image_query(
         include_metadata=True,
     )
 
-    # Display results
-    print(f"\n{'=' * 80}")
-    print(f"Query Image: {image_path}")
-    print(f"Artwork Type: {artwork_type}")
-    print(f"Results: {len(results.matches)} matches found")
-    print(f"{'=' * 80}\n")
+    logger.info("%s", "=" * 80)
+    logger.info("Query Image: %s", image_path)
+    logger.info("Artwork Type: %s", artwork_type)
+    logger.info("Results: %d matches found", len(results.matches))
+    logger.info("%s", "=" * 80)
 
     for i, match in enumerate(results.matches, 1):
-        print(f"Result {i}: Score={match.score:.4f}")
-        print(f"  ID: {match.id}")
+        logger.info("Result %d: Score=%.4f", i, match.score)
+        logger.info("  ID: %s", match.id)
         if match.metadata:
             for key in ["title", "author", "sale_date", "sale_title", "location", "lot_number"]:
                 if key in match.metadata:
-                    print(f"  {key}: {match.metadata[key]}")
-        print()
+                    logger.info("  %s: %s", key, match.metadata[key])
 
 
 def main() -> None:

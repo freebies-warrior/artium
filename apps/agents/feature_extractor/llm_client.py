@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-import json
+import logging
 from typing import Any, Dict, List, Optional
 
 from google import genai
@@ -9,6 +9,9 @@ from google.genai import types
 from PIL import Image
 
 from core.settings import get_settings
+from utils.parsing import parse_json_object
+
+logger = logging.getLogger(__name__)
 
 
 class VisionLLMClient:
@@ -60,15 +63,34 @@ class VisionLLMClient:
         elif image_jpeg_bytes is not None:
             contents.append(self._img_part_from_bytes(image_jpeg_bytes))
 
-        print("Before client")
-        resp = self.client.models.generate_content(
-            model=self.model,
-            contents=contents,
-        )
-        print("Client responded")
-        text = (resp.text or "").strip()
-        text = text.removeprefix("```json").removeprefix("```").split("```")[0].strip()
-        return json.loads(text)
+        try:
+            resp = self.client.models.generate_content(
+                model=self.model,
+                contents=contents,
+            )
+        except Exception:
+            logger.exception(
+                "llm request failed",
+                extra={
+                    "provider": "gemini",
+                    "model": self.model,
+                    "step": "feature_extractor.generate_json",
+                },
+            )
+            raise
+
+        try:
+            return parse_json_object(resp.text, source="feature_extractor.generate_json")
+        except ValueError:
+            logger.exception(
+                "llm response parsing failed",
+                extra={
+                    "provider": "gemini",
+                    "model": self.model,
+                    "step": "feature_extractor.generate_json",
+                },
+            )
+            raise
 
     def generate_text(
         self,
@@ -83,10 +105,21 @@ class VisionLLMClient:
         elif image_jpeg_bytes is not None:
             contents.append(self._img_part_from_bytes(image_jpeg_bytes))
 
-        resp = self.client.models.generate_content(
-            model=self.model,
-            contents=contents,
-        )
+        try:
+            resp = self.client.models.generate_content(
+                model=self.model,
+                contents=contents,
+            )
+        except Exception:
+            logger.exception(
+                "llm request failed",
+                extra={
+                    "provider": "gemini",
+                    "model": self.model,
+                    "step": "feature_extractor.generate_text",
+                },
+            )
+            raise
         return (resp.text or "").strip()
 
     def edit_image(
@@ -96,7 +129,18 @@ class VisionLLMClient:
         if art is not None:
             contents.append(self._img_part(art))
 
-        resp = self.client.models.generate_content(model=model, contents=contents)
+        try:
+            resp = self.client.models.generate_content(model=model, contents=contents)
+        except Exception:
+            logger.exception(
+                "llm request failed",
+                extra={
+                    "provider": "gemini",
+                    "model": model,
+                    "step": "feature_extractor.edit_image",
+                },
+            )
+            raise
 
         for part in resp.parts or []:
             inline = getattr(part, "inline_data", None)

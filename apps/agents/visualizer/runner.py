@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from io import BytesIO
 from typing import Optional
 from urllib.parse import urlparse
@@ -7,11 +8,13 @@ from urllib.parse import urlparse
 from PIL import Image
 
 from core.settings import get_settings
-from utils.http import put_bytes
+from utils.http import loggable_url, put_bytes
 
 from .config import VisualizerConfig
 from .pipeline_sequential import run_pipeline_sequential
 from .types import VisualizerResult
+
+logger = logging.getLogger(__name__)
 
 
 def _save_image(out_img: Image.Image, out_path: str):
@@ -21,14 +24,17 @@ def _save_image(out_img: Image.Image, out_path: str):
         buf = BytesIO()
         out_img.save(buf, format="JPEG")
         buf.seek(0)
-        print("Uploading image to remote path")
+        logger.info("uploading image to remote path", extra={"url": loggable_url(out_path)})
         resp = put_bytes(
             out_path,
             data=buf.getvalue(),
             headers={"Content-Type": "image/jpeg"},
             timeout=30.0,
         )
-        print("Upload response:", resp.status_code, resp.text)
+        logger.info(
+            "upload response received",
+            extra={"url": loggable_url(out_path), "status_code": resp.status_code},
+        )
         resp.raise_for_status()
 
 
@@ -52,7 +58,7 @@ def visualize_installation(
 
     if use_langgraph:
         try:
-            print("Trying langgraph pipeline")
+            logger.info("trying langgraph pipeline")
             from .pipeline_langgraph import run_pipeline_langgraph  # noqa
 
             final = run_pipeline_langgraph(cfg, room_path, art_path)
@@ -64,13 +70,15 @@ def visualize_installation(
             placement = final.get("placement")
             appraisal = final.get("appraisal")
         except Exception as e:
-            print(f"LangGraph pipeline failed with error: {e}")
+            logger.exception(
+                "langgraph pipeline failed, falling back to sequential", extra={"error": str(e)}
+            )
             # fallback silently
             out_img, used_enhancement, retries_used, room_quality, crit = run_pipeline_sequential(
                 cfg, room_path, art_path
             )
     else:
-        print("LangGraph pipeline not used; falling back to sequential.")
+        logger.info("langgraph pipeline disabled, using sequential fallback")
         out_img, used_enhancement, retries_used, room_quality, crit = run_pipeline_sequential(
             cfg, room_path, art_path
         )

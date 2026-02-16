@@ -1,5 +1,5 @@
+import logging
 import io
-import json
 from typing import Any, Dict, List, Optional
 
 from google import genai
@@ -7,6 +7,9 @@ from google.genai import types
 from PIL import Image
 
 from core.settings import get_settings
+from utils.parsing import parse_json_object
+
+logger = logging.getLogger(__name__)
 
 
 class GeminiClient:
@@ -51,16 +54,27 @@ class GeminiClient:
         elif image is not None:
             contents.append(self._img_part(image))
 
-        print("Before client")
-        resp = self.client.models.generate_content(
-            model=model,
-            contents=contents,
-            config=types.GenerateContentConfig(response_mime_type="application/json"),
-        )
-        print("Client responded")
-        text = (resp.text or "").strip()
-        text = text.removeprefix("```json").removeprefix("```").split("```")[0].strip()
-        return json.loads(text)
+        try:
+            resp = self.client.models.generate_content(
+                model=model,
+                contents=contents,
+                config=types.GenerateContentConfig(response_mime_type="application/json"),
+            )
+        except Exception:
+            logger.exception(
+                "llm request failed",
+                extra={"provider": "gemini", "model": model, "step": "visualizer.generate_json"},
+            )
+            raise
+
+        try:
+            return parse_json_object(resp.text, source="visualizer.generate_json")
+        except ValueError:
+            logger.exception(
+                "llm response parsing failed",
+                extra={"provider": "gemini", "model": model, "step": "visualizer.generate_json"},
+            )
+            raise
 
     def edit_image(
         self, model: str, prompt: str, room: Image.Image, art: Image.Image | None = None
@@ -69,7 +83,14 @@ class GeminiClient:
         if art is not None:
             contents.append(self._img_part(art))
 
-        resp = self.client.models.generate_content(model=model, contents=contents)
+        try:
+            resp = self.client.models.generate_content(model=model, contents=contents)
+        except Exception:
+            logger.exception(
+                "llm request failed",
+                extra={"provider": "gemini", "model": model, "step": "visualizer.edit_image"},
+            )
+            raise
 
         for part in resp.parts or []:
             inline = getattr(part, "inline_data", None)

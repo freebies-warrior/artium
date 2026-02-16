@@ -2,13 +2,21 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 from dataclasses import asdict
+
+from core.logging import configure_logging
+from core.settings import get_settings
 
 from .config import VisualizerConfig
 from .runner import visualize_installation
 
+logger = logging.getLogger(__name__)
+
 
 def main() -> None:
+    configure_logging(get_settings().LOG_LEVEL)
+
     arguments = argparse.ArgumentParser(description="Install artwork into a room (Gemini-only).")
     arguments.add_argument("--room", required=True, help="Path to room image (jpg/png).")
     arguments.add_argument("--art", required=True, help="Path to artwork image (jpg/png).")
@@ -39,8 +47,8 @@ def main() -> None:
 
     res = visualize_installation(args.room, args.art, args.out, cfg=cfg)
 
-    # Print a compact JSON summary
-    print(
+    logger.info(
+        "visualization summary\n%s",
         json.dumps(
             {
                 "out_path": res.out_path,
@@ -57,7 +65,7 @@ def main() -> None:
                 },
             },
             indent=2,
-        )
+        ),
     )
 
     # For now the result will be stored as a json file

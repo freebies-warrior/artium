@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from PIL import Image
 
 from core.settings import get_settings
-from core.utils.http import put_bytes
+from utils.http import put_bytes
 
 from .config import VisualizerConfig
 from .pipeline_sequential import run_pipeline_sequential

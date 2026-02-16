@@ -17,14 +17,15 @@ import tempfile
 import uuid
 from pathlib import Path
 from typing import Optional, List, Dict, Any
-from urllib.parse import urlparse
 
-import requests
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks
 from pydantic import BaseModel, HttpUrl
 from enum import Enum
 
 from core.settings import get_settings
+from core.utils.files import cleanup_directory, download_to_temp_file
+from core.utils.http import internal_auth_headers, put_json
+from core.utils.json import sanitize_for_json
 
 from feature_extractor.tools.image_tool import fetch_and_standardize_image  # noqa: E402
 from feature_extractor.types import ArtworkMetadata, FeatureState  # noqa: E402
@@ -96,14 +97,7 @@ feature_extractor_router = APIRouter(prefix="/agents/feature_extractor", tags=["
 
 
 def _download_to_temp(url: str, suffix: str) -> Path:
-    resp = requests.get(url, timeout=30)
-    if resp.status_code != 200:
-        raise HTTPException(status_code=400, detail=f"Failed to download {url}: {resp.status_code}")
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-    tmp.write(resp.content)
-    tmp.flush()
-    tmp.close()
-    return Path(tmp.name)
+    return download_to_temp_file(url, suffix=suffix, timeout=30.0)
 
 
 def _notify_backend_preview(
@@ -120,13 +114,10 @@ def _notify_backend_preview(
         "error_message": error_message,
     }
 
-    internal_token = settings.INTERNAL_TOKEN.strip()
-    headers = {}
-    if internal_token:
-        headers["Authorization"] = f"Bearer {internal_token}"
+    headers = internal_auth_headers(settings.INTERNAL_TOKEN)
 
     try:
-        resp = requests.put(url, json=payload, headers=headers, timeout=10)
+        resp = put_json(url, payload, headers=headers, timeout=10.0)
         if resp.status_code >= 400:
             logger.warning(
                 "failed to update visualizer job",
@@ -149,13 +140,10 @@ def _notify_backend_feature_extraction(
         "features": sanitized_features,
     }
 
-    internal_token = settings.INTERNAL_TOKEN.strip()
-    headers = {}
-    if internal_token:
-        headers["Authorization"] = f"Bearer {internal_token}"
+    headers = internal_auth_headers(settings.INTERNAL_TOKEN)
 
     try:
-        resp = requests.put(url, json=payload, headers=headers, timeout=10)
+        resp = put_json(url, payload, headers=headers, timeout=10.0)
         if resp.status_code >= 400:
             logger.warning(
                 "failed to update feature extraction job",
@@ -166,21 +154,8 @@ def _notify_backend_feature_extraction(
 
 
 def _sanitize_for_json(value: Any) -> Any:
-    if isinstance(value, (bytes, bytearray)):
-        return None
-    if isinstance(value, dict):
-        return {
-            key: _sanitize_for_json(val)
-            for key, val in value.items()
-            if not isinstance(val, (bytes, bytearray))
-        }
-    if isinstance(value, list):
-        return [
-            _sanitize_for_json(item) for item in value if not isinstance(item, (bytes, bytearray))
-        ]
-    if isinstance(value, tuple):
-        return [_sanitize_for_json(item) for item in value]
-    return value
+    # Backward-compatible wrapper used by existing tests/imports.
+    return sanitize_for_json(value)
 
 
 @system_router.get("/health")
@@ -211,17 +186,6 @@ def _run_preview(req: VisualizerRequest) -> None:
         str(req.room_url), suffix=Path(req.room_url.path).suffix or ".jpeg"
     )
     art_path = _download_to_temp(str(req.art_url), suffix=Path(req.art_url.path).suffix or ".jpeg")
-
-    if req.upload_image_url:
-        base_name = Path(req.upload_image_url).name if req.upload_image_url else "preview.jpeg"
-        if len(base_name) > 80:
-            stem = Path(base_name).stem[:60]
-            base_name = stem + Path(base_name).suffix
-        # Ensure we have a file extension (default to .jpeg)
-        ext = Path(base_name).suffix
-        if not ext:
-            base_name = f"{base_name}.jpeg"
-        out_path = tmp_dir / base_name
 
     status = JobStatus.FAILED
     result_description = None
@@ -268,12 +232,7 @@ def _run_preview(req: VisualizerRequest) -> None:
             result_description=result_description,
             error_message=error_message,
         )
-        try:
-            for f in tmp_dir.iterdir():
-                f.unlink()
-            tmp_dir.rmdir()
-        except Exception:
-            pass
+        cleanup_directory(tmp_dir)
 
 
 @visualizer_router.post("/visualize_installation", response_model=AsyncPreviewResponse)
@@ -373,17 +332,6 @@ def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionRespons
         }
 
         del combined_result["image_bytes"]
-
-        # # Build response (exclude image_bytes)
-        # return FeatureExtractionResponse(
-        #     metadata=final.get("metadata", {}),
-        #     artwork_type=final.get("artwork_type", "UNKNOWN"),
-        #     image_mode=final.get("image_mode", ""),
-        #     image_size=list(final.get("image_size", (0, 0))),
-        #     vision_features=final.get("vision_features"),
-        #     market_features=final.get("market_features"),
-        #     errors=final.get("errors", []),
-        # )
 
     except Exception as exc:  # pragma: no cover - handled at runtime
         error_message = str(exc)

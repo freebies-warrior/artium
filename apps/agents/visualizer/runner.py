@@ -1,18 +1,17 @@
 from __future__ import annotations
 
 from io import BytesIO
-from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
 
-import requests
 from PIL import Image
 
 from core.settings import get_settings
+from core.utils.http import put_bytes
 
 from .config import VisualizerConfig
 from .pipeline_sequential import run_pipeline_sequential
-from .types import CriticReport, RoomQualityReport, VisualizerResult
+from .types import VisualizerResult
 
 
 def _save_image(out_img: Image.Image, out_path: str):
@@ -23,17 +22,14 @@ def _save_image(out_img: Image.Image, out_path: str):
         out_img.save(buf, format="JPEG")
         buf.seek(0)
         print("Uploading image to remote path")
-        resp = requests.put(
+        resp = put_bytes(
             out_path,
             data=buf.getvalue(),
             headers={"Content-Type": "image/jpeg"},
-            timeout=30,
+            timeout=30.0,
         )
         print("Upload response:", resp.status_code, resp.text)
         resp.raise_for_status()
-        # return out_path
-
-    # return out_path
 
 
 def visualize_installation(
@@ -79,10 +75,10 @@ def visualize_installation(
             cfg, room_path, art_path
         )
 
-    saved_path = _save_image(out_img, out_path)
+    _save_image(out_img, out_path)
 
     return VisualizerResult(
-        out_path=saved_path,
+        out_path=None,
         used_enhancement=used_enhancement,
         retries_used=retries_used,
         room_quality=room_quality,

@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 from PIL import Image
 
 from core.settings import get_settings
-from utils.http import loggable_url, put_bytes
+from core.utils.http import loggable_url, put_bytes
 
 from .config import VisualizerConfig
 from .pipeline_sequential import run_pipeline_sequential

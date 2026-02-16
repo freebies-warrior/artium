@@ -5,8 +5,8 @@ import logging
 import pytest
 import requests
 
-from utils.http import put_json
-from utils.parsing import parse_json_object
+from core.utils.http import put_json
+from core.utils.parsing import parse_json_object
 
 
 def test_parse_json_object_invalid_output_has_actionable_message() -> None:
@@ -25,8 +25,8 @@ def test_put_json_timeout_logs_actionable_context(
     def raise_timeout(*args, **kwargs):
         raise requests.Timeout("timed out")
 
-    monkeypatch.setattr("utils.http.requests.put", raise_timeout)
-    caplog.set_level(logging.ERROR, logger="utils.http")
+    monkeypatch.setattr("core.utils.http.requests.put", raise_timeout)
+    caplog.set_level(logging.ERROR, logger="core.utils.http")
 
     with pytest.raises(requests.Timeout):
         put_json("https://example.com/api/resource?token=secret", {"ok": True}, timeout=1.5)

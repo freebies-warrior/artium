@@ -7,7 +7,7 @@ from google.genai import types
 from PIL import Image
 
 from core.settings import get_settings
-from utils.parsing import parse_json_object
+from core.utils.parsing import parse_json_object
 
 logger = logging.getLogger(__name__)
 

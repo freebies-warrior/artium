@@ -70,8 +70,9 @@ def visualize_installation(
             placement = final.get("placement")
             appraisal = final.get("appraisal")
         except Exception as e:
-            logger.exception(
-                "langgraph pipeline failed, falling back to sequential", extra={"error": str(e)}
+            logger.error(
+                "langgraph pipeline failed, falling back to sequential",
+                extra={"error_type": type(e).__name__},
             )
             # fallback silently
             out_img, used_enhancement, retries_used, room_quality, crit = run_pipeline_sequential(

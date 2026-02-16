@@ -68,26 +68,28 @@ class VisionLLMClient:
                 model=self.model,
                 contents=contents,
             )
-        except Exception:
-            logger.exception(
+        except Exception as exc:
+            logger.error(
                 "llm request failed",
                 extra={
                     "provider": "gemini",
                     "model": self.model,
                     "step": "feature_extractor.generate_json",
+                    "error_type": type(exc).__name__,
                 },
             )
             raise
 
         try:
             return parse_json_object(resp.text, source="feature_extractor.generate_json")
-        except ValueError:
-            logger.exception(
+        except ValueError as exc:
+            logger.error(
                 "llm response parsing failed",
                 extra={
                     "provider": "gemini",
                     "model": self.model,
                     "step": "feature_extractor.generate_json",
+                    "error_type": type(exc).__name__,
                 },
             )
             raise
@@ -110,13 +112,14 @@ class VisionLLMClient:
                 model=self.model,
                 contents=contents,
             )
-        except Exception:
-            logger.exception(
+        except Exception as exc:
+            logger.error(
                 "llm request failed",
                 extra={
                     "provider": "gemini",
                     "model": self.model,
                     "step": "feature_extractor.generate_text",
+                    "error_type": type(exc).__name__,
                 },
             )
             raise
@@ -131,13 +134,14 @@ class VisionLLMClient:
 
         try:
             resp = self.client.models.generate_content(model=model, contents=contents)
-        except Exception:
-            logger.exception(
+        except Exception as exc:
+            logger.error(
                 "llm request failed",
                 extra={
                     "provider": "gemini",
                     "model": model,
                     "step": "feature_extractor.edit_image",
+                    "error_type": type(exc).__name__,
                 },
             )
             raise

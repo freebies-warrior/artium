@@ -77,7 +77,7 @@ def metadata_research_node():
             )
 
         except Exception as e:
-            logger.exception(f"Metadata research failed: {e}")
+            logger.error("Metadata research failed", extra={"error_type": type(e).__name__})
             return Command(
                 update={
                     "metadata_research": {

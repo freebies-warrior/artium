@@ -31,13 +31,14 @@ def put_json(
 ) -> requests.Response:
     try:
         return requests.put(url, json=payload, headers=headers or {}, timeout=timeout)
-    except requests.RequestException:
-        logger.exception(
+    except requests.RequestException as exc:
+        logger.error(
             "http request failed",
             extra={
                 "method": "PUT",
                 "url": loggable_url(url),
                 "timeout": timeout,
+                "error_type": type(exc).__name__,
             },
         )
         raise
@@ -52,13 +53,14 @@ def put_bytes(
 ) -> requests.Response:
     try:
         return requests.put(url, data=data, headers=headers or {}, timeout=timeout)
-    except requests.RequestException:
-        logger.exception(
+    except requests.RequestException as exc:
+        logger.error(
             "http request failed",
             extra={
                 "method": "PUT",
                 "url": loggable_url(url),
                 "timeout": timeout,
+                "error_type": type(exc).__name__,
             },
         )
         raise

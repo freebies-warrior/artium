@@ -64,7 +64,7 @@ def rag_search_node(rag_tool: RAGQueryTool):
             )
 
         except Exception as e:
-            logger.exception(f"RAG search failed: {e}")
+            logger.error("RAG search failed", extra={"error_type": type(e).__name__})
             return Command(
                 update={"errors": [f"RAG search error: {e}"]},
                 goto="END",

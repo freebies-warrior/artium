@@ -21,7 +21,7 @@ def blending_node(llm: VisionLLMClient):
             logger.info("Blending features extracted.")
             return Command(update={"vision_blending": parsed}, goto="vision_aggregate_painting")
         except Exception as e:
-            logger.exception("Blending agent failed: %s", e)
+            logger.error("Blending agent failed", extra={"error_type": type(e).__name__})
             errs = list(state.get("errors", []))
             errs.append(f"blending_agent_error: {e}")
             return Command(update={"errors": errs}, goto="vision_aggregate_painting")

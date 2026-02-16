@@ -21,7 +21,7 @@ def physicality_node(llm: VisionLLMClient):
             logger.info("Physicality features extracted.")
             return Command(update={"vision_physicality": parsed}, goto="vision_aggregate_painting")
         except Exception as e:
-            logger.exception("Physicality agent failed: %s", e)
+            logger.error("Physicality agent failed", extra={"error_type": type(e).__name__})
             errs = list(state.get("errors", []))
             errs.append(f"physicality_agent_error: {e}")
             return Command(update={"errors": errs}, goto="vision_aggregate_painting")

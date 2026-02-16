@@ -49,7 +49,7 @@ def vision_aggregate_node():
             logger.info("Vision features aggregated.")
             return Command(update={"vision_features": vf}, goto="state_coordinator")
         except Exception as e:
-            logger.exception("Vision aggregate failed: %s", e)
+            logger.error("Vision aggregate failed", extra={"error_type": type(e).__name__})
             errs = list(state.get("errors", []))
             errs.append(f"vision_aggregate_error: {e}")
             return Command(update={"errors": errs}, goto="state_coordinator")

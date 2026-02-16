@@ -46,7 +46,7 @@ def state_coordinator_node():
             )
 
         except Exception as e:
-            logger.exception(f"State coordination failed: {e}")
+            logger.error("State coordination failed", extra={"error_type": type(e).__name__})
             return Command(
                 update={
                     "coordinator_report": f"Error during coordination: {e}",

@@ -21,7 +21,7 @@ def brushstroke_node(llm: VisionLLMClient):
             logger.info("Brushstroke features extracted.")
             return Command(update={"vision_brushstroke": parsed}, goto="vision_aggregate_painting")
         except Exception as e:
-            logger.exception("Brushstroke agent failed: %s", e)
+            logger.error("Brushstroke agent failed", extra={"error_type": type(e).__name__})
             errs = list(state.get("errors", []))
             errs.append(f"brushstroke_agent_error: {e}")
             return Command(update={"errors": errs}, goto="vision_aggregate_painting")

@@ -15,13 +15,14 @@ logger = logging.getLogger(__name__)
 def download_to_temp_file(url: str, *, suffix: str, timeout: float = 30.0) -> Path:
     try:
         response = requests.get(url, timeout=timeout)
-    except requests.RequestException:
-        logger.exception(
+    except requests.RequestException as exc:
+        logger.error(
             "http request failed",
             extra={
                 "method": "GET",
                 "url": loggable_url(url),
                 "timeout": timeout,
+                "error_type": type(exc).__name__,
             },
         )
         raise
@@ -32,7 +33,8 @@ def download_to_temp_file(url: str, *, suffix: str, timeout: float = 30.0) -> Pa
             extra={"method": "GET", "url": loggable_url(url), "status": response.status_code},
         )
         raise HTTPException(
-            status_code=400, detail=f"Failed to download {url}: {response.status_code}"
+            status_code=400,
+            detail=f"Failed to download {loggable_url(url)}: {response.status_code}",
         )
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
     tmp.write(response.content)

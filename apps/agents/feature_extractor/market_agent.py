@@ -75,7 +75,7 @@ def market_intelligence_node(
             return Command(update={"market_features": mf}, goto="state_coordinator")
 
         except Exception as e:
-            logger.exception("Market agent failed: %s", e)
+            logger.error("Market agent failed", extra={"error_type": type(e).__name__})
             errs = list(state.get("errors", []))
             errs.append(f"market_agent_error: {e}")
             return Command(update={"errors": errs}, goto="state_coordinator")

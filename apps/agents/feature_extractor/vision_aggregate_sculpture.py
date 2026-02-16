@@ -66,11 +66,13 @@ def vision_aggregate_sculpture_node():
             )
         except ValidationError as e:
             error_msg = f"Sculpture aggregation validation error: {e}"
-            logger.error(error_msg)
+            logger.error(
+                "Sculpture aggregation validation error", extra={"error_type": type(e).__name__}
+            )
             return Command(update={"errors": [error_msg]}, goto="state_coordinator")
         except Exception as e:
             error_msg = f"Sculpture aggregation failed: {str(e)}"
-            logger.error(error_msg)
+            logger.error("Sculpture aggregation failed", extra={"error_type": type(e).__name__})
             return Command(update={"errors": [error_msg]}, goto="state_coordinator")
 
     return node

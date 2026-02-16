@@ -57,7 +57,7 @@ Return only the classification, nothing else."""
 
         except Exception as e:
             error_msg = f"Artwork classification failed: {str(e)}"
-            logger.error(error_msg)
+            logger.error("Artwork classification failed", extra={"error_type": type(e).__name__})
             return Command(
                 update={"artwork_type": "NOT AN ARTWORK", "errors": [error_msg]},
                 goto=END,

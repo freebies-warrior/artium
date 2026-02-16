@@ -36,11 +36,11 @@ def form_node(llm: VisionLLMClient):
             )
         except ValidationError as e:
             error_msg = f"Form validation error: {e}"
-            logger.error(error_msg)
+            logger.error("Form validation error", extra={"error_type": type(e).__name__})
             return Command(update={"errors": [error_msg]}, goto="state_coordinator")
         except Exception as e:
             error_msg = f"Form extraction failed: {str(e)}"
-            logger.error(error_msg)
+            logger.error("Form extraction failed", extra={"error_type": type(e).__name__})
             return Command(update={"errors": [error_msg]}, goto="state_coordinator")
 
     return node

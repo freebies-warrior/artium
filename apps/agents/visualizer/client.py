@@ -60,19 +60,29 @@ class GeminiClient:
                 contents=contents,
                 config=types.GenerateContentConfig(response_mime_type="application/json"),
             )
-        except Exception:
-            logger.exception(
+        except Exception as exc:
+            logger.error(
                 "llm request failed",
-                extra={"provider": "gemini", "model": model, "step": "visualizer.generate_json"},
+                extra={
+                    "provider": "gemini",
+                    "model": model,
+                    "step": "visualizer.generate_json",
+                    "error_type": type(exc).__name__,
+                },
             )
             raise
 
         try:
             return parse_json_object(resp.text, source="visualizer.generate_json")
-        except ValueError:
-            logger.exception(
+        except ValueError as exc:
+            logger.error(
                 "llm response parsing failed",
-                extra={"provider": "gemini", "model": model, "step": "visualizer.generate_json"},
+                extra={
+                    "provider": "gemini",
+                    "model": model,
+                    "step": "visualizer.generate_json",
+                    "error_type": type(exc).__name__,
+                },
             )
             raise
 
@@ -85,10 +95,15 @@ class GeminiClient:
 
         try:
             resp = self.client.models.generate_content(model=model, contents=contents)
-        except Exception:
-            logger.exception(
+        except Exception as exc:
+            logger.error(
                 "llm request failed",
-                extra={"provider": "gemini", "model": model, "step": "visualizer.edit_image"},
+                extra={
+                    "provider": "gemini",
+                    "model": model,
+                    "step": "visualizer.edit_image",
+                    "error_type": type(exc).__name__,
+                },
             )
             raise
 

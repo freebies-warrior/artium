@@ -31,7 +31,10 @@ class ValuationLLMClient:
             response = self.client.generate_json(prompt=prompt)
             return response
         except Exception as e:
-            logger.error(f"LLM comparables analysis failed: {e}")
+            logger.error(
+                "LLM comparables analysis failed",
+                extra={"error_type": type(e).__name__, "step": "comparables_analysis"},
+            )
             return {
                 "key_similarities": [],
                 "key_differences": [],
@@ -56,7 +59,10 @@ class ValuationLLMClient:
             response = self.client.generate_json(prompt=prompt)
             return response
         except Exception as e:
-            logger.error(f"LLM price estimation failed: {e}")
+            logger.error(
+                "LLM price estimation failed",
+                extra={"error_type": type(e).__name__, "step": "price_estimation"},
+            )
             # Fallback to simple average
             avg = sum(comparable_prices) / len(comparable_prices) if comparable_prices else 0
             return {
@@ -90,7 +96,10 @@ class ValuationLLMClient:
             response = self.client.generate_text(prompt=prompt)
             return response
         except Exception as e:
-            logger.error(f"LLM justification failed: {e}")
+            logger.error(
+                "LLM justification failed",
+                extra={"error_type": type(e).__name__, "step": "justification"},
+            )
             return f"Price estimate: ${price_range.get('mid', 0):,.2f}. Error generating detailed justification: {e}"
 
     def research_artist(
@@ -115,7 +124,10 @@ class ValuationLLMClient:
             response = self.client.generate_json(prompt=prompt)
             return response
         except Exception as e:
-            logger.error(f"LLM artist research failed: {e}")
+            logger.error(
+                "LLM artist research failed",
+                extra={"error_type": type(e).__name__, "step": "artist_research"},
+            )
             return {
                 "artist_background": f"Unable to research artist: {e}",
                 "artist_market_level": "unknown",

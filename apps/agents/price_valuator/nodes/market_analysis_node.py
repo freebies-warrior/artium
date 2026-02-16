@@ -93,7 +93,10 @@ def market_analysis_node():
                 )
 
             except Exception as llm_error:
-                logger.warning(f"LLM analysis failed: {llm_error}")
+                logger.warning(
+                    "LLM analysis failed",
+                    extra={"error_type": type(llm_error).__name__},
+                )
                 comparables_analysis = {
                     "key_similarities": [],
                     "key_differences": [],
@@ -116,7 +119,7 @@ def market_analysis_node():
             )
 
         except Exception as e:
-            logger.exception(f"Market analysis failed: {e}")
+            logger.error("Market analysis failed", extra={"error_type": type(e).__name__})
             return Command(
                 update={"errors": [f"Market analysis error: {e}"]},
                 goto="END",

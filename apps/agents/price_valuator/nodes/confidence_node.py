@@ -94,7 +94,10 @@ def confidence_node():
                 logger.info(f"LLM justification generated (length: {len(justification)})")
 
             except Exception as llm_error:
-                logger.warning(f"LLM justification failed, using fallback: {llm_error}")
+                logger.warning(
+                    "LLM justification failed, using fallback",
+                    extra={"error_type": type(llm_error).__name__},
+                )
                 # Fallback to simple justification
                 justification = _build_justification(
                     state, comparables, confidence_score, confidence_factors, market_insights
@@ -112,7 +115,7 @@ def confidence_node():
             )
 
         except Exception as e:
-            logger.exception(f"Confidence assessment failed: {e}")
+            logger.error("Confidence assessment failed", extra={"error_type": type(e).__name__})
             return Command(
                 update={
                     "confidence_score": 0.0,

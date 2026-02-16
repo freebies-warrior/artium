@@ -93,7 +93,10 @@ def price_calculation_node():
                 ]
 
             except Exception as llm_error:
-                logger.warning(f"LLM price estimation failed, using fallback: {llm_error}")
+                logger.warning(
+                    "LLM price estimation failed, using fallback",
+                    extra={"error_type": type(llm_error).__name__},
+                )
 
                 # Fallback: Calculate range based on standard deviation and market variance
                 cv = price_std / mid_estimate if mid_estimate > 0 else 0.2
@@ -130,7 +133,7 @@ def price_calculation_node():
             )
 
         except Exception as e:
-            logger.exception(f"Price calculation failed: {e}")
+            logger.error("Price calculation failed", extra={"error_type": type(e).__name__})
             return Command(
                 update={"errors": [f"Price calculation error: {e}"]},
                 goto="END",

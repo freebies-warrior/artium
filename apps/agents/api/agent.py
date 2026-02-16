@@ -122,10 +122,14 @@ def _notify_backend_preview(
                 "failed to update visualizer job",
                 extra={"job_id": job_id, "status": resp.status_code, "url": loggable_url(url)},
             )
-    except Exception:
-        logger.exception(
+    except Exception as exc:
+        logger.error(
             "failed to send visualizer job update",
-            extra={"job_id": job_id, "url": loggable_url(url)},
+            extra={
+                "job_id": job_id,
+                "url": loggable_url(url),
+                "error_type": type(exc).__name__,
+            },
         )
 
 
@@ -151,10 +155,14 @@ def _notify_backend_feature_extraction(
                 "failed to update feature extraction job",
                 extra={"item_id": item_id, "status": resp.status_code, "url": loggable_url(url)},
             )
-    except Exception:
-        logger.exception(
+    except Exception as exc:
+        logger.error(
             "failed to send feature extraction job update",
-            extra={"item_id": item_id, "url": loggable_url(url)},
+            extra={
+                "item_id": item_id,
+                "url": loggable_url(url),
+                "error_type": type(exc).__name__,
+            },
         )
 
 
@@ -182,7 +190,10 @@ def get_config() -> dict:
 def _run_preview(req: VisualizerRequest) -> None:
     logger.info(
         "preview request",
-        extra={"room_url": str(req.room_url), "art_url": str(req.art_url)},
+        extra={
+            "room_url": loggable_url(str(req.room_url)),
+            "art_url": loggable_url(str(req.art_url)),
+        },
     )
 
     cfg = VisualizerConfig()
@@ -228,7 +239,10 @@ def _run_preview(req: VisualizerRequest) -> None:
         status = JobStatus.SUCCEEDED
     except Exception as exc:  # pragma: no cover - handled at runtime
         error_message = str(exc)
-        logger.exception("visualization failed")
+        logger.error(
+            "visualization failed",
+            extra={"job_id": req.job_id, "error_type": type(exc).__name__},
+        )
     finally:
         logger.info("result_description: %s", result_description)
         _notify_backend_preview(
@@ -256,7 +270,10 @@ def extract_features(
 
 def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionResponse:
     """Extract visual and market features from artwork image. Automatically determines if painting or sculpture."""
-    logger.info("feature extraction request", extra={"image_urls": str(req.image_get_urls)})
+    logger.info(
+        "feature extraction request",
+        extra={"image_urls": [loggable_url(str(image_url)) for image_url in req.image_get_urls]},
+    )
 
     try:
         selected_index = get_primary_image_index(
@@ -302,7 +319,7 @@ def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionRespons
         try:
             artwork_type = final.get("artwork_type", "").lower()
             if artwork_type in ("painting", "sculpture"):
-                logger.info(f"Running price valuation for {artwork_type}")
+                logger.info("running price valuation", extra={"artwork_type": artwork_type})
 
                 # Build valuation state
                 valuation_state = {
@@ -317,17 +334,25 @@ def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionRespons
                 valuation_result = service.valuate_artwork(valuation_state)
 
                 logger.info(
-                    f"Price valuation complete: ${valuation_result.get('price_range', {}).get('mid', 0):,.2f}"
+                    "price valuation complete",
+                    extra={"mid_price": valuation_result.get("price_range", {}).get("mid", 0)},
                 )
             else:
                 if artwork_type == "NOT_AN_ARTWORK":
                     logger.info("Skipping price valuation - input image not recognized as artwork")
                 else:
                     logger.info(
-                        f"Skipping price valuation - artwork_type '{artwork_type}' not supported"
+                        "Skipping price valuation - artwork_type '%s' not supported",
+                        artwork_type,
                     )
-        except Exception as valuation_exc:
-            logger.exception(f"Price valuation failed: {valuation_exc}")
+        except Exception as exc:
+            logger.error(
+                "price valuation failed",
+                extra={
+                    "item_id": str(req.item_id),
+                    "error_type": type(exc).__name__,
+                },
+            )
             # Continue even if valuation fails
 
         # Combine results
@@ -339,8 +364,13 @@ def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionRespons
         del combined_result["image_bytes"]
 
     except Exception as exc:  # pragma: no cover - handled at runtime
-        error_message = str(exc)
-        logger.exception(f"feature extraction failed, {error_message}")
+        logger.error(
+            "feature extraction failed",
+            extra={
+                "item_id": str(req.item_id),
+                "error_type": type(exc).__name__,
+            },
+        )
         combined_result = {}
     finally:
         logger.info("feature extraction complete")

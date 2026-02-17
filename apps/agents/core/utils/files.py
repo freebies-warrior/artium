@@ -7,7 +7,7 @@ from pathlib import Path
 import requests
 from fastapi import HTTPException
 
-from core.utils.http import loggable_url
+from core.utils.http import _redacted_exc_info, loggable_url
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ def download_to_temp_file(url: str, *, suffix: str, timeout: float = 30.0) -> Pa
     try:
         response = requests.get(url, timeout=timeout)
     except requests.RequestException as exc:
-        logger.error(
+        logger.exception(
             "http request failed",
             extra={
                 "method": "GET",
@@ -24,6 +24,7 @@ def download_to_temp_file(url: str, *, suffix: str, timeout: float = 30.0) -> Pa
                 "timeout": timeout,
                 "error_type": type(exc).__name__,
             },
+            exc_info=_redacted_exc_info(exc),
         )
         raise
 

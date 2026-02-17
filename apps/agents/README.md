@@ -194,6 +194,22 @@ Follow as given in `.env.example`.
 
 ---
 
+## Project structure
+
+The codebase is being migrated incrementally to a clearer package layout while keeping existing entrypoints stable.
+
+### Target structure (WIP)
+- `agents/core/` — orchestration, prompting, parsing, and other pure domain logic.
+- `agents/providers/` — integration boundaries (LLM, HTTP, storage, and external clients).
+- `agents/tasks/<task_name>/` — task-specific pipelines/services (for example, visualizer).
+- `agents/utils/` — shared utilities used across tasks.
+
+### Migration strategy
+- Migrate one task at a time into `agents/tasks/...` to keep changes reviewable and low risk.
+- Keep legacy import paths working via thin compatibility wrappers during migration.
+
+---
+
 ## Adding a new agent
 
 1. Create a new module under `app/agents/<new_agent>.py`

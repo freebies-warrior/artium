@@ -11,8 +11,8 @@ from feature_extractor.llm_client import GeminiVisionClient
 from feature_extractor.types import FeatureState
 from price_valuator.graph import build_valuation_graph
 from price_valuator.types import ValuationState
-from visualizer.client import GeminiClient
-from visualizer.pipeline_langgraph import (  # maaf iya ni emang jelek soalnya mau cepet hehe
+from agents.tasks.visualizer.client import GeminiClient
+from agents.tasks.visualizer.pipeline_langgraph import (
     VizState,
     build_visualization_graph,
 )

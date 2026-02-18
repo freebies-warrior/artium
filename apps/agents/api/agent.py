@@ -27,14 +27,14 @@ from core.utils.files import cleanup_directory, download_to_temp_file
 from core.utils.http import internal_auth_headers, loggable_url, put_json
 from core.utils.json import sanitize_for_json
 
+from agents.tasks.visualizer.classify_node import is_valid_artwork_and_room  # noqa: E402
+from agents.tasks.visualizer.config import VisualizerConfig  # noqa: E402
+from agents.tasks.visualizer.pipeline_langgraph import VizState  # noqa: E402
+from agents.tasks.visualizer.pipeline_sequential import _load_image  # noqa: E402
+from agents.tasks.visualizer.runner import _save_image  # noqa: E402
 from feature_extractor.tools.image_tool import fetch_and_standardize_image  # noqa: E402
 from feature_extractor.types import ArtworkMetadata, FeatureState  # noqa: E402
 from feature_extractor.single_select import get_primary_image_index
-from visualizer.config import VisualizerConfig  # noqa: E402
-from visualizer.pipeline_langgraph import VizState  # noqa: E402
-from visualizer.pipeline_sequential import _load_image  # noqa: E402
-from visualizer.classify_node import is_valid_artwork_and_room  # noqa: E402
-from visualizer.runner import _save_image  # noqa: E402
 
 from .service import get_agent_service  # noqa: E402
 

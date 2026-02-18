@@ -14,8 +14,8 @@ from agents.tasks.visualizer.pipeline_langgraph import (
 from agents.tasks.feature_extractor.graph import build_graph
 from agents.tasks.feature_extractor.llm_client import GeminiVisionClient
 from agents.tasks.feature_extractor.types import FeatureState
-from price_valuator.graph import build_valuation_graph
-from price_valuator.types import ValuationState
+from agents.tasks.price_valuator.graph import build_valuation_graph
+from agents.tasks.price_valuator.types import ValuationState
 
 logger = logging.getLogger(__name__)
 

@@ -22,10 +22,10 @@ from fastapi import APIRouter, BackgroundTasks
 from pydantic import BaseModel, HttpUrl
 from enum import Enum
 
-from core.settings import get_settings
-from core.utils.files import cleanup_directory, download_to_temp_file
-from core.utils.http import internal_auth_headers, loggable_url, put_json
-from core.utils.json import sanitize_for_json
+from agents.core.settings import get_settings
+from agents.core.utils.files import cleanup_directory, download_to_temp_file
+from agents.core.utils.http import internal_auth_headers, loggable_url, put_json
+from agents.core.utils.json import sanitize_for_json
 
 from agents.tasks.feature_extractor.single_select import get_primary_image_index
 from agents.tasks.feature_extractor.tools.image_tool import fetch_and_standardize_image  # noqa: E402

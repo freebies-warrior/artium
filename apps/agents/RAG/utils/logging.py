@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from core.logging import configure_logging
-from core.settings import get_settings
+from agents.core.logging import configure_logging
+from agents.core.settings import get_settings
 
 
 def setup_logging(level: str | None = None) -> None:

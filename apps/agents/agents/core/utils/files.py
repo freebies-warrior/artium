@@ -7,7 +7,7 @@ from pathlib import Path
 import requests
 from fastapi import HTTPException
 
-from core.utils.http import _redacted_exc_info, loggable_url
+from agents.core.utils.http import _redacted_exc_info, loggable_url
 
 logger = logging.getLogger(__name__)
 

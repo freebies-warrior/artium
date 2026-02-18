@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from core.utils.parsing import parse_json_object
+from agents.core.utils.parsing import parse_json_object
 
 
 def test_parse_json_object_rejects_empty_content() -> None:

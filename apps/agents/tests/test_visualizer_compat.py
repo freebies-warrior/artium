@@ -1,5 +1,5 @@
 import agents.tasks.visualizer.runner as migrated
-from api import agent as api_agent
+from agents.api import agent as api_agent
 
 
 def test_visualizer_runner_import_smoke() -> None:

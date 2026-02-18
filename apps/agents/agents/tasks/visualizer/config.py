@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from core.settings import get_settings
+from agents.core.settings import get_settings
 
 
 class VisualizerConfig(BaseModel):

@@ -5,8 +5,8 @@ from typing import Dict, List
 
 import httpx
 
-from core.settings import get_settings
-from core.utils.http import loggable_url
+from agents.core.settings import get_settings
+from agents.core.utils.http import loggable_url
 
 logger = logging.getLogger(__name__)
 

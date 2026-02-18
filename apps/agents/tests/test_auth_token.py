@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
 from app import require_internal_token
-from core.settings import get_settings
+from agents.core.settings import get_settings
 
 
 @pytest.fixture(autouse=True)

@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 
 import yaml
 
-from core.settings import Settings, get_settings
+from agents.core.settings import Settings, get_settings
 
 
 def EnvSettings() -> Settings:

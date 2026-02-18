@@ -14,8 +14,8 @@ import json
 import logging
 import sys
 
-from core.logging import configure_logging
-from core.settings import get_settings
+from agents.core.logging import configure_logging
+from agents.core.settings import get_settings
 
 from agents.tasks.feature_extractor.tools.image_tool import fetch_and_standardize_image
 from agents.tasks.feature_extractor.types import ArtworkMetadata, FeatureState

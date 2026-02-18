@@ -5,8 +5,8 @@ import json
 import logging
 from dataclasses import asdict
 
-from core.logging import configure_logging
-from core.settings import get_settings
+from agents.core.logging import configure_logging
+from agents.core.settings import get_settings
 
 from .config import VisualizerConfig
 from .runner import visualize_installation

@@ -5,7 +5,7 @@ import logging
 import pytest
 import requests
 
-from core.utils.http import loggable_url, put_json
+from agents.core.utils.http import loggable_url, put_json
 
 
 def test_loggable_url_strips_query_and_fragment() -> None:
@@ -22,8 +22,8 @@ def test_put_json_timeout_logs_actionable_sanitized_context(
     def raise_timeout(*args, **kwargs):
         raise requests.Timeout(f"timed out while calling {signed_url}")
 
-    monkeypatch.setattr("core.utils.http.requests.put", raise_timeout)
-    caplog.set_level(logging.ERROR, logger="core.utils.http")
+    monkeypatch.setattr("agents.core.utils.http.requests.put", raise_timeout)
+    caplog.set_level(logging.ERROR, logger="agents.core.utils.http")
 
     with pytest.raises(requests.Timeout):
         put_json(signed_url, {"ok": True}, timeout=1.5)

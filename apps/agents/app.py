@@ -9,10 +9,10 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, Header, HTTPException, status
 
-from api import agent as agent_api
-from core.logging import configure_logging
-from api.service import agent_service_lifespan
-from core.settings import get_settings
+from agents.api import agent as agent_api
+from agents.core.logging import configure_logging
+from agents.api.service import agent_service_lifespan
+from agents.core.settings import get_settings
 
 logger = logging.getLogger(__name__)
 

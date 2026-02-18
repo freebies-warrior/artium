@@ -4,8 +4,8 @@ import argparse
 import json
 import logging
 
-from core.logging import configure_logging
-from core.settings import get_settings
+from agents.core.logging import configure_logging
+from agents.core.settings import get_settings
 
 from .graph import build_graph
 from .llm_client import GeminiVisionClient

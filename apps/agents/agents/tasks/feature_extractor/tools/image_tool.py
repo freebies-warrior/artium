@@ -7,7 +7,7 @@ from typing import Tuple
 import httpx
 from PIL import Image
 
-from core.utils.http import loggable_url
+from agents.core.utils.http import loggable_url
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from core.utils.files import sanitize_output_filename
-from core.utils.http import internal_auth_headers
+from agents.core.utils.files import sanitize_output_filename
+from agents.core.utils.http import internal_auth_headers
 
 
 def test_sanitize_output_filename_applies_default_suffix() -> None:

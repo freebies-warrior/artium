@@ -6,8 +6,8 @@ from google import genai
 from google.genai import types
 from PIL import Image
 
-from core.settings import get_settings
-from core.utils.parsing import parse_json_object
+from agents.core.settings import get_settings
+from agents.core.utils.parsing import parse_json_object
 
 logger = logging.getLogger(__name__)
 

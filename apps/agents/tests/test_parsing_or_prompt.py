@@ -1,4 +1,4 @@
-from core.utils.json import sanitize_for_json
+from agents.core.utils.json import sanitize_for_json
 
 
 def test_sanitize_for_json_removes_binary_values() -> None:

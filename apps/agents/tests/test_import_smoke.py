@@ -5,7 +5,7 @@ def test_import_app_entrypoint_module() -> None:
 
 
 def test_import_api_router_module() -> None:
-    from api import agent
+    from agents.api import agent
 
     assert agent.system_router is not None
     assert agent.visualizer_router is not None

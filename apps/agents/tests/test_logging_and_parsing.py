@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-import core.logging as core_logging
+import agents.core.logging as core_logging
 
 
 def test_configure_logging_is_idempotent(monkeypatch: pytest.MonkeyPatch) -> None:

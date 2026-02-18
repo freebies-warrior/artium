@@ -6,16 +6,16 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Any
 
-from feature_extractor.graph import build_graph
-from feature_extractor.llm_client import GeminiVisionClient
-from feature_extractor.types import FeatureState
-from price_valuator.graph import build_valuation_graph
-from price_valuator.types import ValuationState
 from agents.tasks.visualizer.client import GeminiClient
 from agents.tasks.visualizer.pipeline_langgraph import (
     VizState,
     build_visualization_graph,
 )
+from agents.tasks.feature_extractor.graph import build_graph
+from agents.tasks.feature_extractor.llm_client import GeminiVisionClient
+from agents.tasks.feature_extractor.types import FeatureState
+from price_valuator.graph import build_valuation_graph
+from price_valuator.types import ValuationState
 
 logger = logging.getLogger(__name__)
 

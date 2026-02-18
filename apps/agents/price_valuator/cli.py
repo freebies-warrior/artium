@@ -17,10 +17,10 @@ import sys
 from core.logging import configure_logging
 from core.settings import get_settings
 
-from feature_extractor.tools.image_tool import fetch_and_standardize_image
-from feature_extractor.types import ArtworkMetadata, FeatureState
-from feature_extractor.graph import build_graph
-from feature_extractor.llm_client import GeminiVisionClient
+from agents.tasks.feature_extractor.tools.image_tool import fetch_and_standardize_image
+from agents.tasks.feature_extractor.types import ArtworkMetadata, FeatureState
+from agents.tasks.feature_extractor.graph import build_graph
+from agents.tasks.feature_extractor.llm_client import GeminiVisionClient
 from price_valuator.graph import build_valuation_graph
 from price_valuator.types import ValuationState
 

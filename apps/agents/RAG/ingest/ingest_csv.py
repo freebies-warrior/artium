@@ -26,9 +26,9 @@ from RAG.embedder.openai_embed import OpenAITextEmbedder
 from RAG.embedder.numeric import NumericFeatureEmbedder
 from RAG.embedder.clip_image import ClipImageEmbedder
 from RAG.utils.logging import setup_logging
-from feature_extractor.graph import build_graph
-from feature_extractor.llm_client import GeminiVisionClient
-from feature_extractor.types import ArtworkMetadata, FeatureState
+from agents.tasks.feature_extractor.graph import build_graph
+from agents.tasks.feature_extractor.llm_client import GeminiVisionClient
+from agents.tasks.feature_extractor.types import ArtworkMetadata, FeatureState
 
 logger = logging.getLogger(__name__)
 
@@ -277,7 +277,7 @@ def main() -> None:
                 "errors": [],
             }
             # Build a minimal graph just to get classification
-            from feature_extractor.classifier_node import artwork_classifier_node
+            from agents.tasks.feature_extractor.classifier_node import artwork_classifier_node
 
             classifier = artwork_classifier_node(GeminiVisionClient())
             from langgraph.types import Command

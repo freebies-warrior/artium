@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     VISUALIZER_USE_LANGGRAPH: bool = True
 
     # RAG configuration
-    VECTORDB_CONFIG: str = "RAG/config.yaml"
+    VECTORDB_CONFIG: str = "agents/providers/rag/config.yaml"
     LOG_LEVEL: str = "INFO"
     APP_ENV: str = "dev"
 

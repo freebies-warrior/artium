@@ -11,21 +11,21 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import pandas as pd
 
-from RAG.settings import EnvSettings, load_config
-from RAG.utils.dynamic_import import import_from_path
-from RAG.utils.hashing import sha256_hex
-from RAG.pinecone_store import (
+from agents.providers.rag.settings import EnvSettings, load_config
+from agents.providers.rag.utils.dynamic_import import import_from_path
+from agents.providers.rag.utils.hashing import sha256_hex
+from agents.providers.rag.pinecone_store import (
     build_pinecone_client,
     ensure_index,
     get_index,
     index_name,
 )
-from RAG.context.canonicalize import canonicalize_feature_state
-from RAG.context.manus import ManusCanonicalizer
-from RAG.embedder.openai_embed import OpenAITextEmbedder
-from RAG.embedder.numeric import NumericFeatureEmbedder
-from RAG.embedder.clip_image import ClipImageEmbedder
-from RAG.utils.logging import setup_logging
+from agents.providers.rag.context.canonicalize import canonicalize_feature_state
+from agents.providers.rag.context.manus import ManusCanonicalizer
+from agents.providers.rag.embedder.openai_embed import OpenAITextEmbedder
+from agents.providers.rag.embedder.numeric import NumericFeatureEmbedder
+from agents.providers.rag.embedder.clip_image import ClipImageEmbedder
+from agents.providers.rag.utils.logging import setup_logging
 from agents.tasks.feature_extractor.graph import build_graph
 from agents.tasks.feature_extractor.llm_client import GeminiVisionClient
 from agents.tasks.feature_extractor.types import ArtworkMetadata, FeatureState

@@ -15,11 +15,11 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from RAG.embedder.clip_image import ClipImageEmbedder
-from RAG.embedder.openai_embed import OpenAITextEmbedder
-from RAG.pinecone_store import build_pinecone_client, get_index, index_name
-from RAG.settings import EnvSettings, load_config
-from RAG.utils.logging import setup_logging
+from agents.providers.rag.embedder.clip_image import ClipImageEmbedder
+from agents.providers.rag.embedder.openai_embed import OpenAITextEmbedder
+from agents.providers.rag.pinecone_store import build_pinecone_client, get_index, index_name
+from agents.providers.rag.settings import EnvSettings, load_config
+from agents.providers.rag.utils.logging import setup_logging
 
 logger = logging.getLogger(__name__)
 

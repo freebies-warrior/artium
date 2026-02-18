@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List
 
-from RAG.settings import EnvSettings, load_config
-from RAG.pinecone_store import build_pinecone_client, get_index, index_name
-from RAG.embedder.openai_embed import OpenAITextEmbedder
-from RAG.context.canonicalize import canonicalize_feature_state
+from agents.providers.rag.settings import EnvSettings, load_config
+from agents.providers.rag.pinecone_store import build_pinecone_client, get_index, index_name
+from agents.providers.rag.embedder.openai_embed import OpenAITextEmbedder
+from agents.providers.rag.context.canonicalize import canonicalize_feature_state
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class RAGQueryTool:
         top_k: int = 10,
     ) -> List[Dict[str, Any]]:
         """
-        Search for comparable artworks using RAG.
+        Search for comparable artworks using agents.providers.rag.
 
         Args:
             feature_state: Feature state from feature extractor

@@ -33,10 +33,39 @@ class AppConfig:
         return cur
 
 
+def _resolve_default_config_path() -> Path:
+    configured = Path(get_settings().VECTORDB_CONFIG)
+    candidates = [
+        configured,
+        Path("agents/providers/rag/config.yaml"),
+        Path("RAG/config.yaml"),
+    ]
+
+    unique_candidates: list[Path] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        key = str(candidate)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_candidates.append(candidate)
+
+    tried: list[Path] = []
+    for candidate in unique_candidates:
+        p = candidate.expanduser()
+        if p.exists():
+            return p
+        tried.append(p)
+
+    tried_paths = ", ".join(str(path) for path in tried)
+    raise FileNotFoundError(f"RAG config file not found. Tried: {tried_paths}")
+
+
 def load_config(config_path: str | os.PathLike = None) -> AppConfig:
     if config_path is None:
-        config_path = get_settings().VECTORDB_CONFIG
-    p = Path(config_path)
+        p = _resolve_default_config_path()
+    else:
+        p = Path(config_path)
     data = yaml.safe_load(p.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise ValueError(f"Config at {p} must be a YAML dict")

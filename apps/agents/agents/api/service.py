@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
-from typing import Any
+from PIL import Image
 
 from agents.tasks.visualizer.client import GeminiClient
-from agents.tasks.visualizer.pipeline_langgraph import (
-    VizState,
-    build_visualization_graph,
-)
+from agents.tasks.visualizer.config import VisualizerConfig
+from agents.tasks.visualizer.pipeline_langgraph import build_visualization_graph
+from agents.tasks.visualizer.service import run_preview_with_graph
 from agents.tasks.feature_extractor.graph import build_graph
 from agents.tasks.feature_extractor.llm_client import GeminiVisionClient
 from agents.tasks.feature_extractor.types import FeatureState
@@ -60,13 +59,26 @@ class AgentService:
         logger.info(f"Feature extraction complete. Artwork type: {result.get('artwork_type')}")
         return result
 
-    def visualize(self, state: VizState) -> VizState:
-        """Run visualization pipeline using the cached visualization graph."""
-        if self.visualizer_graph is None:
+    def run_visualizer_preview(
+        self,
+        cfg: VisualizerConfig,
+        room_img: Image.Image,
+        art_img: Image.Image,
+        upload_image_url: str | None,
+    ) -> str:
+        """Run visualizer preview flow using cached visualizer resources."""
+        if self.visualizer_graph is None or self.visualizer_client is None:
             raise RuntimeError("AgentService not initialized. Call initialize() first.")
 
         logger.info("Running visualization pipeline...")
-        result = self.visualizer_graph.invoke(state)
+        result = run_preview_with_graph(
+            cfg=cfg,
+            room_img=room_img,
+            art_img=art_img,
+            upload_image_url=upload_image_url,
+            visualizer_client=self.visualizer_client,
+            visualizer_graph=self.visualizer_graph,
+        )
         logger.info("Visualization complete.")
         return result
 

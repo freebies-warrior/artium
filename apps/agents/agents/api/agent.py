@@ -30,11 +30,8 @@ from agents.core.utils.json import sanitize_for_json
 from agents.tasks.feature_extractor.single_select import get_primary_image_index
 from agents.tasks.feature_extractor.tools.image_tool import fetch_and_standardize_image  # noqa: E402
 from agents.tasks.feature_extractor.types import ArtworkMetadata, FeatureState  # noqa: E402
-from agents.tasks.visualizer.classify_node import is_valid_artwork_and_room  # noqa: E402
 from agents.tasks.visualizer.config import VisualizerConfig  # noqa: E402
-from agents.tasks.visualizer.pipeline_langgraph import VizState  # noqa: E402
-from agents.tasks.visualizer.pipeline_sequential import _load_image  # noqa: E402
-from agents.tasks.visualizer.runner import _save_image  # noqa: E402
+from agents.tasks.visualizer.service import load_preview_images  # noqa: E402
 
 from .service import get_agent_service  # noqa: E402
 
@@ -202,34 +199,16 @@ def _run_preview(req: VisualizerRequest) -> None:
     result_description = None
     error_message = None
 
-    room_img = _load_image(str(room_path))
-    art_img = _load_image(str(art_path))
+    room_img, art_img = load_preview_images(str(room_path), str(art_path))
 
     try:
-        valid, is_artwork, is_room = is_valid_artwork_and_room(art_img, room_img)
-        if not valid:
-            if not is_artwork and not is_room:
-                raise ValueError(
-                    "First image is not recognized as an artwork and second image is not recognized as a room."
-                )
-            if not is_artwork:
-                raise ValueError("First image is not recognized as an artwork.")
-            if not is_room:
-                raise ValueError("Second image is not recognized as a room.")
-
         viz_service = get_agent_service()
-        state: VizState = {
-            "cfg": cfg,
-            "client": viz_service.visualizer_client,
-            "room_img": room_img,
-            "art_img": art_img,
-            "used_enhancement": False,
-            "retries_used": 0,
-        }
-        result = viz_service.visualize(state)
-        _save_image(result["out_img"], req.upload_image_url)
-
-        result_description = result["appraisal"].summary
+        result_description = viz_service.run_visualizer_preview(
+            cfg=cfg,
+            room_img=room_img,
+            art_img=art_img,
+            upload_image_url=req.upload_image_url,
+        )
 
         status = JobStatus.SUCCEEDED
     except Exception as exc:  # pragma: no cover - handled at runtime

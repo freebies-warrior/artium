@@ -177,6 +177,15 @@ uv run ruff check .
 uv run pytest -q
 ```
 
+### RAG tooling entrypoints
+RAG provider logic lives under `agents/providers/rag`, while operational entrypoints live under `scripts/`.
+
+```bash
+cd apps/agents
+uv run python -m scripts.rag_ingest --help
+uv run uvicorn scripts.rag_api:app --host 0.0.0.0 --port 8010
+```
+
 ### Option B: Docker (recommended for parity)
 If your repo provides a Dockerfile for agents:
 ```bash
@@ -206,7 +215,8 @@ The codebase is being migrated incrementally to a clearer package layout while k
 
 ### Migration strategy
 - Migrate one task at a time into `agents/tasks/...` to keep changes reviewable and low risk.
-- Keep legacy import paths working via thin compatibility wrappers during migration.
+- Keep service boundaries selective: add `service.py` only when API code would otherwise depend on task-private internals.
+- RAG entrypoints use a clean cutover: run `scripts.rag_api` and `scripts.rag_ingest` (no legacy `agents.providers.rag.*` module wrappers).
 
 ---
 

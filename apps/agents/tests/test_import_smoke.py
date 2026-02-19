@@ -10,3 +10,9 @@ def test_import_api_router_module() -> None:
     assert agent.system_router is not None
     assert agent.visualizer_router is not None
     assert agent.feature_extractor_router is not None
+
+
+def test_import_rag_ingest_script_module() -> None:
+    from scripts import rag_ingest
+
+    assert callable(rag_ingest.main)

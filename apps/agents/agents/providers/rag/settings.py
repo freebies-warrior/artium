@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 
 import yaml
 
-from agents.core.settings import Settings, get_settings
+from agents.core.settings import AGENTS_ROOT, Settings, get_settings
 
 
 def EnvSettings() -> Settings:
@@ -34,11 +34,13 @@ class AppConfig:
 
 
 def _resolve_default_config_path() -> Path:
-    configured = Path(get_settings().VECTORDB_CONFIG)
+    configured = Path(get_settings().VECTORDB_CONFIG).expanduser()
+    if not configured.is_absolute():
+        configured = AGENTS_ROOT / configured
     candidates = [
         configured,
-        Path("agents/providers/rag/config.yaml"),
-        Path("RAG/config.yaml"),
+        AGENTS_ROOT / "agents/providers/rag/config.yaml",
+        AGENTS_ROOT / "RAG/config.yaml",
     ]
 
     unique_candidates: list[Path] = []

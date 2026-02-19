@@ -3,9 +3,9 @@
 Unified CLI for initializing Pinecone index and ingesting sample data.
 
 Usage:
-    python -m agents.providers.rag.ingest.cli init --config config.yaml
-    python -m agents.providers.rag.ingest.cli ingest --config config.yaml --dataset-path /path/to/data
-    python -m agents.providers.rag.ingest.cli full --config config.yaml --dataset-path /path/to/data
+    python -m scripts.rag_ingest init --config config.yaml
+    python -m scripts.rag_ingest ingest --config config.yaml --dataset-path /path/to/data
+    python -m scripts.rag_ingest full --config config.yaml --dataset-path /path/to/data
 """
 
 from __future__ import annotations

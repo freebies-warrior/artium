@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from agents.core.settings import get_settings
-from agents.providers.rag.settings import load_config
+import agents.providers.rag.settings as rag_settings
 
 
 @pytest.fixture(autouse=True)
@@ -24,7 +24,7 @@ def test_load_config_uses_explicit_path_without_fallback(tmp_path: Path) -> None
     explicit = tmp_path / "explicit.yaml"
     _write_config(explicit, embedding_mode="numeric")
 
-    cfg = load_config(explicit)
+    cfg = rag_settings.load_config(explicit)
 
     assert cfg.path == explicit
     assert cfg.embedding_mode == "numeric"
@@ -33,37 +33,37 @@ def test_load_config_uses_explicit_path_without_fallback(tmp_path: Path) -> None
 def test_load_config_prefers_new_default_path(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(rag_settings, "AGENTS_ROOT", tmp_path)
     new_path = tmp_path / "agents/providers/rag/config.yaml"
     _write_config(new_path, embedding_mode="feature_text")
 
-    cfg = load_config()
+    cfg = rag_settings.load_config()
 
-    assert cfg.path == Path("agents/providers/rag/config.yaml")
+    assert cfg.path == new_path
     assert cfg.embedding_mode == "feature_text"
 
 
 def test_load_config_falls_back_to_legacy_path(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(rag_settings, "AGENTS_ROOT", tmp_path)
     legacy_path = tmp_path / "RAG/config.yaml"
     _write_config(legacy_path, embedding_mode="image")
 
-    cfg = load_config()
+    cfg = rag_settings.load_config()
 
-    assert cfg.path == Path("RAG/config.yaml")
+    assert cfg.path == legacy_path
     assert cfg.embedding_mode == "image"
 
 
 def test_load_config_raises_when_no_default_path_exists(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(rag_settings, "AGENTS_ROOT", tmp_path)
 
     with pytest.raises(FileNotFoundError) as exc:
-        load_config()
+        rag_settings.load_config()
 
     message = str(exc.value)
-    assert "agents/providers/rag/config.yaml" in message
-    assert "RAG/config.yaml" in message
+    assert str(tmp_path / "agents/providers/rag/config.yaml") in message
+    assert str(tmp_path / "RAG/config.yaml") in message

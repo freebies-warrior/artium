@@ -5,14 +5,25 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
+
+def _resolve_agents_root() -> Path:
+    start_dir = Path(__file__).resolve().parent
+    for directory in (start_dir, *start_dir.parents):
+        if (directory / "pyproject.toml").exists():
+            return directory
+    raise FileNotFoundError(
+        f"Could not resolve agents root from {start_dir}; no pyproject.toml found in parent chain."
+    )
+
+
+AGENTS_ROOT = _resolve_agents_root()
+ENV_FILE = AGENTS_ROOT / ".env"
 
 
 class Settings(BaseSettings):
     """Centralized settings for the agents codebase."""
 
     model_config = SettingsConfigDict(
-        env_file=ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -49,4 +60,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    return Settings(_env_file=ENV_FILE)

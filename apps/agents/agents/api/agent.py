@@ -28,12 +28,12 @@ from agents.core.utils.http import internal_auth_headers, loggable_url, put_json
 from agents.core.utils.json import sanitize_for_json
 
 from agents.tasks.feature_extractor.single_select import get_primary_image_index
-from agents.tasks.feature_extractor.tools.image_tool import fetch_and_standardize_image  # noqa: E402
-from agents.tasks.feature_extractor.types import ArtworkMetadata, FeatureState  # noqa: E402
-from agents.tasks.visualizer.config import VisualizerConfig  # noqa: E402
-from agents.tasks.visualizer.service import load_preview_images  # noqa: E402
+from agents.tasks.feature_extractor.tools.image_tool import fetch_and_standardize_image
+from agents.tasks.feature_extractor.types import ArtworkMetadata, FeatureState
+from agents.tasks.visualizer.config import VisualizerConfig
+from agents.tasks.visualizer.service import load_preview_images
 
-from .service import get_agent_service  # noqa: E402
+from .service import get_agent_service
 
 
 class ItemDimensions(BaseModel):

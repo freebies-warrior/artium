@@ -8,17 +8,17 @@ import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from agents.providers.rag.settings import EnvSettings, load_config  # noqa: E402
-from agents.providers.rag.utils.logging import setup_logging  # noqa: E402
-from agents.providers.rag.utils.image_io import data_url_to_bytes  # noqa: E402
-from agents.providers.rag.utils.hashing import sha256_hex  # noqa: E402
+from agents.providers.rag.settings import EnvSettings, load_config
+from agents.providers.rag.utils.logging import setup_logging
+from agents.providers.rag.utils.image_io import data_url_to_bytes
+from agents.providers.rag.utils.hashing import sha256_hex
 
-from agents.providers.rag.pinecone_store import build_pinecone_client, get_index, index_name  # noqa: E402
-from agents.providers.rag.context.canonicalize import canonicalize_feature_state  # noqa: E402
-from agents.providers.rag.context.manus import ManusCanonicalizer  # noqa: E402
-from agents.providers.rag.embedder.openai_embed import OpenAITextEmbedder  # noqa: E402
-from agents.providers.rag.embedder.numeric import NumericFeatureEmbedder  # noqa: E402
-from agents.providers.rag.embedder.clip_image import ClipImageEmbedder  # noqa: E402
+from agents.providers.rag.pinecone_store import build_pinecone_client, get_index, index_name
+from agents.providers.rag.context.canonicalize import canonicalize_feature_state
+from agents.providers.rag.context.manus import ManusCanonicalizer
+from agents.providers.rag.embedder.openai_embed import OpenAITextEmbedder
+from agents.providers.rag.embedder.numeric import NumericFeatureEmbedder
+from agents.providers.rag.embedder.clip_image import ClipImageEmbedder
 
 logger = logging.getLogger(__name__)
 

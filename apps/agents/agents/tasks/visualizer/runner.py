@@ -59,7 +59,7 @@ def visualize_installation(
     if use_langgraph:
         try:
             logger.info("trying langgraph pipeline")
-            from .pipeline_langgraph import run_pipeline_langgraph  # noqa
+            from .pipeline_langgraph import run_pipeline_langgraph
 
             final = run_pipeline_langgraph(cfg, room_path, art_path)
             out_img = final["out_img"]

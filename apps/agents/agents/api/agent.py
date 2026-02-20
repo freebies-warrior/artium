@@ -13,23 +13,18 @@ from __future__ import annotations
 
 import base64
 import logging
-import tempfile
 import uuid
-from pathlib import Path
-from typing import Optional, List, Dict, Any
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks
 from pydantic import BaseModel, HttpUrl
-from enum import Enum
 
 from agents.core.settings import get_settings
-from agents.core.utils.files import cleanup_directory, download_to_temp_file
 from agents.core.utils.http import internal_auth_headers, loggable_url, put_json
 from agents.core.utils.json import sanitize_for_json
-
 from agents.tasks.feature_extractor.service import build_initial_feature_state
 from agents.tasks.visualizer.config import VisualizerConfig
-from agents.tasks.visualizer.service import load_preview_images
 
 from .service import get_agent_service
 
@@ -76,10 +71,10 @@ class AsyncFeatureExtractionResponse(BaseModel):
 
 
 class JobStatus(str, Enum):
-    QUEUED = "queued"
-    PROCESSING = "processing"
-    SUCCEEDED = "succeeded"
-    FAILED = "failed"
+    QUEUED = "QUEUED"
+    PROCESSING = "PROCESSING"
+    SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
 
 
 logger = logging.getLogger(__name__)
@@ -88,44 +83,6 @@ logger = logging.getLogger(__name__)
 system_router = APIRouter(tags=["system"])
 visualizer_router = APIRouter(prefix="/agents/visualizer", tags=["visualizer"])
 feature_extractor_router = APIRouter(prefix="/agents/feature_extractor", tags=["feature_extractor"])
-
-
-def _download_to_temp(url: str, suffix: str) -> Path:
-    return download_to_temp_file(url, suffix=suffix, timeout=30.0)
-
-
-def _notify_backend_preview(
-    job_id: str,
-    status: JobStatus,
-    result_description: Optional[str],
-    error_message: Optional[str],
-) -> None:
-    settings = get_settings()
-    url = f"{settings.backend_url}/visualizations/{job_id}"
-    payload = {
-        "status": status.value,
-        "result_description": result_description,
-        "error_message": error_message,
-    }
-
-    headers = internal_auth_headers(settings.INTERNAL_TOKEN)
-
-    try:
-        resp = put_json(url, payload, headers=headers, timeout=10.0)
-        if resp.status_code >= 400:
-            logger.warning(
-                "failed to update visualizer job",
-                extra={"job_id": job_id, "status": resp.status_code, "url": loggable_url(url)},
-            )
-    except Exception as exc:
-        logger.error(
-            "failed to send visualizer job update",
-            extra={
-                "job_id": job_id,
-                "url": loggable_url(url),
-                "error_type": type(exc).__name__,
-            },
-        )
 
 
 def _notify_backend_feature_extraction(
@@ -178,52 +135,8 @@ def get_config() -> dict:
 
 
 def _run_preview(req: VisualizerRequest) -> None:
-    logger.info(
-        "preview request",
-        extra={
-            "room_url": loggable_url(str(req.room_url)),
-            "art_url": loggable_url(str(req.art_url)),
-        },
-    )
-
-    cfg = VisualizerConfig()
-    tmp_dir = Path(tempfile.mkdtemp())
-    room_path = _download_to_temp(
-        str(req.room_url), suffix=Path(req.room_url.path).suffix or ".jpeg"
-    )
-    art_path = _download_to_temp(str(req.art_url), suffix=Path(req.art_url.path).suffix or ".jpeg")
-
-    status = JobStatus.FAILED
-    result_description = None
-    error_message = None
-
-    room_img, art_img = load_preview_images(str(room_path), str(art_path))
-
-    try:
-        viz_service = get_agent_service()
-        result_description = viz_service.run_visualizer_preview(
-            cfg=cfg,
-            room_img=room_img,
-            art_img=art_img,
-            upload_image_url=req.upload_image_url,
-        )
-
-        status = JobStatus.SUCCEEDED
-    except Exception as exc:  # pragma: no cover - handled at runtime
-        error_message = str(exc)
-        logger.error(
-            "visualization failed",
-            extra={"job_id": req.job_id, "error_type": type(exc).__name__},
-        )
-    finally:
-        logger.info("result_description: %s", result_description)
-        _notify_backend_preview(
-            req.job_id,
-            status=status,
-            result_description=result_description,
-            error_message=error_message,
-        )
-        cleanup_directory(tmp_dir)
+    service = get_agent_service()
+    service.run_preview_job(req)
 
 
 @visualizer_router.post("/visualize_installation", response_model=AsyncPreviewResponse)

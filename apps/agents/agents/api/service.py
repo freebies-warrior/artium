@@ -3,18 +3,29 @@
 from __future__ import annotations
 
 import logging
+import tempfile
 from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import TYPE_CHECKING
+
 from PIL import Image
 
-from agents.tasks.visualizer.client import GeminiClient
-from agents.tasks.visualizer.config import VisualizerConfig
-from agents.tasks.visualizer.pipeline_langgraph import build_visualization_graph
-from agents.tasks.visualizer.service import run_preview_with_graph
+from agents.core.adapters import HttpBackendCallbackClient
+from agents.core.ports import BackendCallbackClient
+from agents.core.utils.files import cleanup_directory, download_to_temp_file
+from agents.core.utils.http import loggable_url
 from agents.tasks.feature_extractor.graph import build_graph
 from agents.tasks.feature_extractor.llm_client import GeminiVisionClient
 from agents.tasks.feature_extractor.types import FeatureState
 from agents.tasks.price_valuator.graph import build_valuation_graph
 from agents.tasks.price_valuator.types import ValuationState
+from agents.tasks.visualizer.client import GeminiClient
+from agents.tasks.visualizer.config import VisualizerConfig
+from agents.tasks.visualizer.pipeline_langgraph import build_visualization_graph
+from agents.tasks.visualizer.service import load_preview_images, run_preview_with_graph
+
+if TYPE_CHECKING:
+    from agents.api.agent import VisualizerRequest
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +33,13 @@ logger = logging.getLogger(__name__)
 class AgentService:
     """Unified service for managing feature extraction, visualization, and price valuation graphs."""
 
-    def __init__(self):
+    def __init__(self, *, callback_client: BackendCallbackClient | None = None):
         self.feature_graph = None
         self.visualizer_graph = None
         self.valuation_graph = None
         self.feature_client = None
         self.visualizer_client = None
+        self.callback_client = callback_client or HttpBackendCallbackClient()
 
     def initialize(self):
         """Initialize all graphs and clients (called once at startup)."""
@@ -81,6 +93,54 @@ class AgentService:
         )
         logger.info("Visualization complete.")
         return result
+
+    def run_preview_job(self, req: "VisualizerRequest") -> None:
+        logger.info(
+            "preview request",
+            extra={
+                "room_url": loggable_url(str(req.room_url)),
+                "art_url": loggable_url(str(req.art_url)),
+            },
+        )
+
+        cfg = VisualizerConfig()
+        tmp_dir = Path(tempfile.mkdtemp())
+        room_path = download_to_temp_file(
+            str(req.room_url), suffix=Path(req.room_url.path).suffix or ".jpeg", timeout=30.0
+        )
+        art_path = download_to_temp_file(
+            str(req.art_url), suffix=Path(req.art_url.path).suffix or ".jpeg", timeout=30.0
+        )
+
+        status = "failed"
+        result_description = None
+        error_message = None
+
+        room_img, art_img = load_preview_images(str(room_path), str(art_path))
+
+        try:
+            result_description = self.run_visualizer_preview(
+                cfg=cfg,
+                room_img=room_img,
+                art_img=art_img,
+                upload_image_url=req.upload_image_url,
+            )
+            status = "succeeded"
+        except Exception as exc:  # pragma: no cover - handled at runtime
+            error_message = str(exc)
+            logger.error(
+                "visualization failed",
+                extra={"job_id": req.job_id, "error_type": type(exc).__name__},
+            )
+        finally:
+            logger.info("result_description: %s", result_description)
+            self.callback_client.update_visualization(
+                req.job_id,
+                status=status,
+                result_description=result_description,
+                error_message=error_message,
+            )
+            cleanup_directory(tmp_dir)
 
     def valuate_artwork(self, state: ValuationState) -> ValuationState:
         """Run price valuation pipeline using the cached valuation graph."""

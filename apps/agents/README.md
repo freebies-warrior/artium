@@ -18,6 +18,7 @@ This folder contains the **AI Agents backend** for **Artium** — a small HTTP s
 - [Security](#security)
 - [Local development](#local-development)
 - [Project structure](#project-structure)
+- [Background execution model](#background-execution-model)
 - [Adding a new agent](#adding-a-new-agent)
 - [Troubleshooting](#troubleshooting)
 
@@ -217,6 +218,16 @@ The codebase is being migrated incrementally to a clearer package layout while k
 - Migrate one task at a time into `agents/tasks/...` to keep changes reviewable and low risk.
 - Keep service boundaries selective: add `service.py` only when API code would otherwise depend on task-private internals.
 - RAG entrypoints use a clean cutover: run `scripts.rag_api` and `scripts.rag_ingest` (no legacy `agents.providers.rag.*` module wrappers).
+
+## Background execution model
+
+Current async execution in the API uses FastAPI in-process `BackgroundTasks`.
+This is temporary and intended for low-complexity local/early environments.
+
+Future Iteration:
+- move long-running jobs to a dedicated queue/worker model
+- keep API handlers as thin enqueue + acknowledgement endpoints
+- keep callback/result persistence behavior compatible with current flows
 
 ---
 

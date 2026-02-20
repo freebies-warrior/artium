@@ -17,7 +17,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl
 
 from agents.tasks.visualizer.config import VisualizerConfig
 
@@ -43,7 +43,7 @@ class FeatureExtractionRequest(BaseModel):
     image_keys: List[str]
     image_get_urls: List[HttpUrl]
     callback_url: Optional[HttpUrl] = None
-    metadata: Dict[str, Any] = {}
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
 class FeatureExtractionResponse(BaseModel):

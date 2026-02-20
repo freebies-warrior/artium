@@ -16,3 +16,9 @@ def test_import_rag_ingest_script_module() -> None:
     from scripts import rag_ingest
 
     assert callable(rag_ingest.main)
+
+
+def test_import_rag_api_script_module() -> None:
+    from scripts import rag_api
+
+    assert rag_api.app is not None

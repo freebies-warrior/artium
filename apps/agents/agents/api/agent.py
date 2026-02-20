@@ -27,9 +27,7 @@ from agents.core.utils.files import cleanup_directory, download_to_temp_file
 from agents.core.utils.http import internal_auth_headers, loggable_url, put_json
 from agents.core.utils.json import sanitize_for_json
 
-from agents.tasks.feature_extractor.single_select import get_primary_image_index
-from agents.tasks.feature_extractor.tools.image_tool import fetch_and_standardize_image
-from agents.tasks.feature_extractor.types import ArtworkMetadata, FeatureState
+from agents.tasks.feature_extractor.service import build_initial_feature_state
 from agents.tasks.visualizer.config import VisualizerConfig
 from agents.tasks.visualizer.service import load_preview_images
 
@@ -250,37 +248,11 @@ def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionRespons
     )
 
     try:
-        selected_index = get_primary_image_index(
-            images=[
-                fetch_and_standardize_image(str(image_url), target_size=(512, 512))[0]
-                for image_url in req.image_get_urls
-            ]
-        )
-
-        image_url = req.image_get_urls[selected_index]
-
-        # Prepare metadata
-        md = ArtworkMetadata(
+        initial_state, md, image_bytes = build_initial_feature_state(
+            image_urls=[str(image_url) for image_url in req.image_get_urls],
             item_id=str(req.item_id),
-            title=req.metadata.get("title", "Unknown"),
-            author=req.metadata.get("author", "Unknown"),
-            year=str(req.metadata.get("year", "Unknown")),
-            medium_hint=req.metadata.get("medium_hint", "Unknown"),
-        ).model_dump()
-
-        # Fetch and standardize image
-        image_bytes, image_mode, image_size = fetch_and_standardize_image(
-            str(image_url), target_size=(1024, 1024)
+            metadata=req.metadata,
         )
-
-        # Build initial state (artwork_type will be determined by classifier node)
-        initial_state: FeatureState = {
-            "metadata": md,
-            "image_bytes": image_bytes,
-            "image_mode": image_mode,
-            "image_size": image_size,
-            "errors": [],
-        }
 
         # Use cached graph from agent service
         service = get_agent_service()

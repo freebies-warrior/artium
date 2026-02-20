@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import logging
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 import httpx
@@ -9,71 +11,115 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from agents.providers.rag.settings import EnvSettings, load_config
-from agents.providers.rag.utils.logging import setup_logging
-from agents.providers.rag.utils.image_io import data_url_to_bytes
 from agents.providers.rag.utils.hashing import sha256_hex
+from agents.providers.rag.utils.image_io import data_url_to_bytes
+from agents.providers.rag.utils.logging import setup_logging
 
-from agents.providers.rag.pinecone_store import build_pinecone_client, get_index, index_name
 from agents.providers.rag.context.canonicalize import canonicalize_feature_state
 from agents.providers.rag.context.manus import ManusCanonicalizer
-from agents.providers.rag.embedder.openai_embed import OpenAITextEmbedder
-from agents.providers.rag.embedder.numeric import NumericFeatureEmbedder
 from agents.providers.rag.embedder.clip_image import ClipImageEmbedder
+from agents.providers.rag.embedder.numeric import NumericFeatureEmbedder
+from agents.providers.rag.embedder.openai_embed import OpenAITextEmbedder
+from agents.providers.rag.pinecone_store import build_pinecone_client, get_index, index_name
 
 logger = logging.getLogger(__name__)
 
-setup_logging()
 
-cfg = load_config()
-env = EnvSettings()
+@dataclass(frozen=True)
+class _RagRuntime:
+    cfg: Any
+    env: Any
+    prefix: str
+    mode: str
+    text_embedder: OpenAITextEmbedder | None
+    manus: ManusCanonicalizer | None
+    numeric_embedder: NumericFeatureEmbedder | None
+    image_embedder: ClipImageEmbedder | None
+    index_clients: dict[str, Any]
 
-pc = build_pinecone_client(env.PINECONE_API_KEY)
 
-prefix = cfg.get("pinecone", "index_prefix", default="artium")
-mode = cfg.embedding_mode
+_runtime: _RagRuntime | None = None
 
-# Prepare embedders
-text_embedder = None
-manus = None
-numeric_embedder = None
-image_embedder = None
 
-if mode == "feature_text":
-    o = cfg.get("feature_text", "openai_embeddings", default={})
-    text_embedder = OpenAITextEmbedder(
-        api_key=env.OPENAI_API_KEY,
-        base_url=env.OPENAI_BASE_URL,
-        model=o.get("model", "text-embedding-3-small"),
-        dimensions=o.get("dimensions", 768),
-        encoding_format=o.get("encoding_format", "float"),
-    )
-    manus_enabled = bool(cfg.get("feature_text", "manus", "enabled", default=False))
-    if manus_enabled:
-        if not env.MANUS_API_KEY:
-            raise RuntimeError("MANUS_API_KEY is required when feature_text.manus.enabled=true")
-        m = cfg.get("feature_text", "manus", default={})
-        manus = ManusCanonicalizer(
-            api_key_header=env.MANUS_API_KEY,
-            agent_profile=m.get("agent_profile", "manus-1.6"),
-            task_mode=m.get("task_mode", "agent"),
+def _initialize_runtime() -> _RagRuntime:
+    global _runtime
+    if _runtime is not None:
+        return _runtime
+
+    setup_logging()
+
+    cfg = load_config()
+    env = EnvSettings()
+
+    pc = build_pinecone_client(env.PINECONE_API_KEY)
+    prefix = cfg.get("pinecone", "index_prefix", default="artium")
+    mode = cfg.embedding_mode
+
+    text_embedder = None
+    manus = None
+    numeric_embedder = None
+    image_embedder = None
+
+    if mode == "feature_text":
+        o = cfg.get("feature_text", "openai_embeddings", default={})
+        text_embedder = OpenAITextEmbedder(
+            api_key=env.OPENAI_API_KEY,
+            base_url=env.OPENAI_BASE_URL,
+            model=o.get("model", "text-embedding-3-small"),
+            dimensions=o.get("dimensions", 768),
+            encoding_format=o.get("encoding_format", "float"),
         )
-elif mode == "numeric":
-    fmap = cfg.get("numeric", "feature_map", default={})
-    numeric_embedder = NumericFeatureEmbedder(feature_map=fmap)
-elif mode == "image":
-    clip_cfg = cfg.get("image", "clip", default={})
-    image_embedder = ClipImageEmbedder(
-        model_name=clip_cfg.get("model", "clip-ViT-B-32"),
-        device=clip_cfg.get("device", "cpu"),
-    )
-else:
-    raise RuntimeError(f"Unknown embedding_mode={mode}")
+        manus_enabled = bool(cfg.get("feature_text", "manus", "enabled", default=False))
+        if manus_enabled:
+            if not env.MANUS_API_KEY:
+                raise RuntimeError("MANUS_API_KEY is required when feature_text.manus.enabled=true")
+            m = cfg.get("feature_text", "manus", default={})
+            manus = ManusCanonicalizer(
+                api_key_header=env.MANUS_API_KEY,
+                agent_profile=m.get("agent_profile", "manus-1.6"),
+                task_mode=m.get("task_mode", "agent"),
+            )
+    elif mode == "numeric":
+        fmap = cfg.get("numeric", "feature_map", default={})
+        numeric_embedder = NumericFeatureEmbedder(feature_map=fmap)
+    elif mode == "image":
+        clip_cfg = cfg.get("image", "clip", default={})
+        image_embedder = ClipImageEmbedder(
+            model_name=clip_cfg.get("model", "clip-ViT-B-32"),
+            device=clip_cfg.get("device", "cpu"),
+        )
+    else:
+        raise RuntimeError(f"Unknown embedding_mode={mode}")
 
-# Prepare pinecone Index objects for each type
-index_clients = {
-    "painting": get_index(pc, index_name(prefix, mode, "painting")),
-    "sculpture": get_index(pc, index_name(prefix, mode, "sculpture")),
-}
+    index_clients = {
+        "painting": get_index(pc, index_name(prefix, mode, "painting")),
+        "sculpture": get_index(pc, index_name(prefix, mode, "sculpture")),
+    }
+
+    _runtime = _RagRuntime(
+        cfg=cfg,
+        env=env,
+        prefix=prefix,
+        mode=mode,
+        text_embedder=text_embedder,
+        manus=manus,
+        numeric_embedder=numeric_embedder,
+        image_embedder=image_embedder,
+        index_clients=index_clients,
+    )
+    return _runtime
+
+
+def _get_runtime() -> _RagRuntime:
+    if _runtime is None:
+        return _initialize_runtime()
+    return _runtime
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    _initialize_runtime()
+    yield
 
 
 class QueryRequest(BaseModel):
@@ -115,23 +161,26 @@ class UpsertResponse(BaseModel):
     upserted: bool
 
 
-app = FastAPI(title="Arium VectorDB Agent", version="0.1.0")
+app = FastAPI(title="Arium VectorDB Agent", version="0.1.0", lifespan=lifespan)
 
 
 @app.get("/health")
 def health() -> Dict[str, Any]:
-    return {"ok": True, "embedding_mode": mode}
+    runtime = _get_runtime()
+    return {"ok": True, "embedding_mode": runtime.mode}
 
 
 @app.post("/upsert", response_model=UpsertResponse)
 def upsert(req: UpsertRequest) -> UpsertResponse:
+    runtime = _get_runtime()
+
     artwork_type = req.artwork_type.lower().strip()
     if artwork_type not in ("painting", "sculpture"):
         raise HTTPException(
             status_code=400, detail="artwork_type must be 'painting' or 'sculpture'"
         )
 
-    if mode == "image":
+    if runtime.mode == "image":
         raise HTTPException(
             status_code=400,
             detail="embedding_mode=image requires image bytes; /upsert currently supports feature_text/numeric only.",
@@ -142,23 +191,28 @@ def upsert(req: UpsertRequest) -> UpsertResponse:
     feature_state.pop("market_features", None)
 
     # Build vector the same way as /query for non-image modes
-    if mode == "numeric":
+    if runtime.mode == "numeric":
+        if runtime.numeric_embedder is None:
+            raise RuntimeError("Numeric embedder is not initialized")
         vision_features = feature_state.get("vision_features") or {}
-        vec = numeric_embedder.build_vector(artwork_type, vision_features)
+        vec = runtime.numeric_embedder.build_vector(artwork_type, vision_features)
         schema_version = "numeric_v1"
         canon_text = None
     else:
-        notes_cfg = cfg.get("feature_text", "notes", default={})
+        if runtime.text_embedder is None:
+            raise RuntimeError("Text embedder is not initialized")
+
+        notes_cfg = runtime.cfg.get("feature_text", "notes", default={})
         strip_urls = bool(notes_cfg.get("strip_urls", True))
         max_total = int(notes_cfg.get("max_chars_total", 800))
         max_section = int(notes_cfg.get("max_chars_per_section", 250))
         schema_version = (
-            cfg.get("feature_text", "schema_version_painting")
+            runtime.cfg.get("feature_text", "schema_version_painting")
             if artwork_type == "painting"
-            else cfg.get("feature_text", "schema_version_sculpture")
+            else runtime.cfg.get("feature_text", "schema_version_sculpture")
         )
-        if manus is None:
-            canon_text, canon_json = canonicalize_feature_state(
+        if runtime.manus is None:
+            canon_text, _canon_json = canonicalize_feature_state(
                 feature_state,
                 strip_urls=strip_urls,
                 max_chars_total=max_total,
@@ -171,12 +225,14 @@ def upsert(req: UpsertRequest) -> UpsertResponse:
                 if artwork_type == "painting"
                 else "For sculptures: include material/form/surface/craftsmanship signals if present."
             )
-            canon_json = manus.canonicalize(
-                feature_state, schema_version=schema_version, type_specific_instructions=type_instr
+            canon_json = runtime.manus.canonicalize(
+                feature_state,
+                schema_version=schema_version,
+                type_specific_instructions=type_instr,
             )
             canon_text = _json_to_text(canon_json, max_chars=max_total)
 
-        vec = text_embedder.embed_texts([canon_text])[0]
+        vec = runtime.text_embedder.embed_texts([canon_text])[0]
 
     # Derive record id if not supplied
     rid = (req.record_id or "").strip()
@@ -205,15 +261,15 @@ def upsert(req: UpsertRequest) -> UpsertResponse:
     if canon_text:
         meta_out["canon_text"] = canon_text[:800]
 
-    index = index_clients[artwork_type]
+    index = runtime.index_clients[artwork_type]
     index.upsert(
         namespace=req.namespace,
         vectors=[{"id": rid, "values": vec, "metadata": meta_out}],
     )
 
     return UpsertResponse(
-        embedding_mode=mode,
-        index=index_name(prefix, mode, artwork_type),
+        embedding_mode=runtime.mode,
+        index=index_name(runtime.prefix, runtime.mode, artwork_type),
         namespace=req.namespace,
         record_id=rid,
         upserted=True,
@@ -222,6 +278,8 @@ def upsert(req: UpsertRequest) -> UpsertResponse:
 
 @app.post("/query", response_model=QueryResponse)
 def query(req: QueryRequest) -> QueryResponse:
+    runtime = _get_runtime()
+
     artwork_type = req.artwork_type.lower().strip()
     if artwork_type not in ("painting", "sculpture"):
         raise HTTPException(
@@ -230,7 +288,7 @@ def query(req: QueryRequest) -> QueryResponse:
 
     # Production path: caller may provide extracted feature_state directly (no image bytes).
     if req.feature_state is not None:
-        if mode == "image":
+        if runtime.mode == "image":
             raise HTTPException(
                 status_code=400,
                 detail="embedding_mode=image requires an image (image_url or image_data_url); feature_state-only queries are not supported.",
@@ -241,8 +299,10 @@ def query(req: QueryRequest) -> QueryResponse:
     else:
         image_bytes = _load_image_bytes(req)
 
-        if mode == "image":
-            vec = image_embedder.embed_image(image_bytes)
+        if runtime.mode == "image":
+            if runtime.image_embedder is None:
+                raise RuntimeError("Image embedder is not initialized")
+            vec = runtime.image_embedder.embed_image(image_bytes)
         else:
             raise HTTPException(
                 status_code=400,
@@ -250,21 +310,25 @@ def query(req: QueryRequest) -> QueryResponse:
             )
 
     # Vector building for non-image modes
-    if mode != "image":
-        if mode == "numeric":
+    if runtime.mode != "image":
+        if runtime.mode == "numeric":
+            if runtime.numeric_embedder is None:
+                raise RuntimeError("Numeric embedder is not initialized")
             vision_features = feature_state.get("vision_features") or {}
-            vec = numeric_embedder.build_vector(artwork_type, vision_features)
+            vec = runtime.numeric_embedder.build_vector(artwork_type, vision_features)
         else:
-            notes_cfg = cfg.get("feature_text", "notes", default={})
+            if runtime.text_embedder is None:
+                raise RuntimeError("Text embedder is not initialized")
+            notes_cfg = runtime.cfg.get("feature_text", "notes", default={})
             strip_urls = bool(notes_cfg.get("strip_urls", True))
             max_total = int(notes_cfg.get("max_chars_total", 800))
             max_section = int(notes_cfg.get("max_chars_per_section", 250))
             schema_version = (
-                cfg.get("feature_text", "schema_version_painting")
+                runtime.cfg.get("feature_text", "schema_version_painting")
                 if artwork_type == "painting"
-                else cfg.get("feature_text", "schema_version_sculpture")
+                else runtime.cfg.get("feature_text", "schema_version_sculpture")
             )
-            if manus is None:
+            if runtime.manus is None:
                 canon_text, _canon_json = canonicalize_feature_state(
                     feature_state,
                     strip_urls=strip_urls,
@@ -278,15 +342,15 @@ def query(req: QueryRequest) -> QueryResponse:
                     if artwork_type == "painting"
                     else "For sculptures: include material/form/surface/craftsmanship signals if present."
                 )
-                canon_json = manus.canonicalize(
+                canon_json = runtime.manus.canonicalize(
                     feature_state,
                     schema_version=schema_version,
                     type_specific_instructions=type_instr,
                 )
                 canon_text = _json_to_text(canon_json, max_chars=max_total)
-            vec = text_embedder.embed_texts([canon_text])[0]
+            vec = runtime.text_embedder.embed_texts([canon_text])[0]
 
-    index = index_clients[artwork_type]
+    index = runtime.index_clients[artwork_type]
     res = index.query(
         namespace=req.namespace,
         vector=vec,
@@ -294,8 +358,8 @@ def query(req: QueryRequest) -> QueryResponse:
         include_metadata=req.include_metadata,
     )
     return QueryResponse(
-        embedding_mode=mode,
-        index=index_name(prefix, mode, artwork_type),
+        embedding_mode=runtime.mode,
+        index=index_name(runtime.prefix, runtime.mode, artwork_type),
         results=res,
     )
 

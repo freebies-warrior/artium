@@ -162,7 +162,7 @@ Recommended:
 ### Option A: `uv` (recommended)
 ```bash
 cd apps/agents
-uv sync --dev
+uv sync --locked --dev
 
 # Run dev server (adjust module path if your app entrypoint differs)
 uv run uvicorn app:app --reload --host 0.0.0.0 --port 8000
@@ -171,7 +171,7 @@ uv run uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ### Quality checks (CI parity)
 ```bash
 cd apps/agents
-uv sync --dev
+uv sync --locked --dev
 uv run ruff format --check .
 uv run ruff check .
 uv run pytest -q

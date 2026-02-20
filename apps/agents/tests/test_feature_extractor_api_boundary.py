@@ -15,6 +15,5 @@ def test_api_agent_module_uses_feature_extractor_service_boundary() -> None:
         "from agents.tasks.feature_extractor.tools.image_tool import fetch_and_standardize_image"
         not in source
     )
-    assert (
-        "from agents.tasks.feature_extractor.service import build_initial_feature_state" in source
-    )
+    assert "build_initial_feature_state" not in source
+    assert "service.run_feature_extraction_job(req)" in source

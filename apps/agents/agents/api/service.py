@@ -16,6 +16,7 @@ from agents.core.utils.files import cleanup_directory, download_to_temp_file
 from agents.core.utils.http import loggable_url
 from agents.tasks.feature_extractor.graph import build_graph
 from agents.tasks.feature_extractor.llm_client import GeminiVisionClient
+from agents.tasks.feature_extractor.service import build_initial_feature_state
 from agents.tasks.feature_extractor.types import FeatureState
 from agents.tasks.price_valuator.graph import build_valuation_graph
 from agents.tasks.price_valuator.types import ValuationState
@@ -25,7 +26,7 @@ from agents.tasks.visualizer.pipeline_langgraph import build_visualization_graph
 from agents.tasks.visualizer.service import load_preview_images, run_preview_with_graph
 
 if TYPE_CHECKING:
-    from agents.api.agent import VisualizerRequest
+    from agents.api.agent import FeatureExtractionRequest, VisualizerRequest
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +142,85 @@ class AgentService:
                 error_message=error_message,
             )
             cleanup_directory(tmp_dir)
+
+    def run_feature_extraction_job(self, req: "FeatureExtractionRequest") -> None:
+        """Run feature extraction and valuation flow, then report result to backend."""
+        logger.info(
+            "feature extraction request",
+            extra={
+                "image_urls": [loggable_url(str(image_url)) for image_url in req.image_get_urls]
+            },
+        )
+
+        try:
+            initial_state, metadata, image_bytes = build_initial_feature_state(
+                image_urls=[str(image_url) for image_url in req.image_get_urls],
+                item_id=str(req.item_id),
+                metadata=req.metadata,
+            )
+
+            final = self.extract_features(initial_state)
+            feature_json = final
+
+            valuation_result = None
+            try:
+                artwork_type = final.get("artwork_type", "").lower()
+                if artwork_type in ("painting", "sculpture"):
+                    logger.info("running price valuation", extra={"artwork_type": artwork_type})
+
+                    valuation_state = {
+                        "artwork_features": final,
+                        "metadata": metadata,
+                        "artwork_type": artwork_type,
+                        "image_bytes": image_bytes,
+                        "errors": [],
+                    }
+
+                    valuation_result = self.valuate_artwork(valuation_state)
+
+                    logger.info(
+                        "price valuation complete",
+                        extra={"mid_price": valuation_result.get("price_range", {}).get("mid", 0)},
+                    )
+                else:
+                    if artwork_type == "NOT_AN_ARTWORK":
+                        logger.info(
+                            "Skipping price valuation - input image not recognized as artwork"
+                        )
+                    else:
+                        logger.info(
+                            "Skipping price valuation - artwork_type '%s' not supported",
+                            artwork_type,
+                        )
+            except Exception as exc:
+                logger.error(
+                    "price valuation failed",
+                    extra={
+                        "item_id": str(req.item_id),
+                        "error_type": type(exc).__name__,
+                    },
+                )
+
+            combined_result = {
+                **feature_json,
+                "valuation": valuation_result if valuation_result else None,
+            }
+            del combined_result["image_bytes"]
+
+        except Exception as exc:  # pragma: no cover - handled at runtime
+            logger.error(
+                "feature extraction failed",
+                extra={
+                    "item_id": str(req.item_id),
+                    "error_type": type(exc).__name__,
+                },
+            )
+            combined_result = {}
+        finally:
+            logger.info("feature extraction complete")
+            if not combined_result:
+                combined_result = {}
+            self.callback_client.update_item_features(req.item_id, feature_json=combined_result)
 
     def valuate_artwork(self, state: ValuationState) -> ValuationState:
         """Run price valuation pipeline using the cached valuation graph."""

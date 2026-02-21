@@ -166,10 +166,12 @@ Recommended:
 
 ## Local development
 
+Python target for `apps/agents`: **3.12** (matches `pyproject.toml` and CI).
+
 ### Option A: `uv` (recommended)
 ```bash
 cd apps/agents
-uv sync --locked --dev
+uv sync --frozen --dev
 
 # Run dev server (adjust module path if your app entrypoint differs)
 uv run uvicorn app:app --reload --host 0.0.0.0 --port 8000
@@ -178,7 +180,7 @@ uv run uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ### Quality checks (CI parity)
 ```bash
 cd apps/agents
-uv sync --locked --dev
+uv sync --frozen --dev
 uv run ruff format --check .
 uv run ruff check .
 uv run pytest -q

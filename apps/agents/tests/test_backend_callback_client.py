@@ -48,6 +48,7 @@ def test_update_visualization_logs_warning_with_sanitized_url(
         None,
     )
     assert record is not None
+    assert getattr(record, "task_name", None) == "backend_callback.update_visualization"
     assert getattr(record, "job_id", None) == "job-1?X-Amz-Signature=SECRET#frag"
     assert getattr(record, "status", None) == 502
     assert getattr(record, "url", None) == "https://backend.example/visualizations/job-1"
@@ -93,6 +94,7 @@ def test_update_item_features_logs_error_context_on_request_exception(
         None,
     )
     assert record is not None
+    assert getattr(record, "task_name", None) == "backend_callback.update_item_features"
     assert getattr(record, "item_id", None) == "item-123?X-Amz-Signature=SECRET#frag"
     assert getattr(record, "error_type", None) == "Timeout"
     assert getattr(record, "url", None) == "https://backend.example/items/item-123"

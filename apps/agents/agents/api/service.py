@@ -6,6 +6,7 @@ import logging
 import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
+from types import TracebackType
 from urllib.parse import urlsplit
 
 from PIL import Image
@@ -28,6 +29,17 @@ from agents.tasks.visualizer.pipeline_langgraph import build_visualization_graph
 from agents.tasks.visualizer.service import load_preview_images, run_preview_with_graph
 
 logger = logging.getLogger(__name__)
+
+
+def _redacted_exc_info(
+    exc: BaseException,
+) -> tuple[type[BaseException], BaseException, TracebackType | None]:
+    """Return sanitized exception info without traceback source lines."""
+    try:
+        redacted = type(exc)()
+    except Exception:
+        redacted = Exception(type(exc).__name__)
+    return type(exc), redacted, None
 
 
 class AgentService:
@@ -128,11 +140,16 @@ class AgentService:
                 upload_image_url=req.upload_image_url,
             )
             status = JobStatus.SUCCEEDED
-        except Exception as exc:  # pragma: no cover - handled at runtime
+        except Exception as exc:
             error_message = str(exc)
-            logger.error(
+            logger.exception(
                 "visualization failed",
-                extra={"job_id": req.job_id, "error_type": type(exc).__name__},
+                extra={
+                    "task_name": "visualizer.preview",
+                    "job_id": req.job_id,
+                    "error_type": type(exc).__name__,
+                },
+                exc_info=_redacted_exc_info(exc),
             )
         finally:
             logger.info("result_description: %s", result_description)
@@ -192,12 +209,14 @@ class AgentService:
                             artwork_type,
                         )
             except Exception as exc:
-                logger.error(
+                logger.exception(
                     "price valuation failed",
                     extra={
+                        "task_name": "feature_extractor.valuation",
                         "item_id": str(req.item_id),
                         "error_type": type(exc).__name__,
                     },
+                    exc_info=_redacted_exc_info(exc),
                 )
 
             combined_result = {
@@ -206,13 +225,15 @@ class AgentService:
             }
             del combined_result["image_bytes"]
 
-        except Exception as exc:  # pragma: no cover - handled at runtime
-            logger.error(
+        except Exception as exc:
+            logger.exception(
                 "feature extraction failed",
                 extra={
+                    "task_name": "feature_extractor.extract",
                     "item_id": str(req.item_id),
                     "error_type": type(exc).__name__,
                 },
+                exc_info=_redacted_exc_info(exc),
             )
             combined_result = {}
         finally:

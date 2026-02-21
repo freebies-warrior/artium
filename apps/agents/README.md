@@ -104,7 +104,7 @@ Typical flow:
 
 ### Feature Extractor
 
-**POST** `/agents/feature_extractor/extract_item_features`  
+**POST** `/agents/feature_extractor/extract`  
 **Auth:** internal-only header
 
 **Headers**
@@ -139,6 +139,12 @@ Typical flow:
 **Notes**
 - The worker downloads images from `image_get_urls`, then `POST/PUT`s results to `callback_url`.
 - The callback must be **idempotent** (safe to retry).
+- Validation rules:
+  - `item_id` is required and must be a valid UUID.
+  - `image_keys` must be non-empty.
+  - `image_get_urls` must be non-empty.
+  - `len(image_keys)` must equal `len(image_get_urls)`.
+  - `callback_url` remains optional for compatibility.
 
 ---
 

@@ -1074,7 +1074,7 @@ Start a visualization job to merge an artwork image with a room photo.
 Start feature extraction for an item using its images.
 
 - **Method**: POST
-- **Path**: `/agents/feature_extractor/extract_item_features`
+- **Path**: `/agents/feature_extractor/extract`
 - **Auth**: Internal Only
 - **Header**:
   - `X-Internal-Token`: `<secret>`

@@ -200,13 +200,27 @@ docker build -t artium-agents .
 docker run --rm -p 8000:8000 --env-file .env artium-agents
 ```
 
-### Environment variables (typical)
-Set these in `.env` (names may differ — align with your code):
-- `INTERNAL_TOKEN` — used to validate `X-Internal-Token`
-- `LOG_LEVEL` — `debug|info|warn|error`
-- Any model provider keys you use (e.g., `OPENAI_API_KEY`) **only if needed**
+### Environment variables
+Copy the template first:
 
-Follow as given in `.env.example`.
+```bash
+cd apps/agents
+cp .env.example .env
+```
+
+| Variable | Required | Used by | Notes |
+|---|---|---|---|
+| `INTERNAL_TOKEN` | Yes (API service) | FastAPI auth + internal callbacks | Missing token returns `500 INTERNAL_TOKEN is not configured` on protected routes. |
+| `BACKEND_URL` | Yes (API service) | Callback/update endpoints | Defaults to `http://localhost:8080`. |
+| `LOG_LEVEL` | Optional | Shared logging | Defaults to `INFO`. |
+| `GOOGLE_API_KEY` | Yes for visualizer/feature extraction | Gemini clients | Missing key raises clear startup/runtime config errors. |
+| `SERPAPI_API_KEY` | Optional | Feature extractor market search | Required only when SerpAPI enrichment runs. |
+| `OPENAI_API_KEY` | Yes for RAG/valuation flows | RAG scripts + valuation tooling | Required for text embeddings in RAG flows. |
+| `PINECONE_API_KEY` | Yes for RAG/valuation flows | RAG scripts + valuation tooling | Required for Pinecone index/query access. |
+| `MANUS_API_KEY` | Optional | RAG canonicalization | Required only when `feature_text.manus.enabled=true`. |
+| `VECTORDB_CONFIG` | Optional | RAG scripts/providers | Defaults to `agents/providers/rag/config.yaml` (legacy fallback supported). |
+
+Use `apps/agents/.env.example` as the source of truth for all currently supported settings.
 
 ---
 
@@ -267,6 +281,11 @@ Future Iteration:
 ### “Failed to download image”
 - Signed URL expired → request a fresh signed GET URL from Go backend.
 - Object key mismatch → ensure Go backend signs keys belonging to the item/job.
+
+### “... is not configured”
+- Ensure the missing variable exists in `apps/agents/.env` (copy from `.env.example`).
+- Verify you are running commands from `apps/agents` so the resolved env file is used.
+- For RAG flows, confirm `OPENAI_API_KEY` and `PINECONE_API_KEY` are both set.
 
 ---
 

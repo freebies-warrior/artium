@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
+from typing import TypeVar
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -20,6 +21,7 @@ def _resolve_agents_root() -> Path:
 
 AGENTS_ROOT = _resolve_agents_root()
 ENV_FILE = AGENTS_ROOT / ".env"
+_E = TypeVar("_E", bound=Exception)
 
 
 class Settings(BaseSettings):
@@ -58,6 +60,38 @@ class Settings(BaseSettings):
     @property
     def backend_url(self) -> str:
         return self.BACKEND_URL.rstrip("/")
+
+    def _require(
+        self,
+        name: str,
+        value: str | None,
+        *,
+        error_type: type[_E] = ValueError,
+    ) -> str:
+        normalized = (value or "").strip()
+        if normalized:
+            return normalized
+        raise error_type(
+            f"{name} is not configured. Set `{name}` in environment or in `{ENV_FILE}`."
+        )
+
+    def require_internal_token(self) -> str:
+        return self._require("INTERNAL_TOKEN", self.INTERNAL_TOKEN)
+
+    def require_google_api_key(self) -> str:
+        return self._require("GOOGLE_API_KEY", self.GOOGLE_API_KEY)
+
+    def require_openai_api_key(self) -> str:
+        return self._require("OPENAI_API_KEY", self.OPENAI_API_KEY)
+
+    def require_serpapi_api_key(self) -> str:
+        return self._require("SERPAPI_API_KEY", self.SERPAPI_API_KEY)
+
+    def require_pinecone_api_key(self) -> str:
+        return self._require("PINECONE_API_KEY", self.PINECONE_API_KEY)
+
+    def require_manus_api_key(self) -> str:
+        return self._require("MANUS_API_KEY", self.MANUS_API_KEY)
 
 
 @lru_cache

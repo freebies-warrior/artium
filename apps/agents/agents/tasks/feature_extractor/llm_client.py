@@ -17,9 +17,7 @@ logger = logging.getLogger(__name__)
 
 class VisionLLMClient:
     def __init__(self, model: str = DEFAULT_GEMINI_IMAGE_MODEL) -> None:
-        api_key = get_settings().GOOGLE_API_KEY
-        if not api_key:
-            raise ValueError("GOOGLE_API_KEY is not configured")
+        api_key = get_settings().require_google_api_key()
         self.client = genai.Client(api_key=api_key)
         self.model = model
 

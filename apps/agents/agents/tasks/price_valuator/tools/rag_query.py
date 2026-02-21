@@ -27,7 +27,7 @@ class RAGQueryTool:
         # Setup text embedder
         o = self.cfg.get("feature_text", "openai_embeddings", default={})
         self.text_embedder = OpenAITextEmbedder(
-            api_key=self.env.OPENAI_API_KEY,
+            api_key=self.env.require_openai_api_key(),
             base_url=self.env.OPENAI_BASE_URL,
             model=o.get("model", "text-embedding-3-small"),
             dimensions=o.get("dimensions", 768),
@@ -35,7 +35,7 @@ class RAGQueryTool:
         )
 
         # Setup Pinecone
-        self.pc = build_pinecone_client(self.env.PINECONE_API_KEY)
+        self.pc = build_pinecone_client(self.env.require_pinecone_api_key())
         self.prefix = self.cfg.get("pinecone", "index_prefix", default="artium")
 
         # Get notes config for canonicalization

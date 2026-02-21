@@ -25,7 +25,7 @@ def main() -> None:
     cfg = load_config(args.config)
     env = EnvSettings()
 
-    pc = build_pinecone_client(env.PINECONE_API_KEY)
+    pc = build_pinecone_client(env.require_pinecone_api_key())
 
     prefix = cfg.get("pinecone", "index_prefix", default="artium")
     mode = cfg.embedding_mode

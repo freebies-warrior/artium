@@ -51,7 +51,7 @@ def _initialize_runtime() -> _RagRuntime:
     cfg = load_config()
     env = EnvSettings()
 
-    pc = build_pinecone_client(env.PINECONE_API_KEY)
+    pc = build_pinecone_client(env.require_pinecone_api_key())
     prefix = cfg.get("pinecone", "index_prefix", default="artium")
     mode = cfg.embedding_mode
 
@@ -63,7 +63,7 @@ def _initialize_runtime() -> _RagRuntime:
     if mode == "feature_text":
         o = cfg.get("feature_text", "openai_embeddings", default={})
         text_embedder = OpenAITextEmbedder(
-            api_key=env.OPENAI_API_KEY,
+            api_key=env.require_openai_api_key(),
             base_url=env.OPENAI_BASE_URL,
             model=o.get("model", "text-embedding-3-small"),
             dimensions=o.get("dimensions", 768),
@@ -71,11 +71,9 @@ def _initialize_runtime() -> _RagRuntime:
         )
         manus_enabled = bool(cfg.get("feature_text", "manus", "enabled", default=False))
         if manus_enabled:
-            if not env.MANUS_API_KEY:
-                raise RuntimeError("MANUS_API_KEY is required when feature_text.manus.enabled=true")
             m = cfg.get("feature_text", "manus", default={})
             manus = ManusCanonicalizer(
-                api_key_header=env.MANUS_API_KEY,
+                api_key_header=env.require_manus_api_key(),
                 agent_profile=m.get("agent_profile", "manus-1.6"),
                 task_mode=m.get("task_mode", "agent"),
             )

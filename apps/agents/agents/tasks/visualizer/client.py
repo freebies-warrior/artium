@@ -14,9 +14,7 @@ logger = logging.getLogger(__name__)
 
 class GeminiClient:
     def __init__(self) -> None:
-        api_key = get_settings().GOOGLE_API_KEY
-        if not api_key:
-            raise ValueError("GOOGLE_API_KEY is not configured")
+        api_key = get_settings().require_google_api_key()
         self.client = genai.Client(api_key=api_key)
 
     def _img_part(self, img, mime_type: str = "image/png") -> types.Part:

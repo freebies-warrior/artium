@@ -18,9 +18,10 @@ def serpapi_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
     Env var: SERPAPI_API_KEY
     Returns: [{title, snippet, url}]
     """
-    api_key = get_settings().SERPAPI_API_KEY
-    if not api_key:
-        raise RuntimeError("SERPAPI_API_KEY not set. Configure a search provider.")
+    try:
+        api_key = get_settings().require_serpapi_api_key()
+    except ValueError as exc:
+        raise RuntimeError(str(exc)) from exc
 
     params = {
         "engine": "google",

@@ -12,7 +12,8 @@ from agents.core.constants import (
     DEFAULT_IMAGE_FILENAME,
     DEFAULT_IMAGE_SUFFIX,
 )
-from agents.core.utils.http import _redacted_exc_info, loggable_url
+from agents.core.utils.errors import redacted_exc_info
+from agents.core.utils.http import loggable_url
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ def download_to_temp_file(
                 "timeout": timeout,
                 "error_type": type(exc).__name__,
             },
-            exc_info=_redacted_exc_info(exc),
+            exc_info=redacted_exc_info(exc),
         )
         raise
 

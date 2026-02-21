@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from types import TracebackType
 from typing import Any
 
 from agents.core.constants import (
@@ -12,21 +11,11 @@ from agents.core.constants import (
 from agents.core.ports import BackendCallbackClient
 from agents.core.settings import get_settings
 from agents.core.types import JobStatus
+from agents.core.utils.errors import redacted_exc_info
 from agents.core.utils.http import internal_auth_headers, loggable_url, put_json
 from agents.core.utils.json import sanitize_for_json
 
 logger = logging.getLogger(__name__)
-
-
-def _redacted_exc_info(
-    exc: BaseException,
-) -> tuple[type[BaseException], BaseException, TracebackType | None]:
-    """Return sanitized exception info without traceback source lines."""
-    try:
-        redacted = type(exc)()
-    except Exception:
-        redacted = Exception(type(exc).__name__)
-    return type(exc), redacted, None
 
 
 class HttpBackendCallbackClient(BackendCallbackClient):
@@ -75,7 +64,7 @@ class HttpBackendCallbackClient(BackendCallbackClient):
                     "url": loggable_url(url),
                     "error_type": type(exc).__name__,
                 },
-                exc_info=_redacted_exc_info(exc),
+                exc_info=redacted_exc_info(exc, include_traceback=False),
             )
 
     def update_item_features(
@@ -121,5 +110,5 @@ class HttpBackendCallbackClient(BackendCallbackClient):
                     "url": loggable_url(url),
                     "error_type": type(exc).__name__,
                 },
-                exc_info=_redacted_exc_info(exc),
+                exc_info=redacted_exc_info(exc, include_traceback=False),
             )

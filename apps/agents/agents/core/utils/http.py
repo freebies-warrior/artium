@@ -1,24 +1,14 @@
 from __future__ import annotations
 
 import logging
-from types import TracebackType
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
 import requests
 
+from agents.core.utils.errors import redacted_exc_info
+
 logger = logging.getLogger(__name__)
-
-
-def _redacted_exc_info(
-    exc: BaseException,
-) -> tuple[type[BaseException], BaseException, TracebackType | None]:
-    """Preserve traceback while redacting potentially sensitive exception text."""
-    try:
-        redacted = type(exc)()
-    except Exception:
-        redacted = Exception(type(exc).__name__)
-    return type(exc), redacted, exc.__traceback__
 
 
 def loggable_url(url: str) -> str:
@@ -52,7 +42,7 @@ def put_json(
                 "timeout": timeout,
                 "error_type": type(exc).__name__,
             },
-            exc_info=_redacted_exc_info(exc),
+            exc_info=redacted_exc_info(exc),
         )
         raise
 
@@ -75,6 +65,6 @@ def put_bytes(
                 "timeout": timeout,
                 "error_type": type(exc).__name__,
             },
-            exc_info=_redacted_exc_info(exc),
+            exc_info=redacted_exc_info(exc),
         )
         raise

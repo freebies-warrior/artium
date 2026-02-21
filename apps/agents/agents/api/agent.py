@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import base64
 import uuid
-from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks
@@ -70,13 +69,6 @@ class AsyncPreviewResponse(BaseModel):
 
 class AsyncFeatureExtractionResponse(BaseModel):
     ok: bool = True
-
-
-class JobStatus(str, Enum):
-    QUEUED = "QUEUED"
-    PROCESSING = "PROCESSING"
-    SUCCEEDED = "SUCCEEDED"
-    FAILED = "FAILED"
 
 
 # Create separate routers for each domain

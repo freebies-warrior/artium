@@ -13,6 +13,7 @@ from PIL import Image
 from agents.api.commands import FeatureExtractionJobCommand, PreviewJobCommand
 from agents.core.adapters import HttpBackendCallbackClient
 from agents.core.ports import BackendCallbackClient
+from agents.core.types import JobStatus
 from agents.core.utils.files import cleanup_directory, download_to_temp_file
 from agents.core.utils.http import loggable_url
 from agents.tasks.feature_extractor.graph import build_graph
@@ -113,7 +114,7 @@ class AgentService:
             req.art_url, suffix=art_url_path.suffix or ".jpeg", timeout=30.0
         )
 
-        status = "failed"
+        status = JobStatus.FAILED
         result_description = None
         error_message = None
 
@@ -126,7 +127,7 @@ class AgentService:
                 art_img=art_img,
                 upload_image_url=req.upload_image_url,
             )
-            status = "succeeded"
+            status = JobStatus.SUCCEEDED
         except Exception as exc:  # pragma: no cover - handled at runtime
             error_message = str(exc)
             logger.error(

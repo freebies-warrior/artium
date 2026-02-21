@@ -8,6 +8,7 @@ import requests
 
 import agents.core.adapters.backend_callback_http as callback_http
 from agents.core.adapters.backend_callback_http import HttpBackendCallbackClient
+from agents.core.types import JobStatus
 
 
 def _stub_settings() -> SimpleNamespace:
@@ -37,7 +38,7 @@ def test_update_visualization_logs_warning_with_sanitized_url(
     client = HttpBackendCallbackClient()
     client.update_visualization(
         job_id="job-1?X-Amz-Signature=SECRET#frag",
-        status="FAILED",
+        status=JobStatus.FAILED,
         result_description=None,
         error_message="boom",
     )
@@ -55,6 +56,11 @@ def test_update_visualization_logs_warning_with_sanitized_url(
     assert called["url"] == (
         "https://backend.example/visualizations/job-1?X-Amz-Signature=SECRET#frag"
     )
+    assert called["payload"] == {
+        "status": "failed",
+        "result_description": None,
+        "error_message": "boom",
+    }
     assert called["headers"] == {"Authorization": "Bearer internal-token"}
     assert called["timeout"] == 10.0
     assert "X-Amz-Signature=SECRET" not in caplog.text

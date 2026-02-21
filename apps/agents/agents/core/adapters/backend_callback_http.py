@@ -5,6 +5,7 @@ from typing import Any
 
 from agents.core.ports import BackendCallbackClient
 from agents.core.settings import get_settings
+from agents.core.types import JobStatus
 from agents.core.utils.http import internal_auth_headers, loggable_url, put_json
 from agents.core.utils.json import sanitize_for_json
 
@@ -17,14 +18,14 @@ class HttpBackendCallbackClient(BackendCallbackClient):
     def update_visualization(
         self,
         job_id: str,
-        status: str,
+        status: JobStatus,
         result_description: str | None,
         error_message: str | None,
     ) -> None:
         settings = get_settings()
         url = f"{settings.backend_url}/visualizations/{job_id}"
         payload = {
-            "status": status,
+            "status": status.value,
             "result_description": result_description,
             "error_message": error_message,
         }

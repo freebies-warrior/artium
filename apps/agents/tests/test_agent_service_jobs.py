@@ -10,6 +10,7 @@ import pytest
 import agents.api.service as agent_service_module
 from agents.api.commands import FeatureExtractionJobCommand, PreviewJobCommand
 from agents.api.service import AgentService
+from agents.core.types import JobStatus
 
 
 class RecordingCallbackClient:
@@ -85,7 +86,7 @@ def test_run_preview_job_success_sends_succeeded_callback(
     assert callback.visualization_updates == [
         {
             "job_id": "job-123",
-            "status": "succeeded",
+            "status": JobStatus.SUCCEEDED,
             "result_description": "preview-complete",
             "error_message": None,
         }
@@ -136,7 +137,7 @@ def test_run_preview_job_failure_sends_failed_callback(
     assert callback.visualization_updates == [
         {
             "job_id": "job-456",
-            "status": "failed",
+            "status": JobStatus.FAILED,
             "result_description": None,
             "error_message": "preview pipeline failed",
         }

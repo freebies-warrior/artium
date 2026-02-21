@@ -3,8 +3,17 @@ from __future__ import annotations
 from pathlib import Path
 
 
+def _resolve_api_agent_path() -> Path:
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        candidate = parent / "agents" / "api" / "agent.py"
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError("Unable to locate agents/api/agent.py from test path")
+
+
 def test_api_agent_module_does_not_import_visualizer_private_internals() -> None:
-    api_agent_path = Path(__file__).resolve().parents[1] / "agents" / "api" / "agent.py"
+    api_agent_path = _resolve_api_agent_path()
     source = api_agent_path.read_text(encoding="utf-8")
 
     assert (

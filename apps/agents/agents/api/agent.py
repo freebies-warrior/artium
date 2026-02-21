@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field, HttpUrl
 
 from agents.tasks.visualizer.config import VisualizerConfig
 
+from .commands import FeatureExtractionJobCommand, PreviewJobCommand
 from .service import get_agent_service
 
 
@@ -96,7 +97,8 @@ def get_config() -> dict:
 
 def _run_preview(req: VisualizerRequest) -> None:
     service = get_agent_service()
-    service.run_preview_job(req)
+    command = PreviewJobCommand.from_request(req)
+    service.run_preview_job(command)
 
 
 @visualizer_router.post("/visualize_installation", response_model=AsyncPreviewResponse)
@@ -115,4 +117,5 @@ def extract_features(
 
 def _extract_features(req: FeatureExtractionRequest) -> None:
     service = get_agent_service()
-    service.run_feature_extraction_job(req)
+    command = FeatureExtractionJobCommand.from_request(req)
+    service.run_feature_extraction_job(command)

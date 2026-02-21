@@ -15,4 +15,4 @@ def test_api_agent_module_does_not_import_visualizer_private_internals() -> None
     assert "from agents.tasks.visualizer.runner import _save_image" not in source
 
     assert "from agents.tasks.visualizer.service import load_preview_images" not in source
-    assert "service.run_preview_job(req)" in source
+    assert "service.run_preview_job(command)" in source

@@ -8,7 +8,7 @@ from PIL import Image
 import pytest
 
 import agents.api.service as agent_service_module
-from agents.api.agent import FeatureExtractionRequest, VisualizerRequest
+from agents.api.commands import FeatureExtractionJobCommand, PreviewJobCommand
 from agents.api.service import AgentService
 
 
@@ -72,10 +72,11 @@ def test_run_preview_job_success_sends_succeeded_callback(
         lambda path: cleaned.update({"path": path}),
     )
 
-    req = VisualizerRequest(
+    req = PreviewJobCommand(
         room_url="https://example.com/room.jpg",
         art_url="https://example.com/art.png",
         upload_image_url="https://example.com/upload.jpg",
+        upload_image_key=None,
         job_id="job-123",
     )
 
@@ -122,10 +123,11 @@ def test_run_preview_job_failure_sends_failed_callback(
     monkeypatch.setattr(service, "run_visualizer_preview", raise_failure)
     monkeypatch.setattr(agent_service_module, "cleanup_directory", lambda path: None)
 
-    req = VisualizerRequest(
+    req = PreviewJobCommand(
         room_url="https://example.com/room.jpg",
         art_url="https://example.com/art.png",
         upload_image_url="https://example.com/upload.jpg",
+        upload_image_key=None,
         job_id="job-456",
     )
 
@@ -173,10 +175,11 @@ def test_run_feature_extraction_job_success_sends_combined_features(
     )
 
     item_id = uuid4()
-    req = FeatureExtractionRequest(
+    req = FeatureExtractionJobCommand(
         item_id=item_id,
-        image_keys=["img1"],
-        image_get_urls=["https://example.com/images/1.jpg"],
+        image_keys=("img1",),
+        image_get_urls=("https://example.com/images/1.jpg",),
+        callback_url=None,
         metadata={"source": "unit-test"},
     )
 
@@ -202,10 +205,11 @@ def test_run_feature_extraction_job_failure_sends_safe_empty_payload(
     monkeypatch.setattr(agent_service_module, "build_initial_feature_state", raise_failure)
 
     item_id = uuid4()
-    req = FeatureExtractionRequest(
+    req = FeatureExtractionJobCommand(
         item_id=item_id,
-        image_keys=["img1"],
-        image_get_urls=["https://example.com/images/1.jpg"],
+        image_keys=("img1",),
+        image_get_urls=("https://example.com/images/1.jpg",),
+        callback_url=None,
         metadata={"source": "unit-test"},
     )
 

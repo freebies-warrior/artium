@@ -6,10 +6,11 @@ import logging
 import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 
 from PIL import Image
 
+from agents.api.commands import FeatureExtractionJobCommand, PreviewJobCommand
 from agents.core.adapters import HttpBackendCallbackClient
 from agents.core.ports import BackendCallbackClient
 from agents.core.utils.files import cleanup_directory, download_to_temp_file
@@ -24,9 +25,6 @@ from agents.tasks.visualizer.client import GeminiClient
 from agents.tasks.visualizer.config import VisualizerConfig
 from agents.tasks.visualizer.pipeline_langgraph import build_visualization_graph
 from agents.tasks.visualizer.service import load_preview_images, run_preview_with_graph
-
-if TYPE_CHECKING:
-    from agents.api.agent import FeatureExtractionRequest, VisualizerRequest
 
 logger = logging.getLogger(__name__)
 
@@ -95,22 +93,24 @@ class AgentService:
         logger.info("Visualization complete.")
         return result
 
-    def run_preview_job(self, req: "VisualizerRequest") -> None:
+    def run_preview_job(self, req: PreviewJobCommand) -> None:
         logger.info(
             "preview request",
             extra={
-                "room_url": loggable_url(str(req.room_url)),
-                "art_url": loggable_url(str(req.art_url)),
+                "room_url": loggable_url(req.room_url),
+                "art_url": loggable_url(req.art_url),
             },
         )
 
         cfg = VisualizerConfig()
         tmp_dir = Path(tempfile.mkdtemp())
+        room_url_path = Path(urlsplit(req.room_url).path)
+        art_url_path = Path(urlsplit(req.art_url).path)
         room_path = download_to_temp_file(
-            str(req.room_url), suffix=Path(req.room_url.path).suffix or ".jpeg", timeout=30.0
+            req.room_url, suffix=room_url_path.suffix or ".jpeg", timeout=30.0
         )
         art_path = download_to_temp_file(
-            str(req.art_url), suffix=Path(req.art_url.path).suffix or ".jpeg", timeout=30.0
+            req.art_url, suffix=art_url_path.suffix or ".jpeg", timeout=30.0
         )
 
         status = "failed"
@@ -143,20 +143,18 @@ class AgentService:
             )
             cleanup_directory(tmp_dir)
 
-    def run_feature_extraction_job(self, req: "FeatureExtractionRequest") -> None:
+    def run_feature_extraction_job(self, req: FeatureExtractionJobCommand) -> None:
         """Run feature extraction and valuation flow, then report result to backend."""
         logger.info(
             "feature extraction request",
-            extra={
-                "image_urls": [loggable_url(str(image_url)) for image_url in req.image_get_urls]
-            },
+            extra={"image_urls": [loggable_url(image_url) for image_url in req.image_get_urls]},
         )
 
         try:
             initial_state, metadata, image_bytes = build_initial_feature_state(
-                image_urls=[str(image_url) for image_url in req.image_get_urls],
+                image_urls=list(req.image_get_urls),
                 item_id=str(req.item_id),
-                metadata=req.metadata,
+                metadata=dict(req.metadata),
             )
 
             final = self.extract_features(initial_state)

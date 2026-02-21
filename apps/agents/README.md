@@ -19,7 +19,7 @@ This folder contains the **AI Agents backend** for **Artium** — a small HTTP s
 - [Local development](#local-development)
 - [Project structure](#project-structure)
 - [Background execution model](#background-execution-model)
-- [Adding a new agent](#adding-a-new-agent)
+- [How to add a new task](#how-to-add-a-new-task)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -240,6 +240,7 @@ The codebase is being migrated incrementally to a clearer package layout while k
 - Migrate one task at a time into `agents/tasks/...` to keep changes reviewable and low risk.
 - Keep service boundaries selective: add `service.py` only when API code would otherwise depend on task-private internals.
 - RAG entrypoints use a clean cutover: run `scripts.rag_api` and `scripts.rag_ingest` (no legacy `agents.providers.rag.*` module wrappers).
+- Runtime imports should use `agents.*` paths (for example, `agents.tasks.visualizer.runner`), not legacy top-level packages.
 
 ## Background execution model
 
@@ -253,19 +254,27 @@ Future Iteration:
 
 ---
 
-## Adding a new agent
+## How to add a new task
 
-1. Create a new module under `app/agents/<new_agent>.py`
-2. Add a router with a stable prefix, e.g.:
-   - `/agents/<new_agent>/run`
-3. Add an input schema (Pydantic model) with explicit validation.
-4. Implement:
-   - download input(s)
-   - run model/pipeline
-   - upload output(s) if any
-   - callback to Go backend (do not write DB directly)
-5. Update **`docs/api/CONTRACT.md`** with request/response examples.
-6. (Optional) Add a minimal integration test using a mocked Go backend callback endpoint.
+1. Add task code under `agents/tasks/<task_name>/`.
+2. Keep integrations in provider/shared modules where possible:
+   - `agents/providers/` for external systems
+   - `agents/core/` for shared orchestration/config/logging helpers
+3. Expose API entrypoints in `agents/api/agent.py` with a stable route prefix:
+   - `/agents/<task_name>/...`
+4. Keep routers thin:
+   - request validation + background enqueue in router
+   - orchestration in `agents/api/service.py` (or task `service.py` when needed to avoid private coupling)
+5. Preserve current callback pattern:
+   - process inputs
+   - send result/status updates to Go backend internal endpoints
+   - do not write DB directly from agents
+6. Add tests:
+   - task unit tests under `tests/tasks/<task_name>/`
+   - API boundary/validation tests under `tests/api/` if endpoint changes
+7. Update docs:
+   - `apps/agents/README.md`
+   - `docs/api/CONTRACT.md` request/response examples
 
 ---
 

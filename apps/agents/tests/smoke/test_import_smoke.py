@@ -22,3 +22,15 @@ def test_import_rag_api_script_module() -> None:
     from scripts import rag_api
 
     assert rag_api.app is not None
+
+
+def test_import_feature_extractor_cli_module() -> None:
+    from agents.tasks.feature_extractor import cli
+
+    assert callable(cli.main)
+
+
+def test_import_price_valuator_cli_module() -> None:
+    from agents.tasks.price_valuator import cli
+
+    assert callable(cli.main)

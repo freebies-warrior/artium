@@ -217,3 +217,53 @@ def test_run_feature_extraction_job_failure_sends_safe_empty_payload(
     service.run_feature_extraction_job(req)
 
     assert callback.feature_updates == [{"item_id": item_id, "feature_json": {}}]
+
+
+@pytest.mark.parametrize("artwork_type_alias", ["NOT AN ARTWORK", "not-artwork"])
+def test_run_feature_extraction_job_skips_valuation_for_not_artwork_aliases(
+    monkeypatch: pytest.MonkeyPatch,
+    artwork_type_alias: str,
+) -> None:
+    callback = RecordingCallbackClient()
+    service = AgentService(callback_client=callback)
+    called = {"valuate": False}
+
+    monkeypatch.setattr(
+        agent_service_module,
+        "build_initial_feature_state",
+        lambda *, image_urls, item_id, metadata: ({"images": ["bytes"]}, {"seller": "abc"}, b"img"),
+    )
+    monkeypatch.setattr(
+        service,
+        "extract_features",
+        lambda state: {
+            "artwork_type": artwork_type_alias,
+            "vision_features": {"style": "abstract"},
+            "image_bytes": b"result-bytes",
+            "errors": [],
+        },
+    )
+
+    def _fail_if_called(state):
+        called["valuate"] = True
+        raise AssertionError("valuate_artwork should not be called for not-artwork aliases")
+
+    monkeypatch.setattr(service, "valuate_artwork", _fail_if_called)
+
+    item_id = uuid4()
+    req = FeatureExtractionJobCommand(
+        item_id=item_id,
+        image_keys=("img1",),
+        image_get_urls=("https://example.com/images/1.jpg",),
+        callback_url=None,
+        metadata={"source": "unit-test"},
+    )
+
+    service.run_feature_extraction_job(req)
+
+    assert called["valuate"] is False
+    assert len(callback.feature_updates) == 1
+    feature_json = callback.feature_updates[0]["feature_json"]
+    assert feature_json["artwork_type"] == artwork_type_alias
+    assert feature_json["valuation"] is None
+    assert "image_bytes" not in feature_json

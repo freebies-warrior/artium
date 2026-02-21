@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from agents.api.agent import FeatureExtractionRequest
 
 
@@ -8,10 +10,12 @@ def test_feature_extraction_request_metadata_uses_default_factory() -> None:
 
 def test_feature_extraction_request_metadata_is_not_shared_between_instances() -> None:
     first = FeatureExtractionRequest(
+        item_id=uuid4(),
         image_keys=["one"],
         image_get_urls=["https://example.com/one.jpg"],
     )
     second = FeatureExtractionRequest(
+        item_id=uuid4(),
         image_keys=["two"],
         image_get_urls=["https://example.com/two.jpg"],
     )

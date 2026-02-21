@@ -17,7 +17,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, model_validator
 
 from agents.tasks.visualizer.config import VisualizerConfig
 
@@ -40,11 +40,17 @@ class VisualizerRequest(BaseModel):
 
 
 class FeatureExtractionRequest(BaseModel):
-    item_id: Optional[uuid.UUID] = None
-    image_keys: List[str]
-    image_get_urls: List[HttpUrl]
+    item_id: uuid.UUID
+    image_keys: List[str] = Field(min_length=1)
+    image_get_urls: List[HttpUrl] = Field(min_length=1)
     callback_url: Optional[HttpUrl] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_image_list_lengths(self) -> "FeatureExtractionRequest":
+        if len(self.image_keys) != len(self.image_get_urls):
+            raise ValueError("image_keys and image_get_urls must have the same length")
+        return self
 
 
 class FeatureExtractionResponse(BaseModel):

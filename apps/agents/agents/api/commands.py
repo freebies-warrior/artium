@@ -30,7 +30,7 @@ class PreviewJobCommand:
 
 @dataclass(frozen=True, slots=True)
 class FeatureExtractionJobCommand:
-    item_id: UUID | None
+    item_id: UUID
     image_keys: tuple[str, ...]
     image_get_urls: tuple[str, ...]
     callback_url: str | None

@@ -14,6 +14,7 @@ import json
 import logging
 import sys
 
+from agents.core.types import ArtworkType, normalize_artwork_type
 from agents.core.logging import configure_logging
 from agents.core.settings import get_settings
 
@@ -25,6 +26,7 @@ from agents.tasks.price_valuator.graph import build_valuation_graph
 from agents.tasks.price_valuator.types import ValuationState
 
 logger = logging.getLogger(__name__)
+SUPPORTED_ARTWORK_TYPES = [ArtworkType.PAINTING.value, ArtworkType.SCULPTURE.value]
 
 
 def main():
@@ -38,7 +40,7 @@ def main():
     parser.add_argument("--medium-hint", default=None, help="Medium hint")
     parser.add_argument(
         "--artwork-type",
-        choices=["painting", "sculpture"],
+        choices=SUPPORTED_ARTWORK_TYPES,
         default=None,
         help="Artwork type (if known)",
     )
@@ -72,12 +74,12 @@ def main():
     feature_graph = build_graph(vision_llm=GeminiVisionClient())
     feature_result = feature_graph.invoke(initial_state)
 
-    artwork_type = feature_result.get("artwork_type", "").lower()
-    if artwork_type not in ("painting", "sculpture"):
-        logger.error(f"Invalid artwork type determined: {artwork_type}")
+    artwork_type = normalize_artwork_type(feature_result.get("artwork_type", ""))
+    if artwork_type not in SUPPORTED_ARTWORK_TYPES:
+        logger.error("Invalid artwork type determined: %s", artwork_type)
         sys.exit(1)
 
-    logger.info(f"Artwork classified as: {artwork_type}")
+    logger.info("Artwork classified as: %s", artwork_type)
 
     # Step 3: Run valuation
     logger.info("Running price valuation...")
@@ -123,7 +125,7 @@ def main():
 
         with open(args.out, "w") as f:
             json.dump(output, f, indent=2)
-        logger.info(f"Full results saved to {args.out}")
+        logger.info("Full results saved to %s", args.out)
 
 
 if __name__ == "__main__":

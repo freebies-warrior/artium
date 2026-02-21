@@ -4,6 +4,8 @@ from typing import Any, Dict
 from langgraph.graph import END
 from langgraph.types import Command
 
+from agents.core.types import ArtworkType
+
 from .llm_client import VisionLLMClient
 from .types import FeatureState
 
@@ -32,34 +34,35 @@ Return only the classification, nothing else."""
 
             classification = llm.infer_text(prompt=prompt, image_bytes=image_bytes).strip().lower()
 
-            logger.info(f"Artwork classification: {classification}")
+            logger.info("Artwork classification: %s", classification)
 
             # Validate classification
             if "painting" in classification:
-                artwork_type = "painting"
+                artwork_type = ArtworkType.PAINTING.value
             elif "sculpture" in classification:
-                artwork_type = "sculpture"
+                artwork_type = ArtworkType.SCULPTURE.value
             elif "not an artwork" in classification or "not art" in classification:
-                artwork_type = "NOT AN ARTWORK"
+                artwork_type = ArtworkType.NOT_ARTWORK.value
             else:
                 # Default to NOT AN ARTWORK if unclear
                 logger.warning(
-                    f"Unclear classification '{classification}', defaulting to NOT AN ARTWORK"
+                    "Unclear classification '%s', defaulting to NOT AN ARTWORK",
+                    classification,
                 )
-                artwork_type = "NOT AN ARTWORK"
+                artwork_type = ArtworkType.NOT_ARTWORK.value
 
             # If not an artwork, end early
-            if artwork_type == "NOT AN ARTWORK":
+            if artwork_type == ArtworkType.NOT_ARTWORK.value:
                 return Command(update={"artwork_type": artwork_type}, goto=END)
 
             # Otherwise, route to state coordinator
             return Command(update={"artwork_type": artwork_type}, goto="state_coordinator")
 
-        except Exception as e:
-            error_msg = f"Artwork classification failed: {str(e)}"
-            logger.error("Artwork classification failed", extra={"error_type": type(e).__name__})
+        except Exception as exc:
+            error_msg = "Artwork classification failed."
+            logger.error("Artwork classification failed", extra={"error_type": type(exc).__name__})
             return Command(
-                update={"artwork_type": "NOT AN ARTWORK", "errors": [error_msg]},
+                update={"artwork_type": ArtworkType.NOT_ARTWORK.value, "errors": [error_msg]},
                 goto=END,
             )
 

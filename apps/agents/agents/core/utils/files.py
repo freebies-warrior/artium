@@ -7,12 +7,22 @@ from pathlib import Path
 import requests
 from fastapi import HTTPException
 
+from agents.core.constants import (
+    DEFAULT_DOWNLOAD_TIMEOUT_SECONDS,
+    DEFAULT_IMAGE_FILENAME,
+    DEFAULT_IMAGE_SUFFIX,
+)
 from agents.core.utils.http import _redacted_exc_info, loggable_url
 
 logger = logging.getLogger(__name__)
 
 
-def download_to_temp_file(url: str, *, suffix: str, timeout: float = 30.0) -> Path:
+def download_to_temp_file(
+    url: str,
+    *,
+    suffix: str,
+    timeout: float = DEFAULT_DOWNLOAD_TIMEOUT_SECONDS,
+) -> Path:
     try:
         response = requests.get(url, timeout=timeout)
     except requests.RequestException as exc:
@@ -47,10 +57,10 @@ def download_to_temp_file(url: str, *, suffix: str, timeout: float = 30.0) -> Pa
 def sanitize_output_filename(
     raw_name: str | None,
     *,
-    default_name: str = "preview.jpeg",
+    default_name: str = DEFAULT_IMAGE_FILENAME,
     max_name_length: int = 80,
     max_stem_length: int = 60,
-    default_suffix: str = ".jpeg",
+    default_suffix: str = DEFAULT_IMAGE_SUFFIX,
 ) -> str:
     base_name = Path(raw_name or default_name).name
     if len(base_name) > max_name_length:

@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 from langgraph.types import Command
 
+from agents.core.types import ArtworkType, normalize_artwork_type
+
 from ..types import ValuationState
 from ..tools.rag_query import RAGQueryTool
 
@@ -16,8 +18,8 @@ def rag_search_node(rag_tool: RAGQueryTool):
 
     def _node(state: ValuationState) -> Command:
         try:
-            artwork_type = state.get("artwork_type", "").lower()
-            if artwork_type not in ("painting", "sculpture"):
+            artwork_type = normalize_artwork_type(state.get("artwork_type", ""))
+            if artwork_type not in (ArtworkType.PAINTING.value, ArtworkType.SCULPTURE.value):
                 raise ValueError(f"Invalid artwork_type: {artwork_type}")
 
             # Construct feature state for RAG query
@@ -28,7 +30,7 @@ def rag_search_node(rag_tool: RAGQueryTool):
             }
 
             # Search for comparables
-            logger.info(f"Searching for comparable {artwork_type}s...")
+            logger.info("Searching for comparable %ss...", artwork_type)
             comparables = rag_tool.search_comparables(
                 feature_state=feature_state,
                 artwork_type=artwork_type,
@@ -63,10 +65,10 @@ def rag_search_node(rag_tool: RAGQueryTool):
                 goto="market_analysis",
             )
 
-        except Exception as e:
-            logger.error("RAG search failed", extra={"error_type": type(e).__name__})
+        except Exception as exc:
+            logger.error("RAG search failed", extra={"error_type": type(exc).__name__})
             return Command(
-                update={"errors": [f"RAG search error: {e}"]},
+                update={"errors": ["RAG search error"]},
                 goto="END",
             )
 

@@ -13,8 +13,9 @@ from PIL import Image
 
 from agents.api.commands import FeatureExtractionJobCommand, PreviewJobCommand
 from agents.core.adapters import HttpBackendCallbackClient
+from agents.core.constants import DEFAULT_DOWNLOAD_TIMEOUT_SECONDS, DEFAULT_IMAGE_SUFFIX
 from agents.core.ports import BackendCallbackClient
-from agents.core.types import JobStatus
+from agents.core.types import ArtworkType, JobStatus, normalize_artwork_type
 from agents.core.utils.files import cleanup_directory, download_to_temp_file
 from agents.core.utils.http import loggable_url
 from agents.tasks.feature_extractor.graph import build_graph
@@ -120,10 +121,14 @@ class AgentService:
         room_url_path = Path(urlsplit(req.room_url).path)
         art_url_path = Path(urlsplit(req.art_url).path)
         room_path = download_to_temp_file(
-            req.room_url, suffix=room_url_path.suffix or ".jpeg", timeout=30.0
+            req.room_url,
+            suffix=room_url_path.suffix or DEFAULT_IMAGE_SUFFIX,
+            timeout=DEFAULT_DOWNLOAD_TIMEOUT_SECONDS,
         )
         art_path = download_to_temp_file(
-            req.art_url, suffix=art_url_path.suffix or ".jpeg", timeout=30.0
+            req.art_url,
+            suffix=art_url_path.suffix or DEFAULT_IMAGE_SUFFIX,
+            timeout=DEFAULT_DOWNLOAD_TIMEOUT_SECONDS,
         )
 
         status = JobStatus.FAILED
@@ -180,8 +185,8 @@ class AgentService:
 
             valuation_result = None
             try:
-                artwork_type = final.get("artwork_type", "").lower()
-                if artwork_type in ("painting", "sculpture"):
+                artwork_type = normalize_artwork_type(str(final.get("artwork_type", "")))
+                if artwork_type in (ArtworkType.PAINTING.value, ArtworkType.SCULPTURE.value):
                     logger.info("running price valuation", extra={"artwork_type": artwork_type})
 
                     valuation_state = {
@@ -199,7 +204,7 @@ class AgentService:
                         extra={"mid_price": valuation_result.get("price_range", {}).get("mid", 0)},
                     )
                 else:
-                    if artwork_type == "NOT_AN_ARTWORK":
+                    if artwork_type == ArtworkType.NOT_ARTWORK.value:
                         logger.info(
                             "Skipping price valuation - input image not recognized as artwork"
                         )

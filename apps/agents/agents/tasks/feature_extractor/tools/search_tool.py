@@ -5,6 +5,7 @@ from typing import Dict, List
 
 import httpx
 
+from agents.core.constants import DEFAULT_SEARCH_TIMEOUT_SECONDS, SERPAPI_SEARCH_URL
 from agents.core.settings import get_settings
 from agents.core.utils.http import loggable_url
 
@@ -29,8 +30,8 @@ def serpapi_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
     }
 
     try:
-        with httpx.Client(timeout=20.0) as client:
-            r = client.get("https://serpapi.com/search.json", params=params)
+        with httpx.Client(timeout=DEFAULT_SEARCH_TIMEOUT_SECONDS) as client:
+            r = client.get(SERPAPI_SEARCH_URL, params=params)
             r.raise_for_status()
             data = r.json()
     except httpx.HTTPStatusError as e:
@@ -52,7 +53,7 @@ def serpapi_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
         logger.error(
             "SerpAPI request failed",
             extra={
-                "url": loggable_url("https://serpapi.com/search.json"),
+                "url": loggable_url(SERPAPI_SEARCH_URL),
                 "error_type": type(e).__name__,
             },
         )

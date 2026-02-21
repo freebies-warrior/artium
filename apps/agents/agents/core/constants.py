@@ -1,0 +1,17 @@
+from __future__ import annotations
+
+DEFAULT_GEMINI_TEXT_MODEL = "gemini-2.5-flash"
+DEFAULT_GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image"
+
+DEFAULT_HTTP_TIMEOUT_SECONDS = 10.0
+DEFAULT_DOWNLOAD_TIMEOUT_SECONDS = 30.0
+DEFAULT_UPLOAD_TIMEOUT_SECONDS = 30.0
+DEFAULT_SEARCH_TIMEOUT_SECONDS = 20.0
+
+DEFAULT_IMAGE_SUFFIX = ".jpeg"
+DEFAULT_IMAGE_FILENAME = "preview.jpeg"
+
+SERPAPI_SEARCH_URL = "https://serpapi.com/search.json"
+
+VISUALIZATION_CALLBACK_PATH_TEMPLATE = "/visualizations/{job_id}"
+ITEM_FEATURES_CALLBACK_PATH_TEMPLATE = "/items/{item_id}/features"

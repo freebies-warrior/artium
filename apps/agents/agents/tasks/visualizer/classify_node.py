@@ -5,13 +5,16 @@ from __future__ import annotations
 from typing import Any
 from PIL import Image
 
+from agents.core.constants import DEFAULT_GEMINI_TEXT_MODEL
+from agents.core.types import ArtworkType, normalize_artwork_type
+
 from .client import GeminiClient
 
 
 def classify_artwork_and_room(
     artwork_image: Image.Image,
     room_image: Image.Image,
-    model: str = "gemini-2.5-flash",
+    model: str = DEFAULT_GEMINI_TEXT_MODEL,
 ) -> dict[str, Any]:
     """
     Classify whether first image is an artwork and second image is a room.
@@ -65,7 +68,7 @@ Return a JSON object with:
 def is_valid_artwork_and_room(
     artwork_image: Image.Image,
     room_image: Image.Image,
-    model: str = "gemini-2.5-flash",
+    model: str = DEFAULT_GEMINI_TEXT_MODEL,
 ) -> tuple[bool, bool | None, bool | None]:
     """
     Check if first image is artwork AND second image is a room.
@@ -86,7 +89,8 @@ def is_valid_artwork_and_room(
     is_room = None
 
     if is_valid:
-        is_artwork = result.get("artwork_type") != "not_artwork"
+        artwork_type = normalize_artwork_type(result.get("artwork_type"))
+        is_artwork = artwork_type != ArtworkType.NOT_ARTWORK.value
         is_room = result.get("room_type") != "not_room"
 
     return is_valid, is_artwork, is_room

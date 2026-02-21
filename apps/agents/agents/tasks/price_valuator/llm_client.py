@@ -6,6 +6,7 @@ import json
 import logging
 from typing import Any, Dict
 
+from agents.core.constants import DEFAULT_GEMINI_TEXT_MODEL
 from agents.tasks.feature_extractor.llm_client import VisionLLMClient
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 class ValuationLLMClient:
     """LLM client for price valuation reasoning."""
 
-    def __init__(self, model: str = "gemini-2.5-flash"):
+    def __init__(self, model: str = DEFAULT_GEMINI_TEXT_MODEL):
         self.client = VisionLLMClient(model=model)
 
     def analyze_comparables(
@@ -30,10 +31,10 @@ class ValuationLLMClient:
         try:
             response = self.client.generate_json(prompt=prompt)
             return response
-        except Exception as e:
+        except Exception as exc:
             logger.error(
                 "LLM comparables analysis failed",
-                extra={"error_type": type(e).__name__, "step": "comparables_analysis"},
+                extra={"error_type": type(exc).__name__, "step": "comparables_analysis"},
             )
             return {
                 "key_similarities": [],
@@ -58,10 +59,10 @@ class ValuationLLMClient:
         try:
             response = self.client.generate_json(prompt=prompt)
             return response
-        except Exception as e:
+        except Exception as exc:
             logger.error(
                 "LLM price estimation failed",
-                extra={"error_type": type(e).__name__, "step": "price_estimation"},
+                extra={"error_type": type(exc).__name__, "step": "price_estimation"},
             )
             # Fallback to simple average
             avg = sum(comparable_prices) / len(comparable_prices) if comparable_prices else 0
@@ -69,7 +70,7 @@ class ValuationLLMClient:
                 "price_low": avg * 0.8,
                 "price_mid": avg,
                 "price_high": avg * 1.2,
-                "reasoning": f"Fallback estimate based on average: {e}",
+                "reasoning": "Fallback estimate based on average due to model error.",
             }
 
     def generate_justification(
@@ -95,12 +96,15 @@ class ValuationLLMClient:
         try:
             response = self.client.generate_text(prompt=prompt)
             return response
-        except Exception as e:
+        except Exception as exc:
             logger.error(
                 "LLM justification failed",
-                extra={"error_type": type(e).__name__, "step": "justification"},
+                extra={"error_type": type(exc).__name__, "step": "justification"},
             )
-            return f"Price estimate: ${price_range.get('mid', 0):,.2f}. Error generating detailed justification: {e}"
+            return (
+                f"Price estimate: ${price_range.get('mid', 0):,.2f}. "
+                "Detailed justification unavailable due to model error."
+            )
 
     def research_artist(
         self,
@@ -123,16 +127,16 @@ class ValuationLLMClient:
         try:
             response = self.client.generate_json(prompt=prompt)
             return response
-        except Exception as e:
+        except Exception as exc:
             logger.error(
                 "LLM artist research failed",
-                extra={"error_type": type(e).__name__, "step": "artist_research"},
+                extra={"error_type": type(exc).__name__, "step": "artist_research"},
             )
             return {
-                "artist_background": f"Unable to research artist: {e}",
+                "artist_background": "Unable to research artist at this time.",
                 "artist_market_level": "unknown",
                 "estimated_price_impact": "Unable to determine",
-                "research_notes": [f"Error: {e}"],
+                "research_notes": ["Artist research unavailable due to model error."],
             }
 
     def _build_comparables_prompt(

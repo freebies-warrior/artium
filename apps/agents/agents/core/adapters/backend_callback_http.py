@@ -4,6 +4,11 @@ import logging
 from types import TracebackType
 from typing import Any
 
+from agents.core.constants import (
+    DEFAULT_HTTP_TIMEOUT_SECONDS,
+    ITEM_FEATURES_CALLBACK_PATH_TEMPLATE,
+    VISUALIZATION_CALLBACK_PATH_TEMPLATE,
+)
 from agents.core.ports import BackendCallbackClient
 from agents.core.settings import get_settings
 from agents.core.types import JobStatus
@@ -35,7 +40,7 @@ class HttpBackendCallbackClient(BackendCallbackClient):
         error_message: str | None,
     ) -> None:
         settings = get_settings()
-        url = f"{settings.backend_url}/visualizations/{job_id}"
+        url = f"{settings.backend_url}{VISUALIZATION_CALLBACK_PATH_TEMPLATE.format(job_id=job_id)}"
         payload = {
             "status": status.value,
             "result_description": result_description,
@@ -45,7 +50,12 @@ class HttpBackendCallbackClient(BackendCallbackClient):
         headers = internal_auth_headers(settings.INTERNAL_TOKEN)
 
         try:
-            response = put_json(url, payload, headers=headers, timeout=10.0)
+            response = put_json(
+                url,
+                payload,
+                headers=headers,
+                timeout=DEFAULT_HTTP_TIMEOUT_SECONDS,
+            )
             if response.status_code >= 400:
                 logger.warning(
                     "failed to update visualizer job",
@@ -78,13 +88,20 @@ class HttpBackendCallbackClient(BackendCallbackClient):
         if not isinstance(sanitized_features, dict):
             sanitized_features = {}
 
-        url = f"{settings.backend_url}/items/{item_id}/features"
+        url = (
+            f"{settings.backend_url}{ITEM_FEATURES_CALLBACK_PATH_TEMPLATE.format(item_id=item_id)}"
+        )
         payload = {"features": sanitized_features}
 
         headers = internal_auth_headers(settings.INTERNAL_TOKEN)
 
         try:
-            response = put_json(url, payload, headers=headers, timeout=10.0)
+            response = put_json(
+                url,
+                payload,
+                headers=headers,
+                timeout=DEFAULT_HTTP_TIMEOUT_SECONDS,
+            )
             if response.status_code >= 400:
                 logger.warning(
                     "failed to update feature extraction job",

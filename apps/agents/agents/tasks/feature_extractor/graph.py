@@ -6,6 +6,8 @@ from typing import Optional
 from langgraph.graph import END, StateGraph
 from langgraph.types import Command
 
+from agents.core.types import ArtworkType, normalize_artwork_type
+
 from .blending_node import blending_node
 from .brushstroke_node import brushstroke_node
 from .classifier_node import artwork_classifier_node
@@ -33,7 +35,7 @@ def state_coordinator_node(state: FeatureState) -> Command:
     """
     have_vision = "vision_features" in state
     have_market = "market_features" in state
-    artwork_type = state.get("artwork_type", "painting").lower()
+    artwork_type = normalize_artwork_type(state.get("artwork_type", ArtworkType.PAINTING.value))
 
     if have_vision and have_market:
         return Command(goto="finalize")
@@ -41,7 +43,7 @@ def state_coordinator_node(state: FeatureState) -> Command:
     targets = []
 
     if not have_vision:
-        if artwork_type == "painting":
+        if artwork_type == ArtworkType.PAINTING.value:
             have_brush = "vision_brushstroke" in state
             have_blend = "vision_blending" in state
             have_phys = "vision_physicality" in state
@@ -55,7 +57,7 @@ def state_coordinator_node(state: FeatureState) -> Command:
             if have_brush and have_blend and have_phys:
                 targets.append("vision_aggregate_painting")
 
-        elif artwork_type == "sculpture":
+        elif artwork_type == ArtworkType.SCULPTURE.value:
             have_material = "vision_material" in state
             have_form = "vision_form" in state
             have_surface = "vision_surface" in state

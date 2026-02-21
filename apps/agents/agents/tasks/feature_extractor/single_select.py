@@ -6,12 +6,14 @@ import io
 from typing import Any
 from PIL import Image
 
+from agents.core.constants import DEFAULT_GEMINI_TEXT_MODEL
+
 from .llm_client import VisionLLMClient
 
 
 def select_primary_image(
     images_bytes: list[bytes],
-    model: str = "gemini-2.5-flash",
+    model: str = DEFAULT_GEMINI_TEXT_MODEL,
 ) -> dict[str, Any]:
     """
     Analyze multiple images and select the primary/main view that best represents all others.
@@ -87,14 +89,13 @@ Return JSON:
         result = {
             "primary_index": 0,
         }
-        # raise ValueError(f"Invalid primary_index: {primary_idx}")
 
     return result
 
 
 def get_primary_image_index(
     images: list[bytes],
-    model: str = "gemini-2.5-flash",
+    model: str = DEFAULT_GEMINI_TEXT_MODEL,
 ) -> int:
     """
     Simple wrapper to get just the primary image index.

@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 from PIL import Image
 
+from agents.core.constants import DEFAULT_UPLOAD_TIMEOUT_SECONDS
 from agents.core.settings import get_settings
 from agents.core.utils.http import loggable_url, put_bytes
 
@@ -29,7 +30,7 @@ def _save_image(out_img: Image.Image, out_path: str):
             out_path,
             data=buf.getvalue(),
             headers={"Content-Type": "image/jpeg"},
-            timeout=30.0,
+            timeout=DEFAULT_UPLOAD_TIMEOUT_SECONDS,
         )
         logger.info(
             "upload response received",

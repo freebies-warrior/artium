@@ -5,6 +5,8 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from agents.core.constants import DEFAULT_GEMINI_IMAGE_MODEL, DEFAULT_GEMINI_TEXT_MODEL
+
 
 def _resolve_agents_root() -> Path:
     start_dir = Path(__file__).resolve().parent
@@ -33,8 +35,8 @@ class Settings(BaseSettings):
     BACKEND_URL: str = "http://localhost:8080"
 
     # Visualizer configuration
-    VISUALIZER_GEMINI_MODEL: str = "gemini-2.5-flash-image"
-    VISUALIZER_GEMINI_TEXT_MODEL: str = "gemini-2.5-flash"
+    VISUALIZER_GEMINI_MODEL: str = DEFAULT_GEMINI_IMAGE_MODEL
+    VISUALIZER_GEMINI_TEXT_MODEL: str = DEFAULT_GEMINI_TEXT_MODEL
     VISUALIZER_MAX_RETRIES: int = 1
     VISUALIZER_ENHANCE_IF_LOW_QUALITY: bool = True
     VISUALIZER_USE_LANGGRAPH: bool = True

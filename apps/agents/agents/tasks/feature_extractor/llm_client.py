@@ -8,6 +8,7 @@ from google import genai
 from google.genai import types
 from PIL import Image
 
+from agents.core.constants import DEFAULT_GEMINI_IMAGE_MODEL
 from agents.core.settings import get_settings
 from agents.core.utils.parsing import parse_json_object
 
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class VisionLLMClient:
-    def __init__(self, model: str = "gemini-2.5-flash-image") -> None:
+    def __init__(self, model: str = DEFAULT_GEMINI_IMAGE_MODEL) -> None:
         api_key = get_settings().GOOGLE_API_KEY
         if not api_key:
             raise ValueError("GOOGLE_API_KEY is not configured")
@@ -160,7 +161,7 @@ class VisionLLMClient:
 
 
 class GeminiVisionClient(VisionLLMClient):
-    def __init__(self, model: str = "gemini-2.5-flash-image") -> None:
+    def __init__(self, model: str = DEFAULT_GEMINI_IMAGE_MODEL) -> None:
         self.client = VisionLLMClient(model=model)
 
     def infer_json(self, prompt: str, image_bytes: bytes) -> Dict[str, Any]:

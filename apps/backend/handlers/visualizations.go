@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 
@@ -56,8 +55,6 @@ type jobResp struct {
 	Job visualizationJobOut `json:"job"`
 }
 
-var uuidRe = regexp.MustCompile(`(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
-
 func (h *VisualizationsHandler) Create(c *gin.Context) {
 	var req createVisualizationReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -66,8 +63,8 @@ func (h *VisualizationsHandler) Create(c *gin.Context) {
 	}
 
 	itemID := strings.TrimSpace(req.ItemID)
-	if !uuidRe.MatchString(itemID) {
-		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid item_id", map[string]any{"field": "item_id"}))
+	if !isUUID(itemID) {
+		invalidUUIDResponse(c, "item_id")
 		return
 	}
 
@@ -88,10 +85,17 @@ func (h *VisualizationsHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, utils.NewError("UNAUTHORIZED", "missing auth", nil))
 		return
 	}
+	if !isUUID(uid) {
+		c.JSON(http.StatusUnauthorized, utils.NewError("UNAUTHORIZED", "invalid user context", nil))
+		return
+	}
 
 	// Ensure item_image_key belongs to the item (and item has images)
 	ok, err := h.jobs.ItemHasPictureKey(c.Request.Context(), itemID, itemKey)
 	if err != nil {
+		if handleInvalidUUIDDBError(c, err, "item_id") {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "database error", nil))
 		return
 	}
@@ -107,6 +111,9 @@ func (h *VisualizationsHandler) Create(c *gin.Context) {
 		RoomImageKey: roomKey,
 	})
 	if err != nil {
+		if handleInvalidUUIDDBError(c, err, "item_id") {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to create visualization job", nil))
 		return
 	}
@@ -129,8 +136,8 @@ func (h *VisualizationsHandler) Create(c *gin.Context) {
 
 func (h *VisualizationsHandler) Get(c *gin.Context) {
 	jobID := strings.TrimSpace(c.Param("job_id"))
-	if !uuidRe.MatchString(jobID) {
-		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid job_id", map[string]any{"field": "job_id"}))
+	if !isUUID(jobID) {
+		invalidUUIDResponse(c, "job_id")
 		return
 	}
 
@@ -144,6 +151,9 @@ func (h *VisualizationsHandler) Get(c *gin.Context) {
 	if err != nil {
 		if err == database.ErrNotFound {
 			c.JSON(http.StatusNotFound, utils.NewError("NOT_FOUND", "job not found", nil))
+			return
+		}
+		if handleInvalidUUIDDBError(c, err, "job_id") {
 			return
 		}
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "database error", nil))
@@ -176,8 +186,8 @@ type updateVisualizationReq struct {
 
 func (h *VisualizationsHandler) UpdateInternal(c *gin.Context) {
 	jobID := strings.TrimSpace(c.Param("job_id"))
-	if !uuidRe.MatchString(jobID) {
-		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid job_id", map[string]any{"field": "job_id"}))
+	if !isUUID(jobID) {
+		invalidUUIDResponse(c, "job_id")
 		return
 	}
 
@@ -202,6 +212,9 @@ func (h *VisualizationsHandler) UpdateInternal(c *gin.Context) {
 	}); err != nil {
 		if err == database.ErrNotFound {
 			c.JSON(http.StatusNotFound, utils.NewError("NOT_FOUND", "job not found", nil))
+			return
+		}
+		if handleInvalidUUIDDBError(c, err, "job_id") {
 			return
 		}
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to update job", nil))

@@ -38,6 +38,10 @@ func (h *BidsHandler) PlaceBid(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "item_id required", map[string]any{"field": "item_id"}))
 		return
 	}
+	if !isUUID(itemID) {
+		invalidUUIDResponse(c, "item_id")
+		return
+	}
 
 	var req placeBidReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -59,8 +63,15 @@ func (h *BidsHandler) PlaceBid(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, utils.NewError("UNAUTHORIZED", "missing auth", nil))
 		return
 	}
+	if !isUUID(userID) {
+		c.JSON(http.StatusUnauthorized, utils.NewError("UNAUTHORIZED", "invalid user context", nil))
+		return
+	}
 
 	if err := h.items.UpdateItemStatus(c.Request.Context(), itemID); err != nil {
+		if handleInvalidUUIDDBError(c, err, "item_id") {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to update item status", nil))
 		return
 	}
@@ -85,6 +96,9 @@ func (h *BidsHandler) PlaceBid(c *gin.Context) {
 				}
 			}
 		}
+		if handleInvalidUUIDDBError(c, err, "item_id") {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "database error", nil))
 		return
 	}
@@ -98,9 +112,16 @@ func (h *BidsHandler) ListBids(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "item_id required", map[string]any{"field": "item_id"}))
 		return
 	}
+	if !isUUID(itemID) {
+		invalidUUIDResponse(c, "item_id")
+		return
+	}
 
 	exists, err := h.items.Exists(c.Request.Context(), itemID)
 	if err != nil {
+		if handleInvalidUUIDDBError(c, err, "item_id") {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "database error", nil))
 		return
 	}
@@ -111,6 +132,9 @@ func (h *BidsHandler) ListBids(c *gin.Context) {
 
 	bids, err := h.bids.ListBidsForItem(c.Request.Context(), itemID)
 	if err != nil {
+		if handleInvalidUUIDDBError(c, err, "item_id") {
+			return
+		}
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "database error", nil))
 		return
 	}

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -73,8 +72,6 @@ func (h *ItemsHandler) presignPictures(ctx context.Context, pics []database.Pict
 	return nil
 }
 
-var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
-
 func (h *ItemsHandler) PostItem(c *gin.Context) {
 	uidAny, ok := c.Get(middlewares.CtxUserIDKey)
 	if !ok {
@@ -83,6 +80,10 @@ func (h *ItemsHandler) PostItem(c *gin.Context) {
 	}
 	sellerID, _ := uidAny.(string)
 	if strings.TrimSpace(sellerID) == "" {
+		c.JSON(http.StatusUnauthorized, utils.NewError("UNAUTHORIZED", "invalid user context", nil))
+		return
+	}
+	if !isUUID(sellerID) {
 		c.JSON(http.StatusUnauthorized, utils.NewError("UNAUTHORIZED", "invalid user context", nil))
 		return
 	}
@@ -165,9 +166,13 @@ func (h *ItemsHandler) PostItem(c *gin.Context) {
 }
 
 func (h *ItemsHandler) GetItem(c *gin.Context) {
-	itemID := c.Param("item_id")
-	if strings.TrimSpace(itemID) == "" {
+	itemID := strings.TrimSpace(c.Param("item_id"))
+	if itemID == "" {
 		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "item_id required", nil))
+		return
+	}
+	if !isUUID(itemID) {
+		invalidUUIDResponse(c, "item_id")
 		return
 	}
 
@@ -175,6 +180,9 @@ func (h *ItemsHandler) GetItem(c *gin.Context) {
 	if err != nil {
 		if err == database.ErrNotFound {
 			c.JSON(http.StatusNotFound, utils.NewError("NOT_FOUND", "item not found", nil))
+			return
+		}
+		if handleInvalidUUIDDBError(c, err, "item_id") {
 			return
 		}
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "database error", nil))
@@ -218,8 +226,8 @@ func (h *ItemsHandler) ListItems(c *gin.Context) {
 
 	sellerID := strings.TrimSpace(c.Query("seller_id"))
 	if sellerID != "" {
-		if !uuidPattern.MatchString(sellerID) {
-			c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid seller_id", map[string]any{"field": "seller_id"}))
+		if !isUUID(sellerID) {
+			invalidUUIDResponse(c, "seller_id")
 			return
 		}
 	}
@@ -276,8 +284,8 @@ type putItemFeaturesReq struct {
 
 func (h *ItemsHandler) PutItemFeatures(c *gin.Context) {
 	itemID := strings.TrimSpace(c.Param("item_id"))
-	if itemID == "" || !uuidPattern.MatchString(itemID) {
-		c.JSON(http.StatusBadRequest, utils.NewError("VALIDATION_ERROR", "invalid item_id", map[string]any{"field": "item_id"}))
+	if itemID == "" || !isUUID(itemID) {
+		invalidUUIDResponse(c, "item_id")
 		return
 	}
 
@@ -306,6 +314,9 @@ func (h *ItemsHandler) PutItemFeatures(c *gin.Context) {
 	if err := h.items.UpdateItemFeatures(c.Request.Context(), itemID, string(req.Features)); err != nil {
 		if err == database.ErrNotFound {
 			c.JSON(http.StatusNotFound, utils.NewError("NOT_FOUND", "item not found", nil))
+			return
+		}
+		if handleInvalidUUIDDBError(c, err, "item_id") {
 			return
 		}
 		c.JSON(http.StatusInternalServerError, utils.NewError("INTERNAL_ERROR", "failed to update item features", nil))

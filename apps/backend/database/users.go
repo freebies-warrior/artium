@@ -40,7 +40,6 @@ type PublicUserDetails struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-
 type ListUsersParams struct {
 	Limit  int
 	Cursor string
@@ -80,9 +79,14 @@ func (r *UserDatabase) GetUserDetailsByUserID(
 		 WHERE id = $1`,
 		userID,
 	).Scan(&u.ID, &u.Email, &u.Username, &u.Verified)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return UserPublic{}, ErrNotFound
+		}
+		return UserPublic{}, err
+	}
 	return u, err
 }
-
 
 func IsUniqueViolation(err error) bool {
 	var pgErr *pgconn.PgError

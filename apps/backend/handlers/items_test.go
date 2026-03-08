@@ -4,9 +4,11 @@ import (
 	"net/http"
 	"testing"
 
+	"backend/database"
 	"backend/middlewares"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func TestItemsPostItemMissingUserContext(t *testing.T) {
@@ -74,6 +76,22 @@ func TestItemsPutItemFeaturesInvalidID(t *testing.T) {
 	c.Params = gin.Params{{Key: "item_id", Value: "not-a-uuid"}}
 
 	h.PutItemFeatures(c)
+
+	assertStatusAndErrorCode(t, w, http.StatusBadRequest, "VALIDATION_ERROR")
+}
+
+func TestItemsGetItemMapsDBInvalidUUIDErrorToValidationError(t *testing.T) {
+	db := newErrorDB(&pgconn.PgError{
+		Code:    "22P02",
+		Message: `invalid input syntax for type uuid: "bad"`,
+	})
+	t.Cleanup(func() { _ = db.Close() })
+
+	h := NewItemsHandler(database.NewItemDatabase(db), nil, nil, nil, "")
+	c, w := newJSONContext(http.MethodGet, "/items/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", "")
+	c.Params = gin.Params{{Key: "item_id", Value: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"}}
+
+	h.GetItem(c)
 
 	assertStatusAndErrorCode(t, w, http.StatusBadRequest, "VALIDATION_ERROR")
 }

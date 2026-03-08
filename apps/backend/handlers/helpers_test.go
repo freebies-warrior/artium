@@ -1,7 +1,11 @@
 package handlers
 
 import (
+	"context"
+	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -51,4 +55,50 @@ func assertStatusAndErrorCode(t *testing.T, w *httptest.ResponseRecorder, wantSt
 	t.Helper()
 	assertStatus(t, w, wantStatus)
 	assertErrorCode(t, w, wantCode)
+}
+
+func newErrorDB(err error) *sql.DB {
+	return sql.OpenDB(errorConnector{err: err})
+}
+
+type errorConnector struct {
+	err error
+}
+
+func (c errorConnector) Connect(context.Context) (driver.Conn, error) {
+	return errorConn{err: c.err}, nil
+}
+
+func (c errorConnector) Driver() driver.Driver {
+	return errorDriver{}
+}
+
+type errorDriver struct{}
+
+func (d errorDriver) Open(string) (driver.Conn, error) {
+	return nil, errors.New("not implemented")
+}
+
+type errorConn struct {
+	err error
+}
+
+func (c errorConn) Prepare(string) (driver.Stmt, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c errorConn) Close() error {
+	return nil
+}
+
+func (c errorConn) Begin() (driver.Tx, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c errorConn) QueryContext(context.Context, string, []driver.NamedValue) (driver.Rows, error) {
+	return nil, c.err
+}
+
+func (c errorConn) ExecContext(context.Context, string, []driver.NamedValue) (driver.Result, error) {
+	return nil, c.err
 }

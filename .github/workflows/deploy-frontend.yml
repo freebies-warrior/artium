@@ -2,6 +2,9 @@ name: Deploy to Vercel
 
 on:
   pull_request:
+    # Preview deployments are only relevant when the frontend changed.
+    paths:
+      - 'apps/frontend/**'
   push:
     tags: ['v*.*.*']
 
@@ -13,8 +16,43 @@ env:
   VERCEL_CLI_VERSION: 50.16.0
 
 jobs:
-  verify-tag-on-main:
+  detect-frontend-changes:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    outputs:
+      frontend_changed: ${{ steps.frontend-diff.outputs.frontend_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect frontend changes since previous release tag
+        id: frontend-diff
+        shell: bash
+        run: |
+          TAG_COMMIT="$(git rev-list -n 1 "${GITHUB_REF}")"
+          PREVIOUS_TAG="$(git describe --tags --match 'v*.*.*' --abbrev=0 "${TAG_COMMIT}^" 2>/dev/null || true)"
+
+          # Push tag events do not support path filters, so compare this release
+          # against the previous release tag before running the production deploy.
+          if [[ -z "${PREVIOUS_TAG}" ]]; then
+            echo "No previous release tag found. Treating frontend as changed."
+            echo "frontend_changed=true" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          echo "Comparing ${PREVIOUS_TAG}..${GITHUB_REF_NAME} for frontend changes."
+          if git diff --quiet "${PREVIOUS_TAG}" "${TAG_COMMIT}" -- apps/frontend; then
+            echo "No frontend changes detected."
+            echo "frontend_changed=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "Frontend changes detected."
+            echo "frontend_changed=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+  verify-tag-on-main:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && needs.detect-frontend-changes.outputs.frontend_changed == 'true'
+    needs: detect-frontend-changes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,9 +105,11 @@ jobs:
         run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
 
   deploy-production:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && needs.detect-frontend-changes.outputs.frontend_changed == 'true'
     runs-on: ubuntu-latest
-    needs: verify-tag-on-main
+    needs:
+      - detect-frontend-changes
+      - verify-tag-on-main
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

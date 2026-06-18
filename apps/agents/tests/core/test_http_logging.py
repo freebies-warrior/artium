@@ -5,6 +5,10 @@ import logging
 import pytest
 import requests
 
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 from agents.core.utils.http import loggable_url, put_json
 
 

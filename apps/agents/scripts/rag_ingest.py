@@ -16,6 +16,10 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 from agents.providers.rag.settings import EnvSettings, load_config
 from agents.providers.rag.utils.logging import setup_logging
 from agents.providers.rag.ingest.build_index import main as build_index_main

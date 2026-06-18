@@ -2,6 +2,10 @@ import logging
 
 import pytest
 
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 import agents.core.logging as core_logging
 
 

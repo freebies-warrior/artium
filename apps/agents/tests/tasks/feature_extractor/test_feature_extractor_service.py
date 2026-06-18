@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 import agents.tasks.feature_extractor.service as feature_service
 
 

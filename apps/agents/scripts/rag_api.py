@@ -10,6 +10,10 @@ import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 from agents.providers.rag.settings import EnvSettings, load_config
 from agents.providers.rag.utils.hashing import sha256_hex
 from agents.providers.rag.utils.image_io import data_url_to_bytes

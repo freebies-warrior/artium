@@ -5,6 +5,10 @@ from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
 from app import require_internal_token
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 from agents.core.settings import get_settings
 
 

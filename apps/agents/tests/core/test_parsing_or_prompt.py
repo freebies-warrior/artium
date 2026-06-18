@@ -1,3 +1,7 @@
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 from agents.core.utils.json import sanitize_for_json
 
 

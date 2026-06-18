@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import pytest
 
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 from agents.core.utils.parsing import parse_json_object
 
 

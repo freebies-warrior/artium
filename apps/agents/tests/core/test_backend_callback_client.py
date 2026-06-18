@@ -6,6 +6,10 @@ from types import SimpleNamespace
 import pytest
 import requests
 
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 import agents.core.adapters.backend_callback_http as callback_http
 from agents.core.adapters.backend_callback_http import HttpBackendCallbackClient
 from agents.core.constants import (

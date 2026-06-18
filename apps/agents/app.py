@@ -9,6 +9,10 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, Header, HTTPException, status
 
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 from agents.api import agent as agent_api
 from agents.core.logging import configure_logging
 from agents.api.service import agent_service_lifespan

@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 from pathlib import Path
 
 import pytest
@@ -34,7 +38,7 @@ def test_load_config_prefers_new_default_path(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(rag_settings, "AGENTS_ROOT", tmp_path)
-    new_path = tmp_path / "agents/providers/rag/config.yaml"
+    new_path = tmp_path / "src/agents/providers/rag/config.yaml"
     _write_config(new_path, embedding_mode="feature_text")
 
     cfg = rag_settings.load_config()
@@ -65,5 +69,5 @@ def test_load_config_raises_when_no_default_path_exists(
         rag_settings.load_config()
 
     message = str(exc.value)
-    assert str(tmp_path / "agents/providers/rag/config.yaml") in message
+    assert str(tmp_path / "src/agents/providers/rag/config.yaml") in message
     assert str(tmp_path / "RAG/config.yaml") in message

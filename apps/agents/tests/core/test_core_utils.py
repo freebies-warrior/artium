@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 from agents.core.types import ArtworkType, normalize_artwork_type
 from agents.core.utils.errors import redacted_exc_info
 from agents.core.utils.files import sanitize_output_filename

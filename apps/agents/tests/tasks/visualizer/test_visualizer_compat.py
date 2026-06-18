@@ -1,3 +1,7 @@
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 import agents.tasks.visualizer.runner as migrated
 from agents.api import agent as api_agent
 

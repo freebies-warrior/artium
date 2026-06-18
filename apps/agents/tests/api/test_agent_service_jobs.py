@@ -7,6 +7,10 @@ from uuid import uuid4
 from PIL import Image
 import pytest
 
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 import agents.api.service as agent_service_module
 from agents.api.commands import FeatureExtractionJobCommand, PreviewJobCommand
 from agents.api.service import AgentService

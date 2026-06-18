@@ -187,7 +187,7 @@ uv run pytest -q
 ```
 
 ### RAG tooling entrypoints
-RAG provider logic lives under `agents/providers/rag`, while operational entrypoints live under `scripts/`.
+RAG provider logic lives under `src/agents/providers/rag`, while operational entrypoints live under `scripts/`.
 
 ```bash
 cd apps/agents
@@ -220,7 +220,7 @@ cp .env.example .env
 | `OPENAI_API_KEY` | Yes for RAG/valuation flows | RAG scripts + valuation tooling | Required for text embeddings in RAG flows. |
 | `PINECONE_API_KEY` | Yes for RAG/valuation flows | RAG scripts + valuation tooling | Required for Pinecone index/query access. |
 | `MANUS_API_KEY` | Optional | RAG canonicalization | Required only when `feature_text.manus.enabled=true`. |
-| `VECTORDB_CONFIG` | Optional | RAG scripts/providers | Defaults to `agents/providers/rag/config.yaml` (legacy fallback supported). |
+| `VECTORDB_CONFIG` | Optional | RAG scripts/providers | Defaults to `src/agents/providers/rag/config.yaml` (legacy fallback supported). |
 
 Use `apps/agents/.env.example` as the source of truth for all currently supported settings.
 
@@ -228,16 +228,16 @@ Use `apps/agents/.env.example` as the source of truth for all currently supporte
 
 ## Project structure
 
-The codebase is being migrated incrementally to a clearer package layout while keeping existing entrypoints stable.
+The codebase uses a `src` layout to keep package code separate from service-level files.
 
-### Target structure (WIP)
-- `agents/core/` — orchestration, prompting, parsing, and other pure domain logic.
-- `agents/providers/` — integration boundaries (LLM, HTTP, storage, and external clients).
-- `agents/tasks/<task_name>/` — task-specific pipelines/services (for example, visualizer).
-- `agents/utils/` — shared utilities used across tasks.
+### Current structure
+- `src/agents/core/` — orchestration, prompting, parsing, and other pure domain logic.
+- `src/agents/providers/` — integration boundaries (LLM, HTTP, storage, and external clients).
+- `src/agents/tasks/<task_name>/` — task-specific pipelines/services (for example, visualizer).
+- `src/agents/utils/` — shared utilities used across tasks.
 
 ### Migration strategy
-- Migrate one task at a time into `agents/tasks/...` to keep changes reviewable and low risk.
+- Keep `src/agents/tasks/...` task-local and reviewable as the codebase evolves.
 - Keep service boundaries selective: add `service.py` only when API code would otherwise depend on task-private internals.
 - RAG entrypoints use a clean cutover: run `scripts.rag_api` and `scripts.rag_ingest` (no legacy `agents.providers.rag.*` module wrappers).
 - Runtime imports should use `agents.*` paths (for example, `agents.tasks.visualizer.runner`), not legacy top-level packages.
@@ -256,10 +256,10 @@ Future Iteration:
 
 ## How to add a new task
 
-1. Add task code under `agents/tasks/<task_name>/`.
+1. Add task code under `src/agents/tasks/<task_name>/`.
 2. Keep integrations in provider/shared modules where possible:
-   - `agents/providers/` for external systems
-   - `agents/core/` for shared orchestration/config/logging helpers
+   - `src/agents/providers/` for external systems
+   - `src/agents/core/` for shared orchestration/config/logging helpers
 3. Expose API entrypoints in `agents/api/agent.py` with a stable route prefix:
    - `/agents/<task_name>/...`
 4. Keep routers thin:

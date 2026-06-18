@@ -25,6 +25,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PORT=8000 \
+    PYTHONPATH="/app/src" \
     PATH="/app/.venv/bin:$PATH"
 
 COPY --from=builder /app/.venv /app/.venv

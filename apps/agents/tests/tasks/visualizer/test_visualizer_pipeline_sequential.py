@@ -1,5 +1,9 @@
 from PIL import Image
 
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 from agents.tasks.visualizer.config import VisualizerConfig
 from agents.tasks.visualizer.pipeline_sequential import critic, locate_artwork, room_judge
 

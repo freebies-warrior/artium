@@ -6,6 +6,10 @@ import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
+from path_bootstrap import ensure_src_on_path
+
+ensure_src_on_path()
+
 import agents.api.agent as agent_api
 from app import require_internal_token
 from agents.core.settings import get_settings

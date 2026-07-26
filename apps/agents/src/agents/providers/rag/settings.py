@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import yaml
 
@@ -37,24 +37,13 @@ def _resolve_default_config_path() -> Path:
     configured = Path(get_settings().VECTORDB_CONFIG).expanduser()
     if not configured.is_absolute():
         configured = AGENTS_ROOT / configured
-    candidates = [
+    tried: list[Path] = []
+    for candidate in (
         configured,
         AGENTS_ROOT / "src/agents/providers/rag/config.yaml",
         AGENTS_ROOT / "providers/rag/config.yaml",
         AGENTS_ROOT / "RAG/config.yaml",
-    ]
-
-    unique_candidates: list[Path] = []
-    seen: set[str] = set()
-    for candidate in candidates:
-        key = str(candidate)
-        if key in seen:
-            continue
-        seen.add(key)
-        unique_candidates.append(candidate)
-
-    tried: list[Path] = []
-    for candidate in unique_candidates:
+    ):
         p = candidate.expanduser()
         if p.exists():
             return p

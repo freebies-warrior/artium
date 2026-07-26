@@ -4,11 +4,11 @@ import sys
 from pathlib import Path
 
 
-def _module_points_to_src(module: object, src_path: str) -> bool:
+def _module_points_to_src(module: object, src_dir: Path) -> bool:
     module_file = getattr(module, "__file__", None)
     if isinstance(module_file, str):
         try:
-            if Path(module_file).resolve().as_posix().startswith(src_path):
+            if Path(module_file).resolve().is_relative_to(src_dir):
                 return True
         except OSError:
             pass
@@ -17,7 +17,7 @@ def _module_points_to_src(module: object, src_path: str) -> bool:
     if module_paths is not None:
         for path in module_paths:
             try:
-                if Path(path).resolve().as_posix().startswith(src_path):
+                if Path(path).resolve().is_relative_to(src_dir):
                     return True
             except OSError:
                 continue
@@ -33,7 +33,7 @@ def ensure_src_on_path() -> None:
         sys.path.insert(0, src_path)
 
     agents_module = sys.modules.get("agents")
-    if agents_module is not None and not _module_points_to_src(agents_module, src_path):
+    if agents_module is not None and not _module_points_to_src(agents_module, src_dir):
         for module_name in list(sys.modules):
             if module_name == "agents" or module_name.startswith("agents."):
                 module = sys.modules.get(module_name)

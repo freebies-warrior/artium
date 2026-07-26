@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import TypeVar
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -19,7 +18,6 @@ def _resolve_agents_root() -> Path:
 
 AGENTS_ROOT = _resolve_agents_root()
 ENV_FILE = AGENTS_ROOT / ".env"
-_E = TypeVar("_E", bound=Exception)
 
 
 class Settings(BaseSettings):
@@ -63,13 +61,11 @@ class Settings(BaseSettings):
         self,
         name: str,
         value: str | None,
-        *,
-        error_type: type[_E] = ValueError,
     ) -> str:
         normalized = (value or "").strip()
         if normalized:
             return normalized
-        raise error_type(
+        raise ValueError(
             f"{name} is not configured. Set `{name}` in environment or in `{ENV_FILE}`."
         )
 

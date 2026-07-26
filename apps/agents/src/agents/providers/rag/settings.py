@@ -40,6 +40,7 @@ def _resolve_default_config_path() -> Path:
     candidates = [
         configured,
         AGENTS_ROOT / "src/agents/providers/rag/config.yaml",
+        AGENTS_ROOT / "providers/rag/config.yaml",
         AGENTS_ROOT / "RAG/config.yaml",
     ]
 

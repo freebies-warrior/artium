@@ -10,13 +10,11 @@ from agents.core.constants import DEFAULT_GEMINI_IMAGE_MODEL, DEFAULT_GEMINI_TEX
 
 
 def _resolve_agents_root() -> Path:
-    start_dir = Path(__file__).resolve().parent
-    for directory in (start_dir, *start_dir.parents):
+    package_root = Path(__file__).resolve().parent.parent
+    for directory in package_root.parents:
         if (directory / "pyproject.toml").exists():
             return directory
-    raise FileNotFoundError(
-        f"Could not resolve agents root from {start_dir}; no pyproject.toml found in parent chain."
-    )
+    return package_root
 
 
 AGENTS_ROOT = _resolve_agents_root()

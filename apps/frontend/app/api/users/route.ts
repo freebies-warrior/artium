@@ -10,7 +10,7 @@ export async function GET(req: Request) {
   const backend = process.env.BACKEND_URL // e.g. http://localhost:8080
   if (!backend) {
     return NextResponse.json(
-      { message: 'Missing NEXT_PUBLIC_BACKEND_URL' },
+      { message: 'Missing BACKEND_URL' },
       { status: 500 }
     )
   }

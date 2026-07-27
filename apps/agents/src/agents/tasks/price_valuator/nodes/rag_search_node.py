@@ -37,16 +37,25 @@ def rag_search_node(rag_tool: RAGQueryTool):
                 top_k=15,  # Get more to filter later
             )
 
-            # Filter out items without prices
-            comparables_with_prices = [c for c in comparables if c.get("price", 0) > 0]
+            # Keep only whole-dollar SGD comparables in the valuation pipeline.
+            priced_comparables = [c for c in comparables if c.get("price", 0) > 0]
+            comparables_with_prices = [
+                c
+                for c in priced_comparables
+                if str(c.get("currency", "SGD")).upper() == "SGD"
+            ]
+            skipped_non_sgd = len(priced_comparables) - len(comparables_with_prices)
+
+            if skipped_non_sgd:
+                logger.warning("Skipping %d comparables with non-SGD currency", skipped_non_sgd)
 
             if not comparables_with_prices:
-                logger.warning("No comparables with prices found")
+                logger.warning("No comparables with SGD prices found")
                 return Command(
                     update={
                         "comparables": [],
-                        "rag_search_summary": "No comparable artworks with prices found in database.",
-                        "errors": ["No comparables with prices found"],
+                        "rag_search_summary": "No comparable artworks with SGD prices found in database.",
+                        "errors": ["No comparable artworks with SGD prices found"],
                     },
                     goto="END",
                 )

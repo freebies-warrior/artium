@@ -76,7 +76,7 @@ class ValuationLLMClient:
     def generate_justification(
         self,
         artwork_features: Dict[str, Any],
-        price_range: Dict[str, float],
+        price_range: Dict[str, int],
         comparables_analysis: Dict[str, Any],
         market_insights: Dict[str, Any],
         confidence_factors: Dict[str, Any],
@@ -102,7 +102,7 @@ class ValuationLLMClient:
                 extra={"error_type": type(exc).__name__, "step": "justification"},
             )
             return (
-                f"Price estimate: ${price_range.get('mid', 0):,.2f}. "
+                f"Price estimate: SGD {price_range.get('mid', 0):,.0f}. "
                 "Detailed justification unavailable due to model error."
             )
 
@@ -151,9 +151,10 @@ class ValuationLLMClient:
 
         comp_summary = []
         for i, comp in enumerate(comparables[:5], 1):
+            currency = str(comp.get("currency", "SGD")).upper()
             comp_summary.append(
                 f'{i}. "{comp.get("title", "Unknown")}" by {comp.get("author", "Unknown")} - '
-                f"${comp.get('price', 0):,.2f} (similarity: {comp.get('similarity_score', 0):.1%})"
+                f"{currency} {comp.get('price', 0):,.0f} (similarity: {comp.get('similarity_score', 0):.1%})"
             )
 
         prompt = f"""You are an expert art appraiser analyzing an {artwork_type} for valuation.
@@ -192,12 +193,12 @@ COMPARABLES ANALYSIS:
 {json.dumps(comparables_analysis, indent=2)}
 
 MARKET INSIGHTS:
-- Average: ${market_insights.get("avg_price", 0):,.2f}
-- Median: ${market_insights.get("median_price", 0):,.2f}
+- Average: SGD {market_insights.get("avg_price", 0):,.0f}
+- Median: SGD {market_insights.get("median_price", 0):,.0f}
 - Trend: {market_insights.get("trend_direction", "unknown")}
 - Recent sales: {market_insights.get("num_recent_sales", 0)}
 
-Based on this data, estimate a price range (low, mid, high) in USD.
+Based on this data, estimate a price range (low, mid, high) in SGD.
 
 Consider:
 - Similarity scores and quality of comparables
@@ -216,7 +217,7 @@ Return JSON with:
     def _build_justification_prompt(
         self,
         artwork_features: Dict[str, Any],
-        price_range: Dict[str, float],
+        price_range: Dict[str, int],
         comparables_analysis: Dict[str, Any],
         market_insights: Dict[str, Any],
         confidence_factors: Dict[str, Any],
@@ -231,9 +232,9 @@ Return JSON with:
         prompt = f"""You are an expert art appraiser preparing a professional valuation report.
 
 PRICE ESTIMATE:
-Low: ${price_range.get("low", 0):,.2f}
-Mid: ${price_range.get("mid", 0):,.2f} (most likely)
-High: ${price_range.get("high", 0):,.2f}
+Low: SGD {price_range.get("low", 0):,.0f}
+Mid: SGD {price_range.get("mid", 0):,.0f} (most likely)
+High: SGD {price_range.get("high", 0):,.0f}
 
 CONFIDENCE: {confidence_factors.get("avg_similarity", 0):.1%} based on {
             confidence_factors.get("num_comparables", 0)
@@ -242,14 +243,15 @@ CONFIDENCE: {confidence_factors.get("avg_similarity", 0):.1%} based on {
 COMPARABLES ANALYSIS:
 {json.dumps(comparables_analysis, indent=2)}
 
-TOP COMPARABLES:
-{
+        TOP COMPARABLES:
+        {
             json.dumps(
                 [
                     {
                         "title": c.get("title"),
                         "author": c.get("author"),
                         "price": c.get("price"),
+                        "currency": c.get("currency", "SGD"),
                         "similarity": c.get("similarity_score"),
                     }
                     for c in top_comps

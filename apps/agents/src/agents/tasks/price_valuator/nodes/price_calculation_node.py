@@ -12,6 +12,12 @@ from ..llm_client import ValuationLLMClient
 logger = logging.getLogger(__name__)
 
 
+def _to_sgd_dollars(value: float) -> int:
+    """Round a numeric amount to whole SGD dollars."""
+
+    return int(float(value) + 0.5)
+
+
 def price_calculation_node():
     """Create price calculation node with LLM-powered estimation."""
 
@@ -73,22 +79,22 @@ def price_calculation_node():
                 high_estimate = llm_estimate.get("price_high", mid_estimate * 1.15)
 
                 price_range = {
-                    "low": round(llm_estimate.get("price_low", low_estimate), 2),
-                    "mid": round(llm_estimate.get("price_mid", mid_estimate), 2),
-                    "high": round(llm_estimate.get("price_high", high_estimate), 2),
+                    "low": _to_sgd_dollars(llm_estimate.get("price_low", low_estimate)),
+                    "mid": _to_sgd_dollars(llm_estimate.get("price_mid", mid_estimate)),
+                    "high": _to_sgd_dollars(llm_estimate.get("price_high", high_estimate)),
                 }
 
                 llm_reasoning = llm_estimate.get("reasoning", "LLM-based estimate")
 
                 logger.info(
-                    f"LLM price estimate: ${price_range['low']:.2f} - ${price_range['mid']:.2f} - ${price_range['high']:.2f}"
+                    f"LLM price estimate: SGD {price_range['low']:,} - SGD {price_range['mid']:,} - SGD {price_range['high']:,}"
                 )
 
                 # Build reasoning steps with LLM insights
                 reasoning_steps = [
                     f"Analyzed {len(comparables)} comparable artworks using LLM reasoning",
-                    f"Weighted average price: ${weighted_avg:.2f} (based on similarity scores)",
-                    f"Market median price: ${median_price:.2f}",
+                    f"Weighted average price: SGD {weighted_avg:,.0f} (based on similarity scores)",
+                    f"Market median price: SGD {median_price:,.0f}",
                     f"LLM-enhanced estimate: {llm_reasoning}",
                 ]
 
@@ -106,27 +112,27 @@ def price_calculation_node():
                 high_estimate = mid_estimate * (1 + range_factor)
 
                 price_range = {
-                    "low": round(low_estimate, 2),
-                    "mid": round(mid_estimate, 2),
-                    "high": round(high_estimate, 2),
+                    "low": _to_sgd_dollars(low_estimate),
+                    "mid": _to_sgd_dollars(mid_estimate),
+                    "high": _to_sgd_dollars(high_estimate),
                 }
 
                 logger.info(
-                    f"Fallback price estimate: ${price_range['low']:.2f} - ${price_range['mid']:.2f} - ${price_range['high']:.2f}"
+                    f"Fallback price estimate: SGD {price_range['low']:,} - SGD {price_range['mid']:,} - SGD {price_range['high']:,}"
                 )
 
                 reasoning_steps = [
                     f"Analyzed {len(comparables)} comparable artworks",
-                    f"Weighted average price: ${weighted_avg:.2f} (based on similarity scores)",
-                    f"Market median price: ${median_price:.2f}",
-                    f"Calculated mid-point estimate: ${mid_estimate:.2f}",
-                    f"Price range: ${low_estimate:.2f} - ${high_estimate:.2f} (±{range_factor * 100:.0f}%)",
+                    f"Weighted average price: SGD {weighted_avg:,.0f} (based on similarity scores)",
+                    f"Market median price: SGD {median_price:,.0f}",
+                    f"Calculated mid-point estimate: SGD {mid_estimate:,.0f}",
+                    f"Price range: SGD {low_estimate:,.0f} - SGD {high_estimate:,.0f} (±{range_factor * 100:.0f}%)",
                 ]
 
             return Command(
                 update={
                     "price_range": price_range,
-                    "currency": "USD",
+                    "currency": "SGD",
                     "reasoning_steps": reasoning_steps,
                 },
                 goto="state_coordinator",

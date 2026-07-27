@@ -13,6 +13,17 @@ from agents.providers.rag.context.canonicalize import canonicalize_feature_state
 logger = logging.getLogger(__name__)
 
 
+def _extract_currency(metadata: Dict[str, Any]) -> str:
+    """Extract the source currency code, defaulting to the platform base currency."""
+
+    for field in ("currency", "sale_currency", "price_currency", "currency_code"):
+        value = metadata.get(field)
+        if isinstance(value, str) and value.strip():
+            return value.strip().upper()
+
+    return "SGD"
+
+
 class RAGQueryTool:
     """Tool for querying Pinecone for comparable artworks."""
 
@@ -103,6 +114,7 @@ class RAGQueryTool:
             # Extract price if available
             meta = match.metadata or {}
             comp["price"] = self._extract_price(meta)
+            comp["currency"] = _extract_currency(meta)
             comp["title"] = meta.get("title", "Unknown")
             comp["author"] = meta.get("author", "Unknown")
             comp["sale_date"] = meta.get("sale_date", "")
@@ -115,15 +127,15 @@ class RAGQueryTool:
         logger.info(f"Found {len(comparables)} comparables")
         return comparables
 
-    def _extract_price(self, metadata: Dict[str, Any]) -> float:
-        """Extract price from metadata."""
+    def _extract_price(self, metadata: Dict[str, Any]) -> int:
+        """Extract price from metadata as whole SGD dollars."""
         # Try different price field names
         for field in ["sale_price", "price", "hammer_price", "estimate_high"]:
             if field in metadata:
                 try:
-                    return float(metadata[field])
+                    return int(float(metadata[field]) + 0.5)
                 except (ValueError, TypeError):
                     continue
 
         # If no price found, return 0 (will be filtered out later)
-        return 0.0
+        return 0

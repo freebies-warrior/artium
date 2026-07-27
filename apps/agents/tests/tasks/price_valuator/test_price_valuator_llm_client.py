@@ -75,3 +75,26 @@ def test_research_artist_fallback_does_not_leak_exception(monkeypatch) -> None:
 
     assert result["artist_background"] == "Unable to research artist at this time."
     assert result["research_notes"] == ["Artist research unavailable due to model error."]
+
+
+def test_build_pricing_prompt_uses_sgd_base_currency(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "agents.tasks.price_valuator.llm_client.VisionLLMClient",
+        _FailingVisionClient,
+    )
+    client = ValuationLLMClient()
+
+    prompt = client._build_pricing_prompt(
+        artwork_features={},
+        comparables_analysis={},
+        market_insights={
+            "avg_price": 1234,
+            "median_price": 1200,
+            "trend_direction": "stable",
+            "num_recent_sales": 4,
+        },
+        comparable_prices=[1000, 2000, 3000],
+    )
+
+    assert "estimate a price range (low, mid, high) in SGD." in prompt
+    assert "USD" not in prompt

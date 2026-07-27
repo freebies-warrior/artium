@@ -11,10 +11,10 @@ from pydantic import BaseModel, Field
 class PriceRange(BaseModel):
     """Price estimate range."""
 
-    low: float = Field(description="Lower bound of price estimate")
-    mid: float = Field(description="Mid-point estimate (most likely price)")
-    high: float = Field(description="Upper bound of price estimate")
-    currency: str = Field(default="USD", description="Currency code")
+    low: int = Field(description="Lower bound of price estimate in SGD dollars")
+    mid: int = Field(description="Mid-point estimate (most likely price) in SGD dollars")
+    high: int = Field(description="Upper bound of price estimate in SGD dollars")
+    currency: str = Field(default="SGD", description="Currency code")
 
 
 class ComparableArtwork(BaseModel):
@@ -22,7 +22,8 @@ class ComparableArtwork(BaseModel):
 
     id: str = Field(description="Vector ID from Pinecone")
     similarity_score: float = Field(description="Similarity to query artwork (0-1)")
-    price: float = Field(description="Sale price")
+    price: int = Field(description="Sale price in SGD dollars")
+    currency: str = Field(default="SGD", description="Currency code")
     title: str = Field(default="Unknown")
     author: str = Field(default="Unknown")
     sale_date: str = Field(default="")
@@ -74,7 +75,7 @@ class ValuationState(TypedDict, total=False):
     price_trends: Dict[str, Any]
 
     # Price estimation
-    price_range: Dict[str, float]  # {low, mid, high}
+    price_range: Dict[str, int]  # {low, mid, high}
     currency: str
 
     # Final coordination and report

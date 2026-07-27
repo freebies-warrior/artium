@@ -14,19 +14,19 @@ Deployed environment sources must switch from `AI_SERVICE_TOKEN` to `INTERNAL_TO
 
 ## Secret rotation record
 
-Any backend or agents production secret rotation must be recorded in the PR that makes the change. Use the following fields so the audit trail is complete:
+Any secret change must be recorded in the PR that makes the change. Use one record per rotation and list every deployment source touched by that rotation:
 
 | Field | Required value |
 | --- | --- |
 | Operator | Person who made the change |
 | Timestamp (UTC) | When the change was applied |
-| Environment | `production` |
-| Files | `~/artium/apps/backend/.env`, `~/artium/apps/agents/.env` |
+| Environment | `preview`, `production`, or `none` |
+| Affected deployment sources | `Vercel project settings (frontend preview/production)`, `~/artium/apps/backend/.env`, `~/artium/apps/agents/.env` |
 | Variables rotated | Secret names only, never values |
-| Deployment run | GitHub Actions run URL that pulled/restarted the VM |
+| Deployment run | Vercel deployment URL or GitHub Actions run URL |
 | Verification | Short note describing the post-deploy check |
 
-Record `none` for staging, because backend/agents do not have a separate staging environment in this repo.
+For `JWT_SECRET`, include both the frontend Vercel source and the backend VM source in the same record. For backend and agents, use `none` for staging because there is no separate staging environment in this repo.
 
 ## Backend
 
@@ -54,6 +54,7 @@ Record `none` for staging, because backend/agents do not have a separate staging
 ## Frontend server routes
 
 These variables are for Next.js server routes only. Do not expose the backend base URL to the browser.
+`JWT_SECRET` is a shared value with the backend; rotations must be recorded once and include both deployment sources.
 
 | Variable | Status | Notes |
 | --- | --- | --- |

@@ -12,12 +12,28 @@ Deployed environment sources must switch from `AI_SERVICE_TOKEN` to `INTERNAL_TO
 - Backend and agents production env vars live on the VM used by `.github/workflows/deploy.yml`, in `~/artium/apps/backend/.env` and `~/artium/apps/agents/.env`, which are consumed by `~/artium/docker-compose.prod.yml`. There is no separate backend/agents staging environment in this repo. Update those VM env files in the same operational change that ships the code, and use the GitHub Actions run log plus the PR/commit history as the audit trail.
 - When a variable name changes, update this document first, then update the relevant deployment source before shipping the code that depends on it.
 
+## Secret rotation record
+
+Any backend or agents production secret rotation must be recorded in the PR that makes the change. Use the following fields so the audit trail is complete:
+
+| Field | Required value |
+| --- | --- |
+| Operator | Person who made the change |
+| Timestamp (UTC) | When the change was applied |
+| Environment | `production` |
+| Files | `~/artium/apps/backend/.env`, `~/artium/apps/agents/.env` |
+| Variables rotated | Secret names only, never values |
+| Deployment run | GitHub Actions run URL that pulled/restarted the VM |
+| Verification | Short note describing the post-deploy check |
+
+Record `none` for staging, because backend/agents do not have a separate staging environment in this repo.
+
 ## Backend
 
 | Variable | Status | Notes |
 | --- | --- | --- |
 | `DATABASE_URL` | Required | Postgres connection string for the Go API. |
-| `JWT_SECRET` | Required | Required by backend auth and frontend auth route verification. |
+| `JWT_SECRET` | Required | Shared with the frontend auth route; use one value in both places. |
 | `INTERNAL_TOKEN` | Required | Shared internal secret for trusted backend-to-agents callbacks. |
 | `APP_BASE_URL` | Optional | Public app URL used in backend-generated links. Defaults to `http://localhost:3000` in code. |
 | `BACKEND_BASE_URL` | Optional | Backend base URL used by backend-generated links. Defaults to `http://localhost:8080` in code. |
@@ -42,7 +58,7 @@ These variables are for Next.js server routes only. Do not expose the backend ba
 | Variable | Status | Notes |
 | --- | --- | --- |
 | `BACKEND_URL` | Required | Server-side base URL for frontend route handlers talking to the backend. |
-| `JWT_SECRET` | Required | Required for the frontend auth route. |
+| `JWT_SECRET` | Required | Shared with backend auth; use one value in both places. |
 
 ## Agents
 

@@ -24,3 +24,8 @@ Self-review findings
 Any issues or concerns
 - Frontend tests and build could not run in this workspace because dependencies are not installed or the local binaries are unavailable.
 - There were unrelated untracked files in `docs/superpowers/`; I left them untouched.
+
+Fix round 1
+- Reinstalled the frontend dependencies with `npm ci --no-audit --no-fund` in `apps/frontend` so the required binaries were available locally.
+- Reran `cd apps/frontend && npm test`. Result: passed, 3 test files and 6 tests all green.
+- Reran `cd apps/frontend && npm run build`. Result: passed and completed the production build successfully.

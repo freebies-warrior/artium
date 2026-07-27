@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -16,7 +15,7 @@ from agents.core.constants import DEFAULT_DOWNLOAD_TIMEOUT_SECONDS, DEFAULT_IMAG
 from agents.core.ports import BackendCallbackClient
 from agents.core.types import ArtworkType, JobStatus, normalize_artwork_type
 from agents.core.utils.errors import redacted_exc_info
-from agents.core.utils.files import cleanup_directory, download_to_temp_file
+from agents.core.utils.files import download_to_temp_file
 from agents.core.utils.http import loggable_url
 from agents.tasks.feature_extractor.graph import build_graph
 from agents.tasks.feature_extractor.llm_client import GeminiVisionClient
@@ -106,27 +105,28 @@ class AgentService:
         )
 
         cfg = VisualizerConfig()
-        tmp_dir = Path(tempfile.mkdtemp())
         room_url_path = Path(urlsplit(req.room_url).path)
         art_url_path = Path(urlsplit(req.art_url).path)
-        room_path = download_to_temp_file(
-            req.room_url,
-            suffix=room_url_path.suffix or DEFAULT_IMAGE_SUFFIX,
-            timeout=DEFAULT_DOWNLOAD_TIMEOUT_SECONDS,
-        )
-        art_path = download_to_temp_file(
-            req.art_url,
-            suffix=art_url_path.suffix or DEFAULT_IMAGE_SUFFIX,
-            timeout=DEFAULT_DOWNLOAD_TIMEOUT_SECONDS,
-        )
-
         status = JobStatus.FAILED
         result_description = None
         error_message = None
-
-        room_img, art_img = load_preview_images(str(room_path), str(art_path))
+        room_path = None
+        art_path = None
+        room_img = None
+        art_img = None
 
         try:
+            room_path = download_to_temp_file(
+                req.room_url,
+                suffix=room_url_path.suffix or DEFAULT_IMAGE_SUFFIX,
+                timeout=DEFAULT_DOWNLOAD_TIMEOUT_SECONDS,
+            )
+            art_path = download_to_temp_file(
+                req.art_url,
+                suffix=art_url_path.suffix or DEFAULT_IMAGE_SUFFIX,
+                timeout=DEFAULT_DOWNLOAD_TIMEOUT_SECONDS,
+            )
+            room_img, art_img = load_preview_images(str(room_path), str(art_path))
             result_description = self.run_visualizer_preview(
                 cfg=cfg,
                 room_img=room_img,
@@ -146,6 +146,16 @@ class AgentService:
                 exc_info=redacted_exc_info(exc, include_traceback=False),
             )
         finally:
+            if room_img is not None:
+                room_img.close()
+            if art_img is not None:
+                art_img.close()
+            for path in (room_path, art_path):
+                if path is not None:
+                    try:
+                        path.unlink()
+                    except FileNotFoundError:
+                        pass
             logger.info("result_description: %s", result_description)
             self.callback_client.update_visualization(
                 req.job_id,
@@ -153,7 +163,6 @@ class AgentService:
                 result_description=result_description,
                 error_message=error_message,
             )
-            cleanup_directory(tmp_dir)
 
     def run_feature_extraction_job(self, req: FeatureExtractionJobCommand) -> None:
         """Run feature extraction and valuation flow, then report result to backend."""

@@ -48,14 +48,12 @@ def test_run_preview_job_success_sends_succeeded_callback(
 ) -> None:
     callback = RecordingCallbackClient()
     service = AgentService(callback_client=callback)
-    cleaned: dict[str, Path] = {}
 
     room_local = tmp_path / "room.jpg"
     art_local = tmp_path / "art.png"
     room_local.write_bytes(b"room")
     art_local.write_bytes(b"art")
 
-    monkeypatch.setattr(agent_service_module.tempfile, "mkdtemp", lambda: str(tmp_path / "job_tmp"))
     monkeypatch.setattr(
         agent_service_module,
         "download_to_temp_file",
@@ -70,11 +68,6 @@ def test_run_preview_job_success_sends_succeeded_callback(
         service,
         "run_visualizer_preview",
         lambda **kwargs: "preview-complete",
-    )
-    monkeypatch.setattr(
-        agent_service_module,
-        "cleanup_directory",
-        lambda path: cleaned.update({"path": path}),
     )
 
     req = PreviewJobCommand(
@@ -95,7 +88,8 @@ def test_run_preview_job_success_sends_succeeded_callback(
             "error_message": None,
         }
     ]
-    assert cleaned["path"] == Path(tmp_path / "job_tmp")
+    assert not room_local.exists()
+    assert not art_local.exists()
 
 
 def test_run_preview_job_failure_sends_failed_callback(
@@ -110,7 +104,6 @@ def test_run_preview_job_failure_sends_failed_callback(
     room_local.write_bytes(b"room")
     art_local.write_bytes(b"art")
 
-    monkeypatch.setattr(agent_service_module.tempfile, "mkdtemp", lambda: str(tmp_path / "job_tmp"))
     monkeypatch.setattr(
         agent_service_module,
         "download_to_temp_file",
@@ -126,7 +119,6 @@ def test_run_preview_job_failure_sends_failed_callback(
         raise RuntimeError("preview pipeline failed")
 
     monkeypatch.setattr(service, "run_visualizer_preview", raise_failure)
-    monkeypatch.setattr(agent_service_module, "cleanup_directory", lambda path: None)
 
     req = PreviewJobCommand(
         room_url="https://example.com/room.jpg",
@@ -146,6 +138,94 @@ def test_run_preview_job_failure_sends_failed_callback(
             "error_message": "preview pipeline failed",
         }
     ]
+    assert not room_local.exists()
+    assert not art_local.exists()
+
+
+def test_run_preview_job_download_failure_sends_failed_callback_and_cleans_first_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    callback = RecordingCallbackClient()
+    service = AgentService(callback_client=callback)
+
+    room_local = tmp_path / "room.jpg"
+    room_local.write_bytes(b"room")
+
+    call_count = {"count": 0}
+
+    def download_side_effect(url, *, suffix, timeout):  # noqa: ANN001
+        call_count["count"] += 1
+        if call_count["count"] == 1:
+            return room_local
+        raise RuntimeError("download failed")
+
+    monkeypatch.setattr(agent_service_module, "download_to_temp_file", download_side_effect)
+
+    req = PreviewJobCommand(
+        room_url="https://example.com/room.jpg",
+        art_url="https://example.com/art.png",
+        upload_image_url="https://example.com/upload.jpg",
+        upload_image_key=None,
+        job_id="job-789",
+    )
+
+    service.run_preview_job(req)
+
+    assert callback.visualization_updates == [
+        {
+            "job_id": "job-789",
+            "status": JobStatus.FAILED,
+            "result_description": None,
+            "error_message": "download failed",
+        }
+    ]
+    assert not room_local.exists()
+
+
+def test_run_preview_job_decode_failure_sends_failed_callback_and_cleans_downloads(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    callback = RecordingCallbackClient()
+    service = AgentService(callback_client=callback)
+
+    room_local = tmp_path / "room.jpg"
+    art_local = tmp_path / "art.png"
+    room_local.write_bytes(b"room")
+    art_local.write_bytes(b"art")
+
+    monkeypatch.setattr(
+        agent_service_module,
+        "download_to_temp_file",
+        lambda url, *, suffix, timeout: room_local if suffix == ".jpg" else art_local,
+    )
+
+    def raise_decode_error(room_path, art_path):  # noqa: ANN001
+        raise RuntimeError("decode failed")
+
+    monkeypatch.setattr(agent_service_module, "load_preview_images", raise_decode_error)
+
+    req = PreviewJobCommand(
+        room_url="https://example.com/room.jpg",
+        art_url="https://example.com/art.png",
+        upload_image_url="https://example.com/upload.jpg",
+        upload_image_key=None,
+        job_id="job-790",
+    )
+
+    service.run_preview_job(req)
+
+    assert callback.visualization_updates == [
+        {
+            "job_id": "job-790",
+            "status": JobStatus.FAILED,
+            "result_description": None,
+            "error_message": "decode failed",
+        }
+    ]
+    assert not room_local.exists()
+    assert not art_local.exists()
 
 
 def test_run_feature_extraction_job_success_sends_combined_features(
@@ -184,7 +264,6 @@ def test_run_feature_extraction_job_success_sends_combined_features(
         item_id=item_id,
         image_keys=("img1",),
         image_get_urls=("https://example.com/images/1.jpg",),
-        callback_url=None,
         metadata={"source": "unit-test"},
     )
 
@@ -214,7 +293,6 @@ def test_run_feature_extraction_job_failure_sends_safe_empty_payload(
         item_id=item_id,
         image_keys=("img1",),
         image_get_urls=("https://example.com/images/1.jpg",),
-        callback_url=None,
         metadata={"source": "unit-test"},
     )
 
@@ -259,7 +337,6 @@ def test_run_feature_extraction_job_skips_valuation_for_not_artwork_aliases(
         item_id=item_id,
         image_keys=("img1",),
         image_get_urls=("https://example.com/images/1.jpg",),
-        callback_url=None,
         metadata={"source": "unit-test"},
     )
 

@@ -6,6 +6,7 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
+from typing import Any
 
 from PIL import Image
 
@@ -171,6 +172,7 @@ class AgentService:
             extra={"image_urls": [loggable_url(image_url) for image_url in req.image_get_urls]},
         )
 
+        combined_result: dict[str, Any] | None = None
         try:
             initial_state, metadata, image_bytes = build_initial_feature_state(
                 image_urls=list(req.image_get_urls),
@@ -238,12 +240,10 @@ class AgentService:
                 },
                 exc_info=redacted_exc_info(exc, include_traceback=False),
             )
-            combined_result = {}
         finally:
             logger.info("feature extraction complete")
-            if not combined_result:
-                combined_result = {}
-            self.callback_client.update_item_features(req.item_id, feature_json=combined_result)
+            if combined_result is not None:
+                self.callback_client.update_item_features(req.item_id, feature_json=combined_result)
 
     def valuate_artwork(self, state: ValuationState) -> ValuationState:
         """Run price valuation pipeline using the cached valuation graph."""

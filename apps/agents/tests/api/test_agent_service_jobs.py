@@ -74,7 +74,6 @@ def test_run_preview_job_success_sends_succeeded_callback(
         room_url="https://example.com/room.jpg",
         art_url="https://example.com/art.png",
         upload_image_url="https://example.com/upload.jpg",
-        upload_image_key=None,
         job_id="job-123",
     )
 
@@ -124,7 +123,6 @@ def test_run_preview_job_failure_sends_failed_callback(
         room_url="https://example.com/room.jpg",
         art_url="https://example.com/art.png",
         upload_image_url="https://example.com/upload.jpg",
-        upload_image_key=None,
         job_id="job-456",
     )
 
@@ -166,7 +164,6 @@ def test_run_preview_job_download_failure_sends_failed_callback_and_cleans_first
         room_url="https://example.com/room.jpg",
         art_url="https://example.com/art.png",
         upload_image_url="https://example.com/upload.jpg",
-        upload_image_key=None,
         job_id="job-789",
     )
 
@@ -210,7 +207,6 @@ def test_run_preview_job_decode_failure_sends_failed_callback_and_cleans_downloa
         room_url="https://example.com/room.jpg",
         art_url="https://example.com/art.png",
         upload_image_url="https://example.com/upload.jpg",
-        upload_image_key=None,
         job_id="job-790",
     )
 
@@ -277,7 +273,7 @@ def test_run_feature_extraction_job_success_sends_combined_features(
     assert "image_bytes" not in update["feature_json"]
 
 
-def test_run_feature_extraction_job_failure_sends_safe_empty_payload(
+def test_run_feature_extraction_job_failure_skips_callback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     callback = RecordingCallbackClient()
@@ -298,7 +294,7 @@ def test_run_feature_extraction_job_failure_sends_safe_empty_payload(
 
     service.run_feature_extraction_job(req)
 
-    assert callback.feature_updates == [{"item_id": item_id, "feature_json": {}}]
+    assert callback.feature_updates == []
 
 
 @pytest.mark.parametrize("artwork_type_alias", ["NOT AN ARTWORK", "not-artwork"])

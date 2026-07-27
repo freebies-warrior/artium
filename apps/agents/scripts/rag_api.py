@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+import ipaddress
 import json
 import logging
+import socket
 from contextlib import asynccontextmanager
+from io import BytesIO
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
+from urllib.parse import urlsplit
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, status
+from PIL import Image
 from pydantic import BaseModel, Field
 
 from path_bootstrap import ensure_src_on_path
@@ -27,6 +32,7 @@ from agents.providers.rag.embedder.openai_embed import OpenAITextEmbedder
 from agents.providers.rag.pinecone_store import build_pinecone_client, get_index, index_name
 
 logger = logging.getLogger(__name__)
+MAX_REMOTE_IMAGE_BYTES = 10 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -43,6 +49,23 @@ class _RagRuntime:
 
 
 _runtime: _RagRuntime | None = None
+
+
+def require_internal_token(
+    internal_token: str = Header(..., alias="X-Internal-Token"),
+) -> None:
+    settings = EnvSettings()
+    expected = settings.INTERNAL_TOKEN.strip()
+    if not expected:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="INTERNAL_TOKEN is not configured",
+        )
+    if internal_token != expected:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid internal token",
+        )
 
 
 def _initialize_runtime() -> _RagRuntime:
@@ -163,7 +186,12 @@ class UpsertResponse(BaseModel):
     upserted: bool
 
 
-app = FastAPI(title="Arium VectorDB Agent", version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title="Arium VectorDB Agent",
+    version="0.1.0",
+    lifespan=lifespan,
+    dependencies=[Depends(require_internal_token)],
+)
 
 
 @app.get("/health")
@@ -369,13 +397,92 @@ def query(req: QueryRequest) -> QueryResponse:
 def _load_image_bytes(req: QueryRequest) -> bytes:
     if req.image_data_url:
         b, _mime = data_url_to_bytes(req.image_data_url)
-        return b
+        return _validate_image_bytes(b)
     if req.image_url:
-        with httpx.Client(timeout=30.0) as client:
-            r = client.get(req.image_url)
-            r.raise_for_status()
-            return r.content
+        _assert_safe_remote_image_url(req.image_url)
+        with httpx.Client(timeout=30.0, follow_redirects=False) as client:
+            with client.stream("GET", req.image_url) as r:
+                if 300 <= r.status_code < 400:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Redirects are not allowed for image_url",
+                    )
+                r.raise_for_status()
+
+                content_length = r.headers.get("content-length")
+                if content_length:
+                    try:
+                        if int(content_length) > MAX_REMOTE_IMAGE_BYTES:
+                            raise HTTPException(
+                                status_code=413,
+                                detail="image_url response is too large",
+                            )
+                    except ValueError:
+                        pass
+
+                data = bytearray()
+                for chunk in r.iter_bytes():
+                    data.extend(chunk)
+                    if len(data) > MAX_REMOTE_IMAGE_BYTES:
+                        raise HTTPException(
+                            status_code=413,
+                            detail="image_url response is too large",
+                        )
+                return _validate_image_bytes(bytes(data))
     raise HTTPException(status_code=400, detail="Provide image_url or image_data_url")
+
+
+def _assert_safe_remote_image_url(image_url: str) -> None:
+    parsed = urlsplit(image_url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise HTTPException(
+            status_code=400,
+            detail="image_url must use http or https and include a hostname",
+        )
+
+    hostname = parsed.hostname.strip().lower()
+    if hostname == "localhost" or hostname.endswith(".localhost"):
+        raise HTTPException(
+            status_code=400,
+            detail="image_url must not target private or loopback addresses",
+        )
+
+    try:
+        addrinfo = socket.getaddrinfo(hostname, None, type=socket.SOCK_STREAM)
+    except socket.gaierror as exc:
+        raise HTTPException(status_code=400, detail="Unable to resolve image_url host") from exc
+
+    for family, _socktype, _proto, _canonname, sockaddr in addrinfo:
+        if family == socket.AF_UNSPEC:
+            continue
+        ip = ipaddress.ip_address(sockaddr[0])
+        if _is_blocked_ip_address(ip):
+            raise HTTPException(
+                status_code=400,
+                detail="image_url must not target private or loopback addresses",
+            )
+
+
+def _is_blocked_ip_address(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    return any(
+        (
+            ip.is_private,
+            ip.is_loopback,
+            ip.is_link_local,
+            ip.is_reserved,
+            ip.is_multicast,
+            ip.is_unspecified,
+        )
+    )
+
+
+def _validate_image_bytes(data: bytes) -> bytes:
+    try:
+        with Image.open(BytesIO(data)) as img:
+            img.verify()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="image_url must point to a valid image") from exc
+    return data
 
 
 def _stable_dumps(obj: Dict[str, Any]) -> str:

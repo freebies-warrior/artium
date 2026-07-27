@@ -192,7 +192,7 @@ RAG provider logic lives under `src/agents/providers/rag`, while operational ent
 ```bash
 cd apps/agents
 uv run python -m scripts.rag_ingest --help
-uv run uvicorn scripts.rag_api:app --host 0.0.0.0 --port 8010
+uv run uvicorn scripts.rag_api:app --host 127.0.0.1 --port 8010
 ```
 
 ### Option B: Docker (recommended for parity)

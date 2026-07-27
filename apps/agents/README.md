@@ -18,7 +18,8 @@ This folder contains the **AI Agents backend** for **Artium** — a small HTTP s
 - [Security](#security)
 - [Local development](#local-development)
 - [Project structure](#project-structure)
-- [Adding a new agent](#adding-a-new-agent)
+- [Background execution model](#background-execution-model)
+- [How to add a new task](#how-to-add-a-new-task)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -84,7 +85,7 @@ Typical flow:
   "art_url": "https://.../items/<item_id>/main.jpg",
   "upload_image_url": "https://.../visualizations/<job_id>/result.jpg",
   "result_image_key": "visualizations/<job_id>/result.jpg",
-  "item_dimensions": { "width": 60, "height": 40 },
+  "item_dimensions": { "width": 60.5, "height": 40.25 },
   "job_id": "uuid"
 }
 ```
@@ -103,7 +104,7 @@ Typical flow:
 
 ### Feature Extractor
 
-**POST** `/agents/feature_extractor/extract_item_features`  
+**POST** `/agents/feature_extractor/extract`  
 **Auth:** internal-only header
 
 **Headers**
@@ -138,6 +139,12 @@ Typical flow:
 **Notes**
 - The worker downloads images from `image_get_urls`, then `POST/PUT`s results to `callback_url`.
 - The callback must be **idempotent** (safe to retry).
+- Validation rules:
+  - `item_id` is required and must be a valid UUID.
+  - `image_keys` must be non-empty.
+  - `image_get_urls` must be non-empty.
+  - `len(image_keys)` must equal `len(image_get_urls)`.
+  - `callback_url` remains optional for compatibility.
 
 ---
 
@@ -159,50 +166,115 @@ Recommended:
 
 ## Local development
 
-> This repo can be set up with either `pip` or a tool like `poetry/uv`.  
-> Use whichever matches the files present in this folder (`requirements.txt` / `pyproject.toml`).
+Python target for `apps/agents`: **3.12** (matches `pyproject.toml` and CI).
 
-### Option A: `pip` + venv
+### Option A: `uv` (recommended)
 ```bash
 cd apps/agents
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+uv sync --frozen --dev
 
 # Run dev server (adjust module path if your app entrypoint differs)
-uvicorn app:app --reload --host 0.0.0.0 --port 8001
+uv run uvicorn app:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Quality checks (CI parity)
+```bash
+cd apps/agents
+uv sync --frozen --dev
+uv run ruff format --check .
+uv run ruff check .
+uv run pytest -q
+```
+
+### RAG tooling entrypoints
+RAG provider logic lives under `src/agents/providers/rag`, while operational entrypoints live under `scripts/`.
+
+```bash
+cd apps/agents
+uv run python -m scripts.rag_ingest --help
+uv run uvicorn scripts.rag_api:app --host 127.0.0.1 --port 8010
 ```
 
 ### Option B: Docker (recommended for parity)
 If your repo provides a Dockerfile for agents:
 ```bash
 docker build -t artium-agents .
-docker run --rm -p 8001:8001 --env-file .env artium-agents
+docker run --rm -p 8000:8000 --env-file .env artium-agents
 ```
 
-### Environment variables (typical)
-Set these in `.env` (names may differ — align with your code):
-- `INTERNAL_TOKEN` — used to validate `X-Internal-Token`
-- `LOG_LEVEL` — `debug|info|warn|error`
-- Any model provider keys you use (e.g., `OPENAI_API_KEY`) **only if needed**
+### Environment variables
+Copy the template first:
 
-Follow as given in `.env.example`.
+```bash
+cd apps/agents
+cp .env.example .env
+```
+
+| Variable | Required | Used by | Notes |
+|---|---|---|---|
+| `INTERNAL_TOKEN` | Yes (API service) | FastAPI auth + internal callbacks | Missing token returns `500 INTERNAL_TOKEN is not configured` on protected routes. |
+| `BACKEND_URL` | Yes (API service) | Callback/update endpoints | Defaults to `http://localhost:8080`. |
+| `LOG_LEVEL` | Optional | Shared logging | Defaults to `INFO`. |
+| `GOOGLE_API_KEY` | Yes for visualizer/feature extraction | Gemini clients | Missing key raises clear startup/runtime config errors. |
+| `SERPAPI_API_KEY` | Optional | Feature extractor market search | Required only when SerpAPI enrichment runs. |
+| `OPENAI_API_KEY` | Yes for RAG/valuation flows | RAG scripts + valuation tooling | Required for text embeddings in RAG flows. |
+| `PINECONE_API_KEY` | Yes for RAG/valuation flows | RAG scripts + valuation tooling | Required for Pinecone index/query access. |
+| `MANUS_API_KEY` | Optional | RAG canonicalization | Required only when `feature_text.manus.enabled=true`. |
+| `VECTORDB_CONFIG` | Optional | RAG scripts/providers | Defaults to `src/agents/providers/rag/config.yaml` (legacy fallback supported). |
+
+Use `apps/agents/.env.example` as the source of truth for all currently supported settings.
 
 ---
 
-## Adding a new agent
+## Project structure
 
-1. Create a new module under `app/agents/<new_agent>.py`
-2. Add a router with a stable prefix, e.g.:
-   - `/agents/<new_agent>/run`
-3. Add an input schema (Pydantic model) with explicit validation.
-4. Implement:
-   - download input(s)
-   - run model/pipeline
-   - upload output(s) if any
-   - callback to Go backend (do not write DB directly)
-5. Update **`docs/api/CONTRACT.md`** with request/response examples.
-6. (Optional) Add a minimal integration test using a mocked Go backend callback endpoint.
+The codebase uses a `src` layout to keep package code separate from service-level files.
+
+### Current structure
+- `src/agents/core/` — orchestration, prompting, parsing, and other pure domain logic.
+- `src/agents/providers/` — integration boundaries (LLM, HTTP, storage, and external clients).
+- `src/agents/tasks/<task_name>/` — task-specific pipelines/services (for example, visualizer).
+- `src/agents/utils/` — shared utilities used across tasks.
+
+### Migration strategy
+- Keep `src/agents/tasks/...` task-local and reviewable as the codebase evolves.
+- Keep service boundaries selective: add `service.py` only when API code would otherwise depend on task-private internals.
+- RAG entrypoints use a clean cutover: run `scripts.rag_api` and `scripts.rag_ingest` (no legacy `agents.providers.rag.*` module wrappers).
+- Runtime imports should use `agents.*` paths (for example, `agents.tasks.visualizer.runner`), not legacy top-level packages.
+
+## Background execution model
+
+Current async execution in the API uses FastAPI in-process `BackgroundTasks`.
+This is temporary and intended for low-complexity local/early environments.
+
+Future Iteration:
+- move long-running jobs to a dedicated queue/worker model
+- keep API handlers as thin enqueue + acknowledgement endpoints
+- keep callback/result persistence behavior compatible with current flows
+
+---
+
+## How to add a new task
+
+1. Add task code under `src/agents/tasks/<task_name>/`.
+2. Keep integrations in provider/shared modules where possible:
+   - `src/agents/providers/` for external systems
+   - `src/agents/core/` for shared orchestration/config/logging helpers
+3. Expose API entrypoints in `agents/api/agent.py` with a stable route prefix:
+   - `/agents/<task_name>/...`
+4. Keep routers thin:
+   - request validation + background enqueue in router
+   - orchestration in `agents/api/service.py` (or task `service.py` when needed to avoid private coupling)
+5. Preserve current callback pattern:
+   - process inputs
+   - send result/status updates to Go backend internal endpoints
+   - do not write DB directly from agents
+6. Add tests:
+   - task unit tests under `tests/tasks/<task_name>/`
+   - API boundary/validation tests under `tests/api/` if endpoint changes
+7. Update docs:
+   - `apps/agents/README.md`
+   - `docs/api/CONTRACT.md` request/response examples
 
 ---
 
@@ -220,6 +292,11 @@ Follow as given in `.env.example`.
 ### “Failed to download image”
 - Signed URL expired → request a fresh signed GET URL from Go backend.
 - Object key mismatch → ensure Go backend signs keys belonging to the item/job.
+
+### “... is not configured”
+- Ensure the missing variable exists in `apps/agents/.env` (copy from `.env.example`).
+- Verify you are running commands from `apps/agents` so the resolved env file is used.
+- For RAG flows, confirm `OPENAI_API_KEY` and `PINECONE_API_KEY` are both set.
 
 ---
 

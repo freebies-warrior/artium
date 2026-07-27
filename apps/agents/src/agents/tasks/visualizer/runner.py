@@ -1,0 +1,98 @@
+from __future__ import annotations
+
+import logging
+from io import BytesIO
+from typing import Optional
+from urllib.parse import urlparse
+
+from PIL import Image
+
+from agents.core.constants import DEFAULT_UPLOAD_TIMEOUT_SECONDS
+from agents.core.settings import get_settings
+from agents.core.utils.http import loggable_url, put_bytes
+
+from .config import VisualizerConfig
+from .pipeline_sequential import run_pipeline_sequential
+from .types import VisualizerResult
+
+logger = logging.getLogger(__name__)
+
+
+def _save_image(out_img: Image.Image, out_path: str):
+    """Save image to local path or upload via PUT if out_path is an HTTP(S) URL."""
+    parsed = urlparse(out_path)
+    if parsed.scheme in {"http", "https"}:
+        buf = BytesIO()
+        out_img.save(buf, format="JPEG")
+        buf.seek(0)
+        logger.info("uploading image to remote path", extra={"url": loggable_url(out_path)})
+        resp = put_bytes(
+            out_path,
+            data=buf.getvalue(),
+            headers={"Content-Type": "image/jpeg"},
+            timeout=DEFAULT_UPLOAD_TIMEOUT_SECONDS,
+        )
+        logger.info(
+            "upload response received",
+            extra={"url": loggable_url(out_path), "status_code": resp.status_code},
+        )
+        resp.raise_for_status()
+
+
+def visualize_installation(
+    room_path: str,
+    art_path: str,
+    out_path: str,
+    cfg: Optional[VisualizerConfig] = None,
+) -> VisualizerResult:
+    """
+    High-level entrypoint.
+    Will use LangGraph if installed, else sequential fallback.
+    """
+    cfg = cfg or VisualizerConfig()
+    settings = get_settings()
+
+    # Prefer langgraph if available
+    use_langgraph = settings.VISUALIZER_USE_LANGGRAPH
+    placement = None
+    appraisal = None
+
+    if use_langgraph:
+        try:
+            logger.info("trying langgraph pipeline")
+            from .pipeline_langgraph import run_pipeline_langgraph
+
+            final = run_pipeline_langgraph(cfg, room_path, art_path)
+            out_img = final["out_img"]
+            used_enhancement = bool(final.get("used_enhancement", False))
+            retries_used = int(final.get("retries_used", 0))
+            room_quality = final["room_quality"]
+            crit = final["critic"]
+            placement = final.get("placement")
+            appraisal = final.get("appraisal")
+        except Exception as e:
+            logger.error(
+                "langgraph pipeline failed, falling back to sequential",
+                extra={"error_type": type(e).__name__},
+            )
+            # fallback silently
+            out_img, used_enhancement, retries_used, room_quality, crit = run_pipeline_sequential(
+                cfg, room_path, art_path
+            )
+    else:
+        logger.info("langgraph pipeline disabled, using sequential fallback")
+        out_img, used_enhancement, retries_used, room_quality, crit = run_pipeline_sequential(
+            cfg, room_path, art_path
+        )
+
+    _save_image(out_img, out_path)
+
+    return VisualizerResult(
+        out_path=None,
+        used_enhancement=used_enhancement,
+        retries_used=retries_used,
+        room_quality=room_quality,
+        critic=crit,
+        placement=placement,
+        appraisal=appraisal,
+    )

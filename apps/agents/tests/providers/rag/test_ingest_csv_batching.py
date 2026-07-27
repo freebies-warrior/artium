@@ -52,6 +52,4 @@ def test_mixed_batches_flush_to_matching_indexes() -> None:
     assert indexes["painting"].calls == [
         ([("p1", [1.0], {"kind": "painting"}), ("p2", [3.0], {"kind": "painting"})], "ns")
     ]
-    assert indexes["sculpture"].calls == [
-        ([("s1", [2.0], {"kind": "sculpture"})], "ns")
-    ]
+    assert indexes["sculpture"].calls == [([("s1", [2.0], {"kind": "sculpture"})], "ns")]

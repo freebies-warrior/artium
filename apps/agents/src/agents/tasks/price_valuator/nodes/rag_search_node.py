@@ -40,9 +40,7 @@ def rag_search_node(rag_tool: RAGQueryTool):
             # Keep only whole-dollar SGD comparables in the valuation pipeline.
             priced_comparables = [c for c in comparables if c.get("price", 0) > 0]
             comparables_with_prices = [
-                c
-                for c in priced_comparables
-                if str(c.get("currency", "SGD")).upper() == "SGD"
+                c for c in priced_comparables if str(c.get("currency", "SGD")).upper() == "SGD"
             ]
             skipped_non_sgd = len(priced_comparables) - len(comparables_with_prices)
 

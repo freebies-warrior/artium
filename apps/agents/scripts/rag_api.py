@@ -481,7 +481,9 @@ def _validate_image_bytes(data: bytes) -> bytes:
         with Image.open(BytesIO(data)) as img:
             img.verify()
     except Exception as exc:
-        raise HTTPException(status_code=400, detail="image_url must point to a valid image") from exc
+        raise HTTPException(
+            status_code=400, detail="image_url must point to a valid image"
+        ) from exc
     return data
 
 

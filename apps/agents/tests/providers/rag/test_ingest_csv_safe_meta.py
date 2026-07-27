@@ -23,5 +23,7 @@ from agents.providers.rag.ingest.ingest_csv import _safe_meta
         (None, None),
     ],
 )
-def test_safe_meta_normalizes_missing_and_non_finite_values(value: object, expected: object) -> None:
+def test_safe_meta_normalizes_missing_and_non_finite_values(
+    value: object, expected: object
+) -> None:
     assert _safe_meta(value) == expected

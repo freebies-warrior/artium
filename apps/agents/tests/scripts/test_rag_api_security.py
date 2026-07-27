@@ -119,9 +119,7 @@ def test_query_rejects_private_image_urls(
         )
 
     assert response.status_code == 400
-    assert response.json() == {
-        "detail": "image_url must not target private or loopback addresses"
-    }
+    assert response.json() == {"detail": "image_url must not target private or loopback addresses"}
 
 
 def test_load_image_bytes_rejects_large_remote_responses(

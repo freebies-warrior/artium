@@ -9,7 +9,7 @@ Deployed environment sources must switch from `AI_SERVICE_TOKEN` to `INTERNAL_TO
 ## Deployment locations
 
 - Frontend preview and production env vars live in Vercel project settings. Update them through Vercel so the deployment history is the audit trail.
-- Backend and agents production env vars live on the VM used by `.github/workflows/deploy.yml`, under `~/artium` with `docker-compose.prod.yml`. There is no separate backend/agents staging environment in this repo. Update the VM env files in the same operational change that ships the code, and use the GitHub Actions run log plus the PR/commit history as the audit trail.
+- Backend and agents production env vars live on the VM used by `.github/workflows/deploy.yml`, in `~/artium/apps/backend/.env` and `~/artium/apps/agents/.env`, which are consumed by `~/artium/docker-compose.prod.yml`. There is no separate backend/agents staging environment in this repo. Update those VM env files in the same operational change that ships the code, and use the GitHub Actions run log plus the PR/commit history as the audit trail.
 - When a variable name changes, update this document first, then update the relevant deployment source before shipping the code that depends on it.
 
 ## Backend

@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 import io
 import json
 import logging
 import zipfile
 from pathlib import Path
+from numbers import Integral, Real
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import pandas as pd
@@ -328,16 +330,22 @@ def _safe_meta(v: Any) -> Any:
     # Pinecone metadata supports: str, int, float, bool, list[str|int|float|bool], dict[str -> ...]
     if v is None:
         return None
-    if isinstance(v, (str, int, float, bool)):
-        return v
-    # pandas NaN
     try:
-        import math
-
-        if isinstance(v, float) and math.isnan(v):
+        if pd.isna(v):
             return None
     except Exception:
         pass
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, Integral):
+        return int(v)
+    if isinstance(v, Real):
+        value = float(v)
+        if math.isfinite(value):
+            return value
+        return None
+    if isinstance(v, str):
+        return v
     return str(v)
 
 

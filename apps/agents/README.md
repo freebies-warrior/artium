@@ -85,7 +85,7 @@ Typical flow:
   "art_url": "https://.../items/<item_id>/main.jpg",
   "upload_image_url": "https://.../visualizations/<job_id>/result.jpg",
   "result_image_key": "visualizations/<job_id>/result.jpg",
-  "item_dimensions": { "width": 60, "height": 40 },
+  "item_dimensions": { "width": 60.5, "height": 40.25 },
   "job_id": "uuid"
 }
 ```

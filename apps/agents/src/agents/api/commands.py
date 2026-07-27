@@ -15,7 +15,6 @@ class PreviewJobCommand:
     room_url: str
     art_url: str
     upload_image_url: str | None
-    upload_image_key: str | None
 
     @classmethod
     def from_request(cls, req: "VisualizerRequest") -> "PreviewJobCommand":
@@ -24,7 +23,6 @@ class PreviewJobCommand:
             room_url=str(req.room_url),
             art_url=str(req.art_url),
             upload_image_url=req.upload_image_url,
-            upload_image_key=req.upload_image_key,
         )
 
 
@@ -33,16 +31,13 @@ class FeatureExtractionJobCommand:
     item_id: UUID
     image_keys: tuple[str, ...]
     image_get_urls: tuple[str, ...]
-    callback_url: str | None
     metadata: Mapping[str, Any]
 
     @classmethod
     def from_request(cls, req: "FeatureExtractionRequest") -> "FeatureExtractionJobCommand":
-        callback_url = str(req.callback_url) if req.callback_url is not None else None
         return cls(
             item_id=req.item_id,
             image_keys=tuple(req.image_keys),
             image_get_urls=tuple(str(url) for url in req.image_get_urls),
-            callback_url=callback_url,
             metadata=MappingProxyType(dict(req.metadata)),
         )

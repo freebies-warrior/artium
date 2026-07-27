@@ -16,7 +16,7 @@ import uuid
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks
-from pydantic import BaseModel, Field, HttpUrl, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
 from agents.tasks.visualizer.config import VisualizerConfig
 
@@ -25,15 +25,19 @@ from .service import get_agent_service
 
 
 class ItemDimensions(BaseModel):
-    width: int
-    height: int
+    model_config = ConfigDict(extra="forbid")
+
+    width: float
+    height: float
 
 
 class VisualizerRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     room_url: HttpUrl
     art_url: HttpUrl
     upload_image_url: Optional[str] = None  # default created in temp dir
-    upload_image_key: Optional[str] = None
+    result_image_key: Optional[str] = None
     item_dimensions: Optional[ItemDimensions] = None
     job_id: str
 
@@ -42,7 +46,6 @@ class FeatureExtractionRequest(BaseModel):
     item_id: uuid.UUID
     image_keys: List[str] = Field(min_length=1)
     image_get_urls: List[HttpUrl] = Field(min_length=1)
-    callback_url: Optional[HttpUrl] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
@@ -50,16 +53,6 @@ class FeatureExtractionRequest(BaseModel):
         if len(self.image_keys) != len(self.image_get_urls):
             raise ValueError("image_keys and image_get_urls must have the same length")
         return self
-
-
-class FeatureExtractionResponse(BaseModel):
-    metadata: dict
-    artwork_type: str
-    image_mode: str
-    image_size: list
-    vision_features: Optional[dict] = None
-    market_features: Optional[dict] = None
-    errors: list
 
 
 class AsyncPreviewResponse(BaseModel):

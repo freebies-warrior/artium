@@ -13,8 +13,10 @@ load_dotenv()
 
 
 class VisionLLMClient:
-    def __init__(self, model: str = "gemini-2.5-flash-image") -> None:
-        self.client = genai.Client()
+    def __init__(
+        self, api_key: str | None = None, model: str = "gemini-2.5-flash-image"
+    ) -> None:
+        self.client = genai.Client(api_key=api_key) if api_key else genai.Client()
         self.model = model
 
     def _img_part(self, img, mime_type: str = "image/jpeg") -> types.Part:
@@ -114,8 +116,10 @@ class VisionLLMClient:
 
 
 class GeminiVisionClient(VisionLLMClient):
-    def __init__(self, model: str = "gemini-2.5-flash-image") -> None:
-        self.client = VisionLLMClient(model=model)
+    def __init__(
+        self, api_key: str | None = None, model: str = "gemini-2.5-flash-image"
+    ) -> None:
+        self.client = VisionLLMClient(api_key=api_key, model=model)
 
     def infer_json(self, prompt: str, image_bytes: bytes) -> Dict[str, Any]:
         return self.client.generate_json(prompt=prompt, image_jpeg_bytes=image_bytes)

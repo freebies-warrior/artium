@@ -8,9 +8,8 @@ Deployed environment sources must switch from `AI_SERVICE_TOKEN` to `INTERNAL_TO
 
 ## Deployment locations
 
-- Frontend preview and production env vars live in Vercel project settings.
-- Backend and agents env vars live in VM-managed `.env` files that are consumed by Docker Compose.
-- Deployment credentials live in GitHub Actions secrets and environment settings.
+- Frontend preview and production env vars live in Vercel project settings. Update them through Vercel so the deployment history is the audit trail.
+- Backend and agents env vars live in the VM-managed `.env` files used by the GitHub Actions release workflow that pulls and restarts the Compose stack. Update those files in the same operational change that ships the code, and use the workflow run log plus the PR/commit history as the audit trail.
 - When a variable name changes, update this document first, then update the relevant deployment source before shipping the code that depends on it.
 
 ## Backend
@@ -20,9 +19,9 @@ Deployed environment sources must switch from `AI_SERVICE_TOKEN` to `INTERNAL_TO
 | `DATABASE_URL` | Required | Postgres connection string for the Go API. |
 | `JWT_SECRET` | Required | Required by backend auth and frontend auth route verification. |
 | `INTERNAL_TOKEN` | Required | Shared internal secret for trusted backend-to-agents callbacks. |
-| `APP_BASE_URL` | Required | Public app URL used in backend-generated links. |
-| `BACKEND_BASE_URL` | Required | Backend base URL used by backend-generated links. |
-| `AI_BASE_URL` | Required | Base URL for the AI service consumed by the backend. |
+| `APP_BASE_URL` | Optional | Public app URL used in backend-generated links. Defaults to `http://localhost:3000` in code. |
+| `BACKEND_BASE_URL` | Optional | Backend base URL used by backend-generated links. Defaults to `http://localhost:8080` in code. |
+| `AI_BASE_URL` | Optional | Base URL for the AI service consumed by the backend. Defaults to `http://localhost:8000` in code. |
 | `CORS_ALLOWED_ORIGINS` | Optional | Comma-separated allowed origins for local/dev access control. |
 | `ITEM_STATUS_SWEEPER_INTERVAL` | Optional | Background sweeper interval. Defaults in code. |
 | `R2_ACCOUNT_ID` | Required | Cloudflare R2 account ID. |
@@ -49,9 +48,10 @@ These variables are for Next.js server routes only. Do not expose the backend ba
 
 | Variable | Status | Notes |
 | --- | --- | --- |
-| `BACKEND_URL` | Required | Base URL for agents calling backend internal endpoints. |
+| `BACKEND_URL` | Optional | Base URL for agents calling backend internal endpoints. Defaults to `http://localhost:8080` in code. |
 | `INTERNAL_TOKEN` | Required | Shared internal secret used on trusted agent callbacks. |
-| `VECTORDB_CONFIG` | Required | Path to the agents vector DB config file. |
+| `GOOGLE_API_KEY` | Required | Gemini API key used by the visualizer and feature extractor at startup. |
+| `VECTORDB_CONFIG` | Optional | Path to the agents vector DB config file. Defaults to `RAG/config.yaml` in code. |
 | `PINECONE_API_KEY` | Required | Pinecone API key for retrieval/indexing flows. |
 | `OPENAI_API_KEY` | Required | OpenAI API key for agents that call OpenAI-compatible APIs. |
 | `OPENAI_BASE_URL` | Optional | Override for OpenAI-compatible base URL. |

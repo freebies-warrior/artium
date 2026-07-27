@@ -36,10 +36,6 @@ Or run Postgres manually.
 Create `apps/backend/.env` (or export env vars in your shell). For the canonical env reference, see `docs/env.md` in the repo root.
 
 ```bash
-# Server
-PORT=8080
-ENV=dev
-
 # Database
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/artium?sslmode=disable
 
@@ -47,11 +43,24 @@ DATABASE_URL=postgres://postgres:postgres@localhost:5432/artium?sslmode=disable
 JWT_SECRET=change-me
 INTERNAL_TOKEN=change-me-too
 
+# Email
+SMTP_HOST=localhost
+SMTP_PORT=1025
+EMAIL_FROM_NAME=Artium Local
+EMAIL_FROM_ADDRESS=no-reply@artium.local
+
 # Object storage (Cloudflare R2 / S3-compatible)
 R2_ACCOUNT_ID=...
 R2_ACCESS_KEY_ID=...
 R2_SECRET_ACCESS_KEY=...
 R2_BUCKET=...
+
+# Optional overrides
+SMTP_USERNAME=
+SMTP_PASSWORD=
+APP_BASE_URL=http://localhost:3000
+BACKEND_BASE_URL=http://localhost:8080
+AI_BASE_URL=http://localhost:8000
 ```
 
 ### 4) Run the backend

@@ -33,7 +33,7 @@ docker compose up -d postgres pgadmin
 Or run Postgres manually.
 
 ### 3) Configure environment
-Create `apps/backend/.env` (or export env vars in your shell). Typical vars:
+Create `apps/backend/.env` (or export env vars in your shell). For the canonical env reference, see `docs/env.md` in the repo root.
 
 ```bash
 # Server
@@ -45,21 +45,14 @@ DATABASE_URL=postgres://postgres:postgres@localhost:5432/artium?sslmode=disable
 
 # Auth
 JWT_SECRET=change-me
-INTERNAL_TOKEN=change-me-too   # used by AI backend for internal endpoints
+INTERNAL_TOKEN=change-me-too
 
 # Object storage (Cloudflare R2 / S3-compatible)
 R2_ACCOUNT_ID=...
 R2_ACCESS_KEY_ID=...
 R2_SECRET_ACCESS_KEY=...
 R2_BUCKET=...
-R2_PUBLIC_BASE_URL=...         # optional CDN/base URL for reads
-R2_ENDPOINT=...                # optional (S3-compatible endpoint)
-
-# AI Agents service
-AGENTS_BASE_URL=http://localhost:8001
 ```
-
-> Names may differ in code. Align this file with the actual config loader in `apps/backend`.
 
 ### 4) Run the backend
 From repo root:
@@ -180,7 +173,7 @@ Prefer structured logs (request ID + route + latency). Avoid logging:
 - full presigned URLs
 
 ### Timeouts
-Outbound calls (Agents service, R2 signing) should have sane timeouts.
+Outbound calls (AI services, R2 signing) should have sane timeouts.
 
 ---
 

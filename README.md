@@ -101,6 +101,7 @@ go run ./cmd/dbreset  # Make sure Go is installed
 - Architecture: [docs/architecture.md](docs/architecture.md)
 - API contract: [docs/api/CONTRACT.md](docs/api/CONTRACT.md)
 - DB schema: [docs/db/schema.md](docs/db/schema.md)
+- Environment reference: [docs/env.md](docs/env.md)
 
 ---
 

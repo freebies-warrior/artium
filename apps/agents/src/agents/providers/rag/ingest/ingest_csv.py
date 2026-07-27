@@ -138,7 +138,10 @@ def main() -> None:
     }
 
     # Ingest rows
-    batch: List[Tuple[str, List[float], Dict[str, Any]]] = []
+    batches: Dict[str, List[Tuple[str, List[float], Dict[str, Any]]]] = {
+        "painting": [],
+        "sculpture": [],
+    }
     upsert_batch_size = 100
 
     notes_cfg = cfg.get("feature_text", "notes", default={})
@@ -304,24 +307,16 @@ def main() -> None:
         lot_id = str(row.get("lot_number") or row.get("id") or f"row{i}")
         vec_id = f"{artwork_type}:{lot_id}:{sha256_hex(image_bytes)[:12]}"
 
-        batch.append((vec_id, vec, metadata))
+        _append_vector_batch(
+            idx=idx,
+            batches=batches,
+            artwork_type=artwork_type,
+            vector_item=(vec_id, vec, metadata),
+            namespace=args.namespace,
+            upsert_batch_size=upsert_batch_size,
+        )
 
-        if len(batch) >= upsert_batch_size:
-            flush_batch(idx[artwork_type], batch, namespace=args.namespace)
-            batch.clear()
-
-    if batch:
-        # Mixed types possible; flush per type
-        by_type: Dict[str, List[Tuple[str, List[float], Dict[str, Any]]]] = {
-            "painting": [],
-            "sculpture": [],
-        }
-        for vid, v, m in batch:
-            t = vid.split(":", 1)[0]
-            by_type[t].append((vid, v, m))
-        for t, items in by_type.items():
-            if items:
-                flush_batch(idx[t], items, namespace=args.namespace)
+    _flush_remaining_batches(idx=idx, batches=batches, namespace=args.namespace)
 
     logger.info("Done ingestion.")
 
@@ -375,6 +370,31 @@ def flush_batch(
     vectors = [(vid, vec, meta) for (vid, vec, meta) in batch]
     index.upsert(vectors=vectors, namespace=namespace)
     logger.info("Upserted %d vectors into %s", len(vectors), namespace)
+
+
+def _append_vector_batch(
+    idx: Dict[str, Any],
+    batches: Dict[str, List[Tuple[str, List[float], Dict[str, Any]]]],
+    artwork_type: str,
+    vector_item: Tuple[str, List[float], Dict[str, Any]],
+    namespace: str,
+    upsert_batch_size: int,
+) -> None:
+    batch = batches[artwork_type]
+    batch.append(vector_item)
+    if len(batch) >= upsert_batch_size:
+        flush_batch(idx[artwork_type], batch, namespace=namespace)
+        batch.clear()
+
+
+def _flush_remaining_batches(
+    idx: Dict[str, Any],
+    batches: Dict[str, List[Tuple[str, List[float], Dict[str, Any]]]],
+    namespace: str,
+) -> None:
+    for artwork_type, batch in batches.items():
+        if batch:
+            flush_batch(idx[artwork_type], batch, namespace=namespace)
 
 
 def load_rows(

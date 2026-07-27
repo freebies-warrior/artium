@@ -6,6 +6,13 @@ This document is the source of truth for environment variable naming across Arti
 
 Deployed environment sources must switch from `AI_SERVICE_TOKEN` to `INTERNAL_TOKEN` before the backend code change ships. The backend now reads `INTERNAL_TOKEN` only.
 
+## Deployment locations
+
+- Frontend preview and production env vars live in Vercel project settings.
+- Backend and agents env vars live in VM-managed `.env` files that are consumed by Docker Compose.
+- Deployment credentials live in GitHub Actions secrets and environment settings.
+- When a variable name changes, update this document first, then update the relevant deployment source before shipping the code that depends on it.
+
 ## Backend
 
 | Variable | Status | Notes |

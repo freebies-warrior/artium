@@ -27,7 +27,7 @@ func main() {
 
 	dsn := mustEnv("DATABASE_URL")
 	secret := mustEnv("JWT_SECRET")
-	internalToken := mustEnv("AI_SERVICE_TOKEN")
+	internalToken := mustEnv("INTERNAL_TOKEN")
 
 	aiBaseURL := getenv("AI_BASE_URL", "http://localhost:8000")
 	appBaseURL := getenv("APP_BASE_URL", "http://localhost:3000")

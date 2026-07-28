@@ -180,13 +180,10 @@ docker build -t artium-agents .
 docker run --rm -p 8001:8001 --env-file .env artium-agents
 ```
 
-### Environment variables (typical)
-Set these in `.env` (names may differ — align with your code):
-- `INTERNAL_TOKEN` — used to validate `X-Internal-Token`
-- `LOG_LEVEL` — `debug|info|warn|error`
-- Any model provider keys you use (e.g., `OPENAI_API_KEY`) **only if needed**
+### Environment variables
+See the canonical env reference in [`docs/env.md`](../../docs/env.md).
 
-Follow as given in `.env.example`.
+`MANUS_API_KEY` is optional and only needed when the Manus integration is enabled.
 
 ---
 

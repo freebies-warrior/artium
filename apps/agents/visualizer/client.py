@@ -8,8 +8,8 @@ from PIL import Image
 
 
 class GeminiClient:
-    def __init__(self) -> None:
-        self.client = genai.Client()
+    def __init__(self, api_key: str | None = None) -> None:
+        self.client = genai.Client(api_key=api_key) if api_key else genai.Client()
 
     def _img_part(self, img, mime_type: str = "image/png") -> types.Part:
         # If it's already a PIL image

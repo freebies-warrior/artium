@@ -34,11 +34,13 @@ npm install
 Create `apps/frontend/.env.local`:
 
 ```bash
-# Go backend base URL (see docs/api/CONTRACT.md)
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+# See canonical env reference: `docs/env.md`
+BACKEND_URL=http://localhost:8080
+JWT_SECRET=<JWT_SECRET>
 ```
 
-> If your code uses a different env var name, align it with the actual implementation (search for `process.env.NEXT_PUBLIC_` usage).
+`BACKEND_URL` is server-side only.
+`JWT_SECRET` is required for the auth route.
 
 ### 4) Run the dev server
 ```bash
@@ -56,11 +58,12 @@ Open:
 ## How the frontend connects to the backend
 
 ### API base URL
-All API calls should be built from:
-- `NEXT_PUBLIC_API_BASE_URL` (e.g., `http://localhost:8080`)
+See `docs/env.md` for the canonical environment variables.
+The frontend server-side API routes should use `BACKEND_URL`.
 
 ### Auth
 Protected endpoints require a Bearer token (JWT), per `docs/api/CONTRACT.md`.
+`JWT_SECRET` is required for the auth route.
 
 Common patterns (implementation-dependent):
 - Store token in memory + persist in localStorage (fast hackathon MVP)
@@ -157,7 +160,7 @@ apps/frontend/
 ## Troubleshooting
 
 ### API requests fail (CORS / network)
-- Ensure Go backend is running at `NEXT_PUBLIC_API_BASE_URL`.
+- Ensure Go backend is running at `BACKEND_URL`.
 - Check browser devtools Network tab for the failing URL.
 - Confirm the endpoint exists in `docs/api/CONTRACT.md`.
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -20,6 +21,20 @@ from visualizer.pipeline_langgraph import (  # maaf iya ni emang jelek soalnya m
 logger = logging.getLogger(__name__)
 
 
+def _require_google_api_key() -> str:
+    api_key = os.getenv("GOOGLE_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("GOOGLE_API_KEY is required")
+    return api_key
+
+
+def _require_internal_token() -> str:
+    token = os.getenv("INTERNAL_TOKEN", "").strip()
+    if not token:
+        raise RuntimeError("INTERNAL_TOKEN is required")
+    return token
+
+
 class AgentService:
     """Unified service for managing feature extraction, visualization, and price valuation graphs."""
 
@@ -29,13 +44,16 @@ class AgentService:
         self.valuation_graph = None
         self.feature_client = None
         self.visualizer_client = None
+        self.internal_token = ""
 
     def initialize(self):
         """Initialize all graphs and clients (called once at startup)."""
         logger.info("Initializing AgentService...")
-        self.feature_client = GeminiVisionClient()
+        google_api_key = _require_google_api_key()
+        self.internal_token = _require_internal_token()
+        self.feature_client = GeminiVisionClient(api_key=google_api_key)
         self.feature_graph = build_graph(vision_llm=self.feature_client)
-        self.visualizer_client = GeminiClient()
+        self.visualizer_client = GeminiClient(api_key=google_api_key)
         self.visualizer_graph = build_visualization_graph()
         self.valuation_graph = build_valuation_graph()
         logger.info("AgentService initialized successfully.")
@@ -48,6 +66,7 @@ class AgentService:
         self.valuation_graph = None
         self.feature_client = None
         self.visualizer_client = None
+        self.internal_token = ""
         logger.info("AgentService shut down.")
 
     def extract_features(self, initial_state: FeatureState) -> FeatureState:

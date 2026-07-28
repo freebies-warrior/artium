@@ -20,7 +20,6 @@ from .prompts import (
 from .types import AppraisalReport, ArtworkPlacement, CriticReport, RoomQualityReport
 
 load_dotenv()
-# print(os.getenv("GOOGLE_API_KEY"))
 
 
 def _load_image(path: str) -> Image.Image:

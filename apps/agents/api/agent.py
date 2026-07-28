@@ -35,7 +35,6 @@ AGENTS_ROOT = CURRENT_DIR.parent  # .../apps/agents
 if str(AGENTS_ROOT) not in sys.path:
     sys.path.insert(0, str(AGENTS_ROOT))
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8080").rstrip("/")
-INTERNAL_TOKEN = os.getenv("INTERNAL_TOKEN", "").strip()
 
 from feature_extractor.tools.image_tool import fetch_and_standardize_image  # noqa: E402
 from feature_extractor.types import ArtworkMetadata, FeatureState  # noqa: E402
@@ -122,6 +121,7 @@ def _notify_backend_preview(
     status: JobStatus,
     result_description: Optional[str],
     error_message: Optional[str],
+    internal_token: str,
 ) -> None:
     url = f"{BACKEND_URL}/visualizations/{job_id}"
     payload = {
@@ -130,12 +130,13 @@ def _notify_backend_preview(
         "error_message": error_message,
     }
 
-    headers = {}
-    if INTERNAL_TOKEN:
-        headers["Authorization"] = f"Bearer {INTERNAL_TOKEN}"
-
     try:
-        resp = requests.put(url, json=payload, headers=headers, timeout=10)
+        resp = requests.put(
+            url,
+            json=payload,
+            headers={"Authorization": f"Bearer {internal_token}"},
+            timeout=10,
+        )
         if resp.status_code >= 400:
             logger.warning(
                 "failed to update visualizer job",
@@ -147,6 +148,7 @@ def _notify_backend_preview(
 def _notify_backend_feature_extraction(
     item_id: uuid.UUID,
     feature_json: dict[str, Any],
+    internal_token: str,
 ) -> None:
     sanitized_features = _sanitize_for_json(feature_json)
     if not isinstance(sanitized_features, dict):
@@ -156,12 +158,13 @@ def _notify_backend_feature_extraction(
         "features" : sanitized_features,
     }
 
-    headers = {}
-    if INTERNAL_TOKEN:
-        headers["Authorization"] = f"Bearer {INTERNAL_TOKEN}"
-
     try:
-        resp = requests.put(url, json=payload, headers=headers, timeout=10)
+        resp = requests.put(
+            url,
+            json=payload,
+            headers={"Authorization": f"Bearer {internal_token}"},
+            timeout=10,
+        )
         if resp.status_code >= 400:
             logger.warning(
                 "failed to update feature extraction job",
@@ -239,6 +242,7 @@ def _run_preview(req: VisualizerRequest) -> None:
 
     room_img = _load_image(str(room_path))
     art_img = _load_image(str(art_path))
+    viz_service = get_agent_service()
 
     try:
         valid, is_artwork, is_room = is_valid_artwork_and_room(art_img, room_img)
@@ -250,7 +254,6 @@ def _run_preview(req: VisualizerRequest) -> None:
             if not is_room:
                 raise ValueError("Second image is not recognized as a room.")
 
-        viz_service = get_agent_service()
         state: VizState = {
             "cfg": cfg,
             "client": viz_service.visualizer_client,
@@ -270,7 +273,13 @@ def _run_preview(req: VisualizerRequest) -> None:
         logger.exception("visualization failed")
     finally:
         logger.info("result_description: %s", result_description)
-        _notify_backend_preview(req.job_id, status=status, result_description=result_description, error_message=error_message)
+        _notify_backend_preview(
+            req.job_id,
+            status=status,
+            result_description=result_description,
+            error_message=error_message,
+            internal_token=viz_service.internal_token,
+        )
         try:
             for f in tmp_dir.iterdir():
                 f.unlink()
@@ -298,6 +307,7 @@ def extract_features(
 def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionResponse:
     """Extract visual and market features from artwork image. Automatically determines if painting or sculpture."""
     logger.info("feature extraction request", extra={"image_urls": str(req.image_get_urls)})
+    service = get_agent_service()
 
     try:
         selected_index = get_primary_image_index(
@@ -330,7 +340,6 @@ def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionRespons
         }
 
         # Use cached graph from agent service
-        service = get_agent_service()
         final = service.extract_features(initial_state)
 
         feature_json = final
@@ -391,4 +400,8 @@ def _extract_features(req: FeatureExtractionRequest) -> FeatureExtractionRespons
         logger.info("feature extraction complete")
         if not combined_result:
             combined_result = {}
-        _notify_backend_feature_extraction(req.item_id, feature_json = combined_result)
+        _notify_backend_feature_extraction(
+            req.item_id,
+            feature_json=combined_result,
+            internal_token=service.internal_token,
+        )

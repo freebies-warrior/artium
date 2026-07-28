@@ -28,6 +28,13 @@ def _require_google_api_key() -> str:
     return api_key
 
 
+def _require_internal_token() -> str:
+    token = os.getenv("INTERNAL_TOKEN", "").strip()
+    if not token:
+        raise RuntimeError("INTERNAL_TOKEN is required")
+    return token
+
+
 class AgentService:
     """Unified service for managing feature extraction, visualization, and price valuation graphs."""
 
@@ -37,11 +44,13 @@ class AgentService:
         self.valuation_graph = None
         self.feature_client = None
         self.visualizer_client = None
+        self.internal_token = ""
 
     def initialize(self):
         """Initialize all graphs and clients (called once at startup)."""
         logger.info("Initializing AgentService...")
         google_api_key = _require_google_api_key()
+        self.internal_token = _require_internal_token()
         self.feature_client = GeminiVisionClient(api_key=google_api_key)
         self.feature_graph = build_graph(vision_llm=self.feature_client)
         self.visualizer_client = GeminiClient(api_key=google_api_key)
@@ -57,6 +66,7 @@ class AgentService:
         self.valuation_graph = None
         self.feature_client = None
         self.visualizer_client = None
+        self.internal_token = ""
         logger.info("AgentService shut down.")
 
     def extract_features(self, initial_state: FeatureState) -> FeatureState:

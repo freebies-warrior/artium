@@ -75,7 +75,6 @@ These variables are for Next.js server routes only. Do not expose the backend ba
 | `SERPAPI_API_KEY` | Required | Search provider key for feature extraction lookups. |
 | `APP_ENV` | Optional | Runtime environment name. |
 | `LOG_LEVEL` | Optional | Log level override. |
-| `VISUALIZER_USE_LANGGRAPH` | Optional | Toggle for the LangGraph visualizer path. |
 | `VISUALIZER_GEMINI_MODEL` | Optional | Image-capable Gemini model selection. |
 | `VISUALIZER_GEMINI_TEXT_MODEL` | Optional | Text Gemini model selection. |
 | `VISUALIZER_MAX_RETRIES` | Optional | Retry count for visualizer runs. |
